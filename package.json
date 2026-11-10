@@ -1,0 +1,47 @@
+{
+  "name": "andijan-creators",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:constraints": "prisma db execute --file prisma/constraints.sql --schema prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "prisma migrate deploy && npm run db:constraints && npm run db:seed",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.682.0",
+    "@aws-sdk/s3-request-presigner": "3.682.0",
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "2.4.3",
+    "jose": "5.9.6",
+    "next": "14.2.15",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "20.17.6",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "autoprefixer": "10.4.20",
+    "dotenv": "16.4.5",
+    "postcss": "8.4.47",
+    "prisma": "5.22.0",
+    "tailwindcss": "3.4.14",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "vitest": "2.1.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

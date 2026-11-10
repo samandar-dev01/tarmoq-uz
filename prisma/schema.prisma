@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  PROVIDER
+  ADMIN
+}
+
+enum ProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  SUSPENDED
+}
+
+enum OrderStatus {
+  REQUESTED
+  AGREEMENT_PENDING
+  AWAITING_PAYMENT
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  REQUIRES_PAYMENT
+  HELD
+  RELEASED
+  FAILED
+  REFUNDED
+}
+
+enum LedgerType {
+  ESCROW_HOLD
+  PROVIDER_PAYOUT
+  PLATFORM_FEE
+  REFUND
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          Role     @default(CLIENT)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  providerProfile ProviderProfile?
+  clientOrders    Order[]          @relation("ClientOrders")
+  providerOrders  Order[]          @relation("ProviderOrders")
+  messages        Message[]
+  reviewsWritten  Review[]         @relation("ReviewAuthor")
+  auditLogs       AuditLog[]
+  conversationsA  Conversation[]   @relation("ConvA")
+  conversationsB  Conversation[]   @relation("ConvB")
+}
+
+model Category {
+  id        String            @id @default(cuid())
+  slug      String            @unique
+  name      String
+  profiles  ProviderProfile[]
+}
+
+model ProviderProfile {
+  id             String        @id @default(cuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug           String        @unique
+  headline       String
+  bio            String
+  city           String        @default("Andijan")
+  district       String?
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  equipment      String?
+  languages      String[]
+  startingPrice  Int           // UZS, whole so'm
+  ratingAvg      Float         @default(0)
+  ratingCount    Int           @default(0)
+  status         ProfileStatus @default(DRAFT)
+  wizardStep     Int           @default(1)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  services  Service[]
+  portfolio PortfolioItem[]
+
+  @@index([city, status])
+  @@index([categoryId, status])
+  @@index([startingPrice])
+}
+
+model Service {
+  id            String          @id @default(cuid())
+  profileId     String
+  profile       ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  price         Int             // UZS
+  deliveryDays  Int
+  revisions     Int             @default(1)
+  isActive      Boolean         @default(true)
+  orders        Order[]
+}
+
+model PortfolioItem {
+  id         String          @id @default(cuid())
+  profileId  String
+  profile    ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title      String
+  videoUrl   String?
+  imageUrl   String?
+  sortOrder  Int             @default(0)
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  clientId      String
+  client        User        @relation("ClientOrders", fields: [clientId], references: [id])
+  providerId    String
+  provider      User        @relation("ProviderOrders", fields: [providerId], references: [id])
+  serviceId     String
+  service       Service     @relation(fields: [serviceId], references: [id])
+  brief         String
+  eventDate     DateTime?
+  agreedPrice   Int?        // set when terms proposed; UZS
+  agreedDays    Int?
+  revisionsAllowed Int      @default(1)
+  revisionsUsed Int         @default(0)
+  status        OrderStatus @default(REQUESTED)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  completedAt   DateTime?
+
+  agreements  Agreement[]
+  payments    Payment[]
+  deliveries  Delivery[]
+  review      Review?
+  conversation Conversation?
+
+  @@index([clientId, status])
+  @@index([providerId, status])
+}
+
+model Agreement {
+  id                 String    @id @default(cuid())
+  orderId            String
+  order              Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  version            Int       @default(1)
+  termsText          String
+  termsHash          String    // sha256 of terms + price + days
+  price              Int
+  deliveryDays       Int
+  clientAcceptedAt   DateTime?
+  clientAcceptedIp   String?
+  providerAcceptedAt DateTime?
+  providerAcceptedIp String?
+  createdAt          DateTime  @default(now())
+
+  @@unique([orderId, version])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id])
+  amount      Int           // computed server-side from agreement
+  currency    String        @default("UZS")
+  status      PaymentStatus @default(REQUIRES_PAYMENT)
+  provider    String        @default("sandbox")
+  cardBrand   String?
+  cardLast4   String?
+  failureCode String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  ledger LedgerEntry[]
+}
+
+model LedgerEntry {
+  id         String     @id @default(cuid())
+  paymentId  String
+  payment    Payment    @relation(fields: [paymentId], references: [id])
+  type       LedgerType
+  amount     Int
+  createdAt  DateTime   @default(now())
+}
+
+model Delivery {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fileKey   String
+  fileName  String
+  fileSize  Int
+  mimeType  String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userAId   String
+  userBId   String
+  userA     User      @relation("ConvA", fields: [userAId], references: [id])
+  userB     User      @relation("ConvB", fields: [userBId], references: [id])
+  orderId   String?   @unique
+  order     Order?    @relation(fields: [orderId], references: [id])
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  @@unique([userAId, userBId, orderId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  authorId  String
+  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  providerUserId String
+  rating    Int      // 1..5, enforced in Zod + DB check in migration
+  comment   String
+  isHidden  Boolean  @default(false) // admin moderation
+  createdAt DateTime @default(now())
+
+  @@index([providerUserId, isHidden])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String   // e.g. AGREEMENT_ACCEPTED, PROVIDER_APPROVED
+  entity    String
+  entityId  String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
