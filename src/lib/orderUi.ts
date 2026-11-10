@@ -1,47 +1,61 @@
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatus, ProfileStatus } from "@prisma/client";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
-  REQUESTED: "Requested",
-  AGREEMENT_PENDING: "Agreement pending",
-  AWAITING_PAYMENT: "Awaiting payment",
-  IN_PROGRESS: "In progress",
-  DELIVERED: "Delivered",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-  DISPUTED: "In dispute",
+  REQUESTED: "Soʻrov yuborildi",
+  AGREEMENT_PENDING: "Kelishuv kutilmoqda",
+  AWAITING_PAYMENT: "Toʻlov kutilmoqda",
+  IN_PROGRESS: "Jarayonda",
+  DELIVERED: "Topshirildi",
+  COMPLETED: "Yakunlandi",
+  CANCELLED: "Bekor qilindi",
+  DISPUTED: "Nizoda",
 };
 
 export const STATUS_STYLE: Record<OrderStatus, string> = {
-  REQUESTED: "bg-slate-100 text-slate-700",
-  AGREEMENT_PENDING: "bg-amber-100 text-amber-800",
-  AWAITING_PAYMENT: "bg-amber-100 text-amber-800",
-  IN_PROGRESS: "bg-blue-100 text-blue-800",
-  DELIVERED: "bg-indigo-100 text-indigo-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-slate-200 text-slate-600",
-  DISPUTED: "bg-red-100 text-red-800",
+  REQUESTED: "bg-paper-deep text-ink",
+  AGREEMENT_PENDING: "bg-saffron-tint text-ink",
+  AWAITING_PAYMENT: "bg-saffron text-ink",
+  IN_PROGRESS: "bg-cobalt-tint text-cobalt-dark",
+  DELIVERED: "bg-lilac-tint text-ink",
+  COMPLETED: "bg-turquoise-tint text-turquoise-deep",
+  CANCELLED: "bg-paper-deep text-ink-mute",
+  DISPUTED: "bg-pomegranate-tint text-pomegranate-deep",
+};
+
+export const PROFILE_STATUS_LABEL: Record<ProfileStatus, string> = {
+  DRAFT: "Qoralama",
+  PENDING_REVIEW: "Koʻrib chiqilmoqda",
+  APPROVED: "Tasdiqlangan",
+  SUSPENDED: "Toʻxtatilgan",
+};
+
+export const PROFILE_STATUS_STYLE: Record<ProfileStatus, string> = {
+  DRAFT: "bg-paper-deep text-ink",
+  PENDING_REVIEW: "bg-saffron text-ink",
+  APPROVED: "bg-turquoise-tint text-turquoise-deep",
+  SUSPENDED: "bg-pomegranate-tint text-pomegranate-deep",
 };
 
 export function nextAction(status: OrderStatus, role: "client" | "provider", hasReview = true): string {
   const client: Record<OrderStatus, string> = {
-    REQUESTED: "Waiting for the provider to send terms",
-    AGREEMENT_PENDING: "Review and accept the terms",
-    AWAITING_PAYMENT: "Pay to start the work",
-    IN_PROGRESS: "The provider is working on your video",
-    DELIVERED: "Review the delivery and approve it",
-    COMPLETED: hasReview ? "Completed" : "Leave a review",
-    CANCELLED: "Cancelled",
-    DISPUTED: "An administrator is reviewing the dispute",
+    REQUESTED: "Ijodkor shartlarni yuborishini kuting",
+    AGREEMENT_PENDING: "Shartlarni koʻrib chiqing va qabul qiling",
+    AWAITING_PAYMENT: "Ish boshlanishi uchun toʻlov qiling",
+    IN_PROGRESS: "Ijodkor videongiz ustida ishlamoqda",
+    DELIVERED: "Topshirilgan ishni koʻrib, qabul qiling",
+    COMPLETED: hasReview ? "Yakunlandi" : "Sharh qoldiring",
+    CANCELLED: "Bekor qilingan",
+    DISPUTED: "Administrator nizoni koʻrib chiqmoqda",
   };
   const provider: Record<OrderStatus, string> = {
-    REQUESTED: "Send your terms",
-    AGREEMENT_PENDING: "Waiting for the client to accept",
-    AWAITING_PAYMENT: "Waiting for the client’s payment",
-    IN_PROGRESS: "Upload the finished video",
-    DELIVERED: "Waiting for the client’s approval",
-    COMPLETED: "Completed and paid out",
-    CANCELLED: "Cancelled",
-    DISPUTED: "An administrator is reviewing the dispute",
+    REQUESTED: "Shartlaringizni yuboring",
+    AGREEMENT_PENDING: "Mijoz shartlarni qabul qilishini kuting",
+    AWAITING_PAYMENT: "Mijoz toʻlov qilishini kuting",
+    IN_PROGRESS: "Tayyor videoni yuklang",
+    DELIVERED: "Mijoz ishni qabul qilishini kuting",
+    COMPLETED: "Yakunlandi, toʻlov oʻtkazildi",
+    CANCELLED: "Bekor qilingan",
+    DISPUTED: "Administrator nizoni koʻrib chiqmoqda",
   };
   return (role === "client" ? client : provider)[status];
 }

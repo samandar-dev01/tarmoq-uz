@@ -2,12 +2,19 @@
 import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
+import { useHydrated } from "@/components/ui/useHydrated";
 import { useAction } from "./useAction";
+
+const STAR = "M12 2.5l2.94 6.1 6.56.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.7l1.2-6.6-4.8-4.6 6.56-.9L12 2.5z";
 
 export function ReviewForm({ orderId }: { orderId: string }) {
   const { run, loading, error, fe } = useAction();
+  const ready = useHydrated();
   const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
+  const shown = hover || rating;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -15,32 +22,28 @@ export function ReviewForm({ orderId }: { orderId: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
       <div>
-        <p id="rating-label" className="mb-1 text-sm font-medium text-slate-700">Rating</p>
-        <div role="radiogroup" aria-labelledby="rating-label" className="flex gap-1">
+        <p id="rating-label" className="mb-1.5 text-sm font-bold">Baho</p>
+        <div role="radiogroup" aria-labelledby="rating-label" className="flex gap-1" onMouseLeave={() => setHover(0)}>
           {[1, 2, 3, 4, 5].map((n) => (
             <button
-              key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} ${n === 1 ? "star" : "stars"}`}
+              key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} yulduz`}
               onClick={() => setRating(n)}
-              className={`text-3xl leading-none ${n <= rating ? "text-amber-500" : "text-slate-300"}`}
+              onMouseEnter={() => setHover(n)}
+              className="rounded-ctl p-1 transition-transform duration-150 hover:scale-110"
             >
-              ★
+              <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true" className={`${n <= shown ? "text-saffron" : "text-white"} ${rating === n ? "animate-star-pop" : ""}`}>
+                <path d={STAR} fill="currentColor" stroke="rgb(var(--c-ink))" strokeWidth="1.6" strokeLinejoin="round" />
+              </svg>
             </button>
           ))}
         </div>
-        {fe("rating") && <p className="mt-1 text-xs text-red-600">{fe("rating")}</p>}
+        {fe("rating") && <p className="mt-1.5 text-sm font-semibold text-pomegranate-deep">{fe("rating")}</p>}
       </div>
-      <div>
-        <label htmlFor="comment" className="mb-1 block text-sm font-medium text-slate-700">Your review</label>
-        <textarea
-          id="comment" rows={4} value={comment} onChange={(e) => setComment(e.target.value)}
-          className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${fe("comment") ? "border-red-500" : "border-slate-300"}`}
-        />
-        {fe("comment") && <p className="mt-1 text-xs text-red-600">{fe("comment")}</p>}
-      </div>
-      <Button type="submit" loading={loading}>{loading ? "Saving…" : "Submit review"}</Button>
+      <Field as="textarea" label="Sharhingiz" id="comment" rows={4} value={comment} onChange={(e) => setComment(e.target.value)} error={fe("comment")} placeholder="Ish qanday oʻtdi? Ijodkorni boshqalarga tavsiya qilasizmi?" />
+      <Button type="submit" loading={loading} disabled={!ready}>{loading ? "Saqlanmoqda…" : "Sharhni yuborish"}</Button>
     </form>
   );
 }

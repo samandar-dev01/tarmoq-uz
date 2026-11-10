@@ -11,9 +11,9 @@ type Ctx = { params: { id: string; deliveryId: string } };
 export const GET = handle(async (req, { params }: Ctx) => {
   const user = await requireUser();
   const delivery = await prisma.delivery.findUnique({ where: { id: params.deliveryId }, include: { order: true } });
-  if (!delivery || delivery.orderId !== params.id) throw new HttpError(404, "File not found.");
+  if (!delivery || delivery.orderId !== params.id) throw new HttpError(404, "Fayl topilmadi.");
   const { order } = delivery;
-  if (user.role !== "ADMIN" && order.clientId !== user.id && order.providerId !== user.id) throw new HttpError(404, "File not found.");
+  if (user.role !== "ADMIN" && order.clientId !== user.id && order.providerId !== user.id) throw new HttpError(404, "Fayl topilmadi.");
 
   const download = new URL(req.url).searchParams.get("download") === "1";
   if (isS3()) {
@@ -21,7 +21,7 @@ export const GET = handle(async (req, { params }: Ctx) => {
   }
 
   const total = await localStore.size(delivery.fileKey).catch(() => {
-    throw new HttpError(404, "File not found.");
+    throw new HttpError(404, "Fayl topilmadi.");
   });
   let start = 0;
   let end = total - 1;

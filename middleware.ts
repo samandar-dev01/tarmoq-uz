@@ -22,13 +22,13 @@ export async function middleware(req: NextRequest) {
   const isApi = pathname.startsWith("/api/");
 
   if (!session) {
-    if (isApi) return NextResponse.json({ error: "Please sign in to continue." }, { status: 401 });
+    if (isApi) return NextResponse.json({ error: "Davom etish uchun tizimga kiring." }, { status: 401 });
     const url = new URL("/login", req.url);
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
   if (!rule.roles.includes(session.role)) {
-    if (isApi) return NextResponse.json({ error: "You do not have permission to do this." }, { status: 403 });
+    if (isApi) return NextResponse.json({ error: "Buning uchun sizda ruxsat yoʻq." }, { status: 403 });
     return NextResponse.redirect(new URL("/forbidden", req.url));
   }
   return NextResponse.next();

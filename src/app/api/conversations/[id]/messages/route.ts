@@ -6,7 +6,7 @@ import { getParticipantConversation, markRead } from "@/lib/messaging";
 import { rateLimit } from "@/lib/rateLimit";
 
 type Ctx = { params: { id: string } };
-const sendSchema = z.object({ body: z.string().trim().min(1, "Write a message").max(2000, "Messages are limited to 2000 characters") });
+const sendSchema = z.object({ body: z.string().trim().min(1, "Xabar yozing").max(2000, "Xabar 2000 ta belgidan oshmasligi kerak") });
 
 const select = { id: true, senderId: true, body: true, createdAt: true, readAt: true } as const;
 
@@ -19,7 +19,7 @@ export const GET = handle(async (req, { params }: Ctx) => {
   let messages;
   if (after) {
     const exists = await prisma.message.findFirst({ where: { id: after, conversationId: params.id }, select: { id: true } });
-    if (!exists) throw new HttpError(400, "Unknown cursor.");
+    if (!exists) throw new HttpError(400, "Notoʻgʻri soʻrov parametri.");
     messages = await prisma.message.findMany({
       where: { conversationId: params.id },
       cursor: { id: after },
@@ -41,7 +41,7 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("CLIENT", "PROVIDER");
   const { body } = sendSchema.parse(await readJson(req));
   await getParticipantConversation(params.id, user.id);
-  if (!rateLimit(`msg:${user.id}`, 30, 60 * 1000)) throw new HttpError(429, "You are sending messages too fast. Please slow down.");
+  if (!rateLimit(`msg:${user.id}`, 30, 60 * 1000)) throw new HttpError(429, "Xabarlarni juda tez yuboryapsiz. Sal sekinroq.");
   const message = await prisma.message.create({ data: { conversationId: params.id, senderId: user.id, body }, select });
   return ok({ message }, 201);
 });

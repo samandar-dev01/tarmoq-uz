@@ -1,11 +1,13 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { nextAction } from "@/lib/orderUi";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { StatTile } from "@/components/ui/StatTile";
 import { OrderList } from "@/components/orders/OrderList";
 
-export const metadata = { title: "Client dashboard" };
+export const metadata = { title: "Mijoz kabineti" };
 
 export default async function ClientDashboard() {
   const user = await requirePageRole("CLIENT");
@@ -20,27 +22,24 @@ export default async function ClientDashboard() {
   const completed = orders.filter((o) => o.status === "COMPLETED").length;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Welcome, {user.name.split(" ")[0]}</h1>
-        <Link href="/search" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">Find creators</Link>
+    <Container size="xl">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1>Salom, {user.name.split(" ")[0]}!</h1>
+        <ButtonLink href="/search" size="lg">Ijodkor topish</ButtonLink>
       </div>
 
-      <dl className="mt-6 grid gap-3 sm:grid-cols-3">
-        {[["Active orders", active], ["Need your action", needsAction], ["Completed", completed]].map(([label, value]) => (
-          <div key={label as string} className="rounded-xl border border-slate-200 bg-white p-4">
-            <dt className="text-xs text-slate-500">{label}</dt>
-            <dd className="mt-1 text-2xl font-bold">{value}</dd>
-          </div>
-        ))}
+      <dl className="mt-8 grid gap-4 sm:grid-cols-3">
+        <StatTile label="Faol buyurtmalar" value={active} />
+        <StatTile label="Sizdan harakat kutilmoqda" value={needsAction} tone="saffron" />
+        <StatTile label="Yakunlangan" value={completed} tone="turquoise" />
       </dl>
 
-      <h2 className="mb-3 mt-8 text-lg font-semibold">Your orders</h2>
+      <h2 className="mb-4 mt-12">Buyurtmalaringiz</h2>
       {orders.length === 0 ? (
         <EmptyState
-          title="No orders yet"
-          description="Search for a creator, pick a package, and send your first order request."
-          action={<Link href="/search?city=Andijan" className="text-sm font-medium text-indigo-600 hover:underline">Browse Andijan creators</Link>}
+          title="Hozircha buyurtmalar yoʻq"
+          description="Ijodkorni qidiring, paket tanlang va birinchi buyurtmangizni yuboring."
+          action={<ButtonLink href="/search">Ijodkorlarni koʻrish</ButtonLink>}
         />
       ) : (
         <OrderList
@@ -50,6 +49,6 @@ export default async function ClientDashboard() {
           }))}
         />
       )}
-    </div>
+    </Container>
   );
 }

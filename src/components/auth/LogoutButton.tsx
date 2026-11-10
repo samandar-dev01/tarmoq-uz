@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { buttonClasses } from "@/components/ui/Button";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -14,9 +15,9 @@ export function LogoutButton() {
         router.replace("/");
         router.refresh();
       }}
-      className="text-sm font-medium text-slate-600 hover:text-slate-900 disabled:opacity-60"
+      className={buttonClasses({ variant: "ghost", size: "sm", className: "px-3 font-semibold" })}
     >
-      {loading ? "Signing out…" : "Sign out"}
+      {loading ? "Chiqilmoqda…" : "Chiqish"}
     </button>
   );
 }

@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Stars } from "@/components/ui/Stars";
 import { ReviewToggle } from "@/components/admin/AdminActions";
 
-export const metadata = { title: "Admin · Reviews" };
+export const metadata = { title: "Admin: sharhlar" };
 
 export default async function AdminReviews() {
   await requirePageRole("ADMIN");
@@ -17,23 +19,23 @@ export default async function AdminReviews() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Reviews</h1>
-      <div className="mt-4 space-y-3">
+      <h1>Sharhlar</h1>
+      <div className="mt-6 space-y-4">
         {reviews.length === 0 ? (
-          <EmptyState title="No reviews yet" description="Reviews appear here after clients rate completed orders." />
+          <EmptyState title="Hozircha sharhlar yoʻq" description="Mijozlar yakunlangan buyurtmalarni baholagach, sharhlar shu yerda paydo boʻladi." />
         ) : (
           reviews.map((r) => (
-            <div key={r.id} className={`rounded-xl border p-4 ${r.isHidden ? "border-slate-200 bg-slate-100" : "border-slate-200 bg-white"}`}>
+            <Card key={r.id} tone={r.isHidden ? "tint" : "white"}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{r.author.name} → {providerName.get(r.providerUserId) ?? "Unknown"}</p>
-                  <p className="text-amber-500" aria-label={`${r.rating} out of 5`}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</p>
-                  <p className="mt-1 text-sm text-slate-700">{r.comment}</p>
-                  {r.isHidden && <p className="mt-1 text-xs text-slate-500">Hidden from the public</p>}
+                  <p className="font-bold">{r.author.name} haqida: {providerName.get(r.providerUserId) ?? "Nomaʼlum"}</p>
+                  <div className="mt-1"><Stars value={r.rating} /></div>
+                  <p className="mt-2 text-ink-soft">{r.comment}</p>
+                  {r.isHidden && <p className="mt-2 text-sm text-ink-mute">Ommadan yashirilgan</p>}
                 </div>
                 <ReviewToggle id={r.id} hidden={r.isHidden} />
               </div>
-            </div>
+            </Card>
           ))
         )}
       </div>

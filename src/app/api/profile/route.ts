@@ -9,44 +9,44 @@ import { logAudit } from "@/lib/audit";
 const httpsUrl = z
   .string()
   .trim()
-  .url("Enter a valid link")
-  .refine((u) => u.startsWith("https://"), "Links must start with https://");
+  .url("Havolani toʻgʻri kiriting")
+  .refine((u) => u.startsWith("https://"), "Havola https:// bilan boshlanishi kerak");
 const optionalUrl = z.preprocess((v) => (v === "" || v == null ? undefined : v), httpsUrl.optional());
 
 const step1 = z.object({
-  headline: z.string().trim().min(10, "Use at least 10 characters").max(100, "Keep it under 100 characters"),
-  bio: z.string().trim().min(40, "Tell clients a little more (40+ characters)").max(2000),
-  categoryId: z.string().min(1, "Choose a category"),
+  headline: z.string().trim().min(10, "Kamida 10 ta belgi yozing").max(100, "100 ta belgidan oshmasin"),
+  bio: z.string().trim().min(40, "Mijozlarga oʻzingiz haqingizda koʻproq yozing (kamida 40 ta belgi)").max(2000),
+  categoryId: z.string().min(1, "Yoʻnalishni tanlang"),
 });
 const step2 = z.object({
-  city: z.enum(CITIES, { errorMap: () => ({ message: "Choose a city" }) }),
+  city: z.enum(CITIES, { errorMap: () => ({ message: "Shaharni tanlang" }) }),
   district: z.string().trim().max(60).optional(),
   equipment: z.string().trim().max(200).optional(),
-  languages: z.array(z.enum(LANGUAGES)).min(1, "Pick at least one language"),
+  languages: z.array(z.enum(LANGUAGES)).min(1, "Kamida bitta tilni tanlang"),
 });
 const step3 = z.object({
   services: z
     .array(
       z.object({
         id: z.string().optional(),
-        title: z.string().trim().min(3, "Add a title").max(80),
-        description: z.string().trim().min(10, "Describe what’s included (10+ characters)").max(500),
-        price: z.number({ required_error: "Enter a price", invalid_type_error: "Enter a price" }).int().min(20000, "Minimum price is 20 000 UZS").max(50_000_000),
-        deliveryDays: z.number({ required_error: "Enter days", invalid_type_error: "Enter days" }).int().min(1, "At least 1 day").max(60),
-        revisions: z.number({ required_error: "Enter revisions", invalid_type_error: "Enter revisions" }).int().min(0).max(10),
+        title: z.string().trim().min(3, "Nomini kiriting").max(80),
+        description: z.string().trim().min(10, "Nimalar kirishini yozing (kamida 10 ta belgi)").max(500),
+        price: z.number({ required_error: "Narxni kiriting", invalid_type_error: "Narxni kiriting" }).int().min(20000, "Eng kam narx — 20 000 soʻm").max(50_000_000),
+        deliveryDays: z.number({ required_error: "Kunlar sonini kiriting", invalid_type_error: "Kunlar sonini kiriting" }).int().min(1, "Kamida 1 kun").max(60),
+        revisions: z.number({ required_error: "Tuzatishlar sonini kiriting", invalid_type_error: "Tuzatishlar sonini kiriting" }).int().min(0).max(10),
       }),
     )
-    .min(1, "Add at least one package")
-    .max(6, "You can list up to 6 packages"),
+    .min(1, "Kamida bitta paket qoʻshing")
+    .max(6, "Koʻpi bilan 6 ta paket qoʻshishingiz mumkin"),
 });
 const step4 = z.object({
   items: z
     .array(
       z
-        .object({ title: z.string().trim().min(2, "Add a title").max(80), videoUrl: optionalUrl, imageUrl: optionalUrl })
-        .refine((i) => i.videoUrl || i.imageUrl, { message: "Add a video or image link", path: ["videoUrl"] }),
+        .object({ title: z.string().trim().min(2, "Nomini kiriting").max(80), videoUrl: optionalUrl, imageUrl: optionalUrl })
+        .refine((i) => i.videoUrl || i.imageUrl, { message: "Video yoki rasm havolasini qoʻshing", path: ["videoUrl"] }),
     )
-    .max(8, "You can add up to 8 items"),
+    .max(8, "Koʻpi bilan 8 ta ish qoʻshishingiz mumkin"),
 });
 const body = z.object({ step: z.number().int().min(1).max(5), data: z.unknown().optional() });
 
@@ -56,14 +56,14 @@ async function uniqueSlug(name: string) {
     const slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
     if (!(await prisma.providerProfile.findUnique({ where: { slug }, select: { id: true } }))) return slug;
   }
-  throw new HttpError(500, "Could not create a profile address. Please try again.");
+  throw new HttpError(500, "Profil manzilini yaratib boʻlmadi. Qayta urinib koʻring.");
 }
 
 async function summary(userId: string) {
   const p = await prisma.providerProfile.findUniqueOrThrow({
     where: { userId },
     include: {
-      services: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
+      services: { where: { isActive: true }, orderBy: { id: "asc" } }, // ids are time-ordered; Service has no createdAt column
       portfolio: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -83,15 +83,15 @@ export const PUT = handle(async (req) => {
   const { step, data } = body.parse(await readJson(req));
 
   const profile = await prisma.providerProfile.findUnique({ where: { userId: user.id } });
-  if (profile?.status === "SUSPENDED") throw new HttpError(403, "Your profile is suspended. Please contact support.");
-  if (step > 1 && !profile) throw new HttpError(409, "Please complete step 1 first.");
-  if (profile && step > profile.wizardStep) throw new HttpError(409, "Please complete the previous step first.");
+  if (profile?.status === "SUSPENDED") throw new HttpError(403, "Profilingiz toʻxtatilgan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.");
+  if (step > 1 && !profile) throw new HttpError(409, "Avval 1-qadamni bajaring.");
+  if (profile && step > profile.wizardStep) throw new HttpError(409, "Avval oldingi qadamni bajaring.");
   const advance = (current: number) => Math.min(5, Math.max(current, step + 1));
 
   if (step === 1) {
     const input = step1.parse(data);
     if (!(await prisma.category.findUnique({ where: { id: input.categoryId }, select: { id: true } }))) {
-      throw new HttpError(400, "That category does not exist.");
+      throw new HttpError(400, "Bunday yoʻnalish mavjud emas.");
     }
     if (!profile) {
       await prisma.providerProfile.create({
@@ -127,7 +127,7 @@ export const PUT = handle(async (req) => {
       const keep = new Set<string>();
       for (const s of input.services) {
         if (s.id) {
-          if (!own.has(s.id)) throw new HttpError(400, "One of the packages does not belong to your profile.");
+          if (!own.has(s.id)) throw new HttpError(400, "Paketlardan biri sizning profilingizga tegishli emas.");
           keep.add(s.id);
         }
       }
@@ -161,16 +161,16 @@ export const PUT = handle(async (req) => {
     ]);
   } else {
     // step 5: submit for admin review
-    if (profile!.status !== "DRAFT") throw new HttpError(409, "This profile has already been submitted.");
+    if (profile!.status !== "DRAFT") throw new HttpError(409, "Bu profil allaqachon yuborilgan.");
     const [services, portfolio] = await Promise.all([
       prisma.service.count({ where: { profileId: profile!.id, isActive: true } }),
       prisma.portfolioItem.count({ where: { profileId: profile!.id } }),
     ]);
     const problems: string[] = [];
-    if (profile!.languages.length === 0) problems.push("Choose at least one language (step 2).");
-    if (services === 0) problems.push("Add at least one package (step 3).");
-    if (portfolio === 0) problems.push("Add at least one portfolio item (step 4).");
-    if (problems.length) throw new HttpError(422, `Your profile isn’t complete yet: ${problems.join(" ")}`, { problems });
+    if (profile!.languages.length === 0) problems.push("Kamida bitta tilni tanlang (2-qadam).");
+    if (services === 0) problems.push("Kamida bitta paket qoʻshing (3-qadam).");
+    if (portfolio === 0) problems.push("Portfolioga kamida bitta ish qoʻshing (4-qadam).");
+    if (problems.length) throw new HttpError(422, `Profilingiz hali toʻliq emas: ${problems.join(" ")}`, { problems });
     await prisma.providerProfile.update({ where: { id: profile!.id }, data: { status: "PENDING_REVIEW" } });
     await logAudit({ actorId: user.id, action: "PROFILE_SUBMITTED", entity: "ProviderProfile", entityId: profile!.id });
   }

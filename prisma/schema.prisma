@@ -81,7 +81,7 @@ model ProviderProfile {
   slug           String        @unique
   headline       String
   bio            String
-  city           String        @default("Andijan")
+  city           String        @default("Andijon")
   district       String?
   categoryId     String
   category       Category      @relation(fields: [categoryId], references: [id])

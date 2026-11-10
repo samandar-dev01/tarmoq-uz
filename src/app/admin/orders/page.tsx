@@ -1,12 +1,13 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { formatUZS } from "@/lib/format";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { ResolveDispute } from "@/components/admin/AdminActions";
 
-export const metadata = { title: "Admin · Orders" };
+export const metadata = { title: "Admin: buyurtmalar" };
 
 export default async function AdminOrders() {
   await requirePageRole("ADMIN");
@@ -26,27 +27,28 @@ export default async function AdminOrders() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Orders</h1>
-      <div className="mt-4 space-y-3">
+      <h1>Buyurtmalar</h1>
+      <div className="mt-6 space-y-4">
         {orders.length === 0 ? (
-          <EmptyState title="No orders yet" />
+          <EmptyState title="Hozircha buyurtmalar yoʻq" />
         ) : (
           orders.map((o) => (
-            <div key={o.id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <Card key={o.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <Link href={`/orders/${o.id}`} className="font-semibold text-indigo-700 hover:underline">{o.service.title}</Link>
-                  <p className="text-sm text-slate-600">{o.client.name} → {o.provider.name} · {o.agreedPrice ? formatUZS(o.agreedPrice) : "—"}</p>
+                  <ButtonLink href={`/orders/${o.id}`} variant="link" className="font-bold">{o.service.title}</ButtonLink>
+                  <p className="mt-1 text-ink-soft">Mijoz: {o.client.name}. Ijodkor: {o.provider.name}.</p>
+                  <p className="mt-1 font-bold">{o.agreedPrice ? formatUZS(o.agreedPrice) : "—"}</p>
                 </div>
                 <StatusBadge status={o.status} />
               </div>
               {o.status === "DISPUTED" && (
-                <div className="mt-3 space-y-3 rounded-lg bg-red-50 p-3">
-                  <p className="text-sm text-red-900"><strong>Dispute reason:</strong> {reason.get(o.id) || "Not provided"}</p>
+                <Card tone="pomegranate" padding="sm" className="mt-4 space-y-3">
+                  <p><strong>Nizo sababi:</strong> {reason.get(o.id) || "Koʻrsatilmagan"}</p>
                   <ResolveDispute orderId={o.id} />
-                </div>
+                </Card>
               )}
-            </div>
+            </Card>
           ))
         )}
       </div>

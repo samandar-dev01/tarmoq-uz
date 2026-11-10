@@ -1,0 +1,45 @@
+# Render Blueprint: the whole app (pages + API) as one free Docker web service.
+# Database and video storage live on Supabase (free plan), see README section 13.
+#
+# Secrets are NOT in this file. The three `sync: false` values are typed once in the Render dashboard.
+services:
+  - type: web
+    name: tarmoq-uz
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    # A static page that does not touch the database, so a paused database never marks the service unhealthy.
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      # Signs session cookies. Render generates a long random value; nobody ever sees it.
+      - key: AUTH_SECRET
+        generateValue: true
+      # Supabase "Session pooler" connection string (IPv4, port 5432), with the database password.
+      - key: DATABASE_URL
+        sync: false
+      # Supabase Storage > S3 connection > access keys.
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_ENDPOINT
+        value: https://gkigkiqzcdjfbysymaur.storage.supabase.co/storage/v1/s3
+      - key: S3_REGION
+        value: eu-central-1
+      - key: S3_BUCKET
+        value: deliveries
+      - key: PAYMENT_PROVIDER
+        value: sandbox
+      - key: PLATFORM_FEE_PERCENT
+        value: "10"
+      - key: SESSION_MAX_AGE_DAYS
+        value: "7"
+      # Uploads are buffered in memory and a free instance has 512 MB, so keep videos short (Supabase's free limit is 50 MB anyway).
+      - key: MAX_UPLOAD_MB
+        value: "25"
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400

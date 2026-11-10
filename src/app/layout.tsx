@@ -1,21 +1,55 @@
 import type { Metadata, Viewport } from "next";
+import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Container } from "@/components/ui/Container";
+
+// Unbounded (wide, round) is for headlines and the logo; Onest is for everything you read. Both cover Latin and Cyrillic.
+const display = Unbounded({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "700", "800"], variable: "--font-display", display: "swap" });
+const sans = Onest({ subsets: ["latin", "latin-ext", "cyrillic"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Andijan Creators", template: "%s · Andijan Creators" },
-  description: "Hire trusted local videographers and creators in Andijan, with agreements and protected payments.",
+  title: { default: "Tarmoq.uz: ijodkorlar tarmogʻi", template: "%s · Tarmoq.uz" },
+  description: "Oʻzbekistondagi ishonchli videograf, fotograf va montajchilarni toping. Shartlar yozma kelishiladi, toʻlov esa ish qabul qilinguncha himoyada turadi.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#EDF8F2" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
+    <html lang="uz" className={`${display.variable} ${sans.variable}`}>
+      <body className="flex min-h-screen flex-col">
+        {/* Shared by every creator cover (class "ikat"): rows of threads slip sideways a little, like dyed warp. */}
+        <svg aria-hidden="true" width="0" height="0" className="absolute">
+          <defs>
+            <filter id="ikat" x="-5%" y="-5%" width="110%" height="110%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="2.6 0" result="soft" />
+              <feTurbulence type="fractalNoise" baseFrequency="0.006 0.07" numOctaves="2" seed="7" result="noise" />
+              <feDisplacementMap in="soft" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+        </svg>
         <Header />
-        <main>{children}</main>
-        <footer className="mt-16 border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} Andijan Creators · Payments run in sandbox mode
+        <main className="flex-1">{children}</main>
+        <footer className="mt-20 border-t-2 border-ink bg-white">
+          <Container pad="none" className="grid gap-8 py-10 sm:grid-cols-[1.4fr_1fr] sm:items-start">
+            <div>
+              <p className="font-display text-2xl font-bold tracking-tight">
+                tarmoq<span className="text-cobalt">.uz</span>
+              </p>
+              <p className="mt-2 max-w-sm text-ink-soft">Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.</p>
+            </div>
+            <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-2 sm:justify-end">
+              <ButtonLink href="/search" variant="link">Ijodkorlar</ButtonLink>
+              <ButtonLink href="/register" variant="link">Ijodkor boʻlib qoʻshilish</ButtonLink>
+              <ButtonLink href="/login" variant="link">Kirish</ButtonLink>
+            </nav>
+          </Container>
+          <div className="border-t-2 border-ink bg-paper-deep">
+            <Container pad="none" className="py-4 text-sm text-ink-soft">
+              © {new Date().getFullYear()} Tarmoq.uz. Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi.
+            </Container>
+          </div>
         </footer>
       </body>
     </html>

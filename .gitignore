@@ -1,6 +1,12 @@
 node_modules
 .next
 .env
+.env.*
+!.env.example
 .uploads
 test-results
 playwright-report
+.localdb
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store

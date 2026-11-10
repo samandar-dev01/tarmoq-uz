@@ -1,10 +1,12 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { PROFILE_STATUS_LABEL, PROFILE_STATUS_STYLE } from "@/lib/orderUi";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card, tagClasses } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProviderActions } from "@/components/admin/AdminActions";
 
-export const metadata = { title: "Admin · Providers" };
+export const metadata = { title: "Admin: ijodkorlar" };
 const RANK: Record<string, number> = { PENDING_REVIEW: 0, SUSPENDED: 1, APPROVED: 2, DRAFT: 3 };
 
 export default async function AdminProviders() {
@@ -18,24 +20,35 @@ export default async function AdminProviders() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Providers</h1>
-      <div className="mt-4 space-y-3">
+      <h1>Ijodkorlar</h1>
+      <div className="mt-6 space-y-4">
         {profiles.length === 0 ? (
-          <EmptyState title="No provider profiles yet" />
+          <EmptyState title="Hozircha ijodkor profillari yoʻq" />
         ) : (
           profiles.map((p) => (
-            <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <Card key={p.id} data-testid="provider-card">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold">{p.user.name} <span className="font-normal text-slate-500">· {p.user.email}</span></p>
-                  <p className="text-sm text-slate-600">{p.headline}</p>
-                  <p className="mt-1 text-xs text-slate-500">{p.city} · {p._count.services} packages · {p._count.portfolio} portfolio items</p>
-                  <Link href={`/providers/${p.slug}`} className="text-xs font-medium text-indigo-600 hover:underline">Preview profile</Link>
+                  <p className="font-bold">{p.user.name}</p>
+                  <p className="text-sm text-ink-soft">{p.user.email}</p>
+                  <p className="mt-2">{p.headline}</p>
+                  <p className="mt-2 flex flex-wrap gap-2">
+                    <span className={tagClasses("paper")}>{p.city}</span>
+                    <span className={tagClasses("paper")}>{p._count.services} ta paket</span>
+                    <span className={tagClasses("paper")}>{p._count.portfolio} ta portfolio ishi</span>
+                  </p>
+                  <ButtonLink href={`/providers/${p.slug}`} variant="link" className="mt-2 inline-block text-sm">Profilni koʻrish</ButtonLink>
                 </div>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium" data-testid="profile-status">{p.status.replace("_", " ")}</span>
+                <span
+                  className={`rounded-full border-2 border-ink px-3 py-1 text-xs font-bold ${PROFILE_STATUS_STYLE[p.status]}`}
+                  data-testid="profile-status"
+                  data-status={p.status}
+                >
+                  {PROFILE_STATUS_LABEL[p.status]}
+                </span>
               </div>
-              <div className="mt-3"><ProviderActions id={p.id} status={p.status} /></div>
-            </div>
+              <div className="mt-4"><ProviderActions id={p.id} status={p.status} /></div>
+            </Card>
           ))
         )}
       </div>

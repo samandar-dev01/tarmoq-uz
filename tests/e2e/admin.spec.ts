@@ -1,15 +1,18 @@
 import { test, expect } from "@playwright/test";
-import { login } from "./helpers";
+import { login, settled } from "./helpers";
 
 test("admin approves a pending provider, who then appears in public search", async ({ page }) => {
   await login(page, "admin@demo.test");
   await page.goto("/admin/providers");
+  await settled(page);
 
-  const card = page.locator("div.rounded-xl", { hasText: "sevara@demo.test" }).first();
+  const card = page.getByTestId("provider-card").filter({ hasText: "sevara@demo.test" }).first();
   await expect(card).toBeVisible();
-  if ((await card.getByTestId("profile-status").innerText()).includes("PENDING")) {
-    await card.getByRole("button", { name: "Approve" }).click();
-    await expect(card.getByTestId("profile-status")).toHaveText("APPROVED");
+  // The status is read from data-status (the enum value), not from the Uzbek label shown to people.
+  const status = card.getByTestId("profile-status");
+  if ((await status.getAttribute("data-status")) === "PENDING_REVIEW") {
+    await card.getByRole("button", { name: "Tasdiqlash" }).click();
+    await expect(status).toHaveAttribute("data-status", "APPROVED");
   }
 
   await page.goto("/search?q=Sevara");
@@ -19,7 +22,8 @@ test("admin approves a pending provider, who then appears in public search", asy
 test("admin can hide and restore a review, and the public rating follows", async ({ page }) => {
   await login(page, "admin@demo.test");
   await page.goto("/admin/reviews");
-  const toggles = page.getByRole("button", { name: /Hide review|Restore review/ });
+  await settled(page);
+  const toggles = page.getByRole("button", { name: /Sharhni yashirish|Sharhni tiklash/ });
   if ((await toggles.count()) === 0) test.skip(true, "No reviews yet. Run the client journey test first.");
   const before = await toggles.first().innerText();
   await toggles.first().click();

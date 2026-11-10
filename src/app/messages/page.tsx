@@ -1,35 +1,43 @@
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth";
 import { listConversations } from "@/lib/messaging";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { cardClasses } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 
-export const metadata = { title: "Messages" };
+export const metadata = { title: "Xabarlar" };
 
 export default async function MessagesPage() {
   const user = await requirePageRole("CLIENT", "PROVIDER");
   const conversations = await listConversations(user.id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold">Messages</h1>
-      <div className="mt-4">
+    <Container size="lg">
+      <h1>Xabarlar</h1>
+      <div className="mt-6">
         {conversations.length === 0 ? (
           <EmptyState
-            title="No conversations yet"
-            description="Message a creator from their profile, or start an order to chat about the details."
-            action={<Link href="/search" className="text-sm font-medium text-indigo-600 hover:underline">Find creators</Link>}
+            title="Hozircha suhbatlar yoʻq"
+            description="Ijodkorga profilidan yozing yoki buyurtma bering. Tafsilotlarni shu yerda muhokama qilasiz."
+            action={<ButtonLink href="/search">Ijodkorlarni topish</ButtonLink>}
           />
         ) : (
-          <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <ul className={cardClasses({ padding: "none", className: "divide-y-2 divide-ink/10 overflow-hidden" })}>
             {conversations.map((c) => (
               <li key={c.id}>
-                <Link href={`/messages/${c.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
+                <Link href={`/messages/${c.id}`} className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-saffron-tint">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{c.other.name}{c.orderTitle ? <span className="font-normal text-slate-500"> · {c.orderTitle}</span> : null}</p>
-                    <p className="truncate text-sm text-slate-600">{c.last ? c.last.body.replace(/\s+/g, " ") : "No messages yet"}</p>
+                    <p className="truncate font-bold">
+                      {c.other.name}
+                      {c.orderTitle ? <span className="font-normal text-ink-soft">: {c.orderTitle}</span> : null}
+                    </p>
+                    <p className="truncate text-ink-soft">{c.last ? c.last.body.replace(/\s+/g, " ") : "Hali xabarlar yoʻq"}</p>
                   </div>
                   {c.unread > 0 && (
-                    <span className="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white" aria-label={`${c.unread} unread`}>{c.unread}</span>
+                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full border-2 border-ink bg-pomegranate px-2 text-sm font-bold text-white" aria-label={`${c.unread} ta oʻqilmagan`}>
+                      {c.unread}
+                    </span>
                   )}
                 </Link>
               </li>
@@ -37,6 +45,6 @@ export default async function MessagesPage() {
           </ul>
         )}
       </div>
-    </div>
+    </Container>
   );
 }

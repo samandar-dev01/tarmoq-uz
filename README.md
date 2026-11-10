@@ -1,6 +1,8 @@
-# Andijan Creators: services marketplace
+# Tarmoq.uz: creators marketplace
 
-A working marketplace where clients find and hire local creators (for example Andijan-based mobile videographers), agree on written terms, pay through an escrow-style **sandbox** payment, receive the finished video, approve it, and leave a review. Includes provider onboarding, messaging, and an admin back office.
+A working marketplace where clients find and hire creators across Uzbekistan (for example mobile videographers), agree on written terms, pay through an escrow-style **sandbox** payment, receive the finished video, approve it, and leave a review. Includes provider onboarding, messaging, and an admin back office.
+
+**The interface is in Uzbek (Latin script).** Visible text is written inline in the components, and the API error messages and the agreement template are Uzbek too. This README stays in English and quotes Uzbek button labels with an English gloss in brackets.
 
 **Stack:** Next.js 14 (App Router) · TypeScript · PostgreSQL · Prisma · Tailwind · Zod · Vitest · Playwright
 
@@ -13,7 +15,7 @@ A working marketplace where clients find and hire local creators (for example An
 | Area | Where | Notes |
 |---|---|---|
 | Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*`, `middleware.ts` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
-| Homepage | `src/app/page.tsx` | Hero search, categories, top Andijan creators |
+| Homepage | `src/app/page.tsx` | Hero search with a live creator feed, categories, top creators |
 | Search and filters | `src/app/search`, `src/lib/providers.ts` | keyword, city, category, price range, sort, pagination, URL-shareable |
 | Provider profiles | `src/app/providers/[slug]` | packages, portfolio, reviews, order button |
 | Profile wizard | `src/components/wizard`, `src/app/api/profile` | 5 steps, server-validated, submit for admin review |
@@ -27,6 +29,7 @@ A working marketplace where clients find and hire local creators (for example An
 | Admin | `src/app/admin`, `src/app/api/admin/*` | approve or suspend providers, resolve disputes, hide reviews, stats |
 | Audit log | `src/lib/audit.ts` | agreement acceptance, payments, approvals, admin actions |
 | Loading, error, empty, success states | `src/components/ui`, `loading.tsx`, `error.tsx` | used on every data screen |
+| Design system | `tailwind.config.ts`, `src/app/globals.css`, `src/components/ui` | Colours (CSS variables), fonts, radii and shadows live in one place: change a variable in `globals.css` to re-skin the site. Shared pieces: `Button`/`ButtonLink`, `Card`, `Container`, `Field`, `Avatar`, `Stars`, `StatTile`, `NavLink`, `Alert`, `EmptyState`. |
 
 ## 2. Requirements
 
@@ -78,10 +81,10 @@ All demo accounts use the password **`Demo12345!`** (set `SEED_DEMO_PASSWORD` to
 |---|---|---|
 | Admin | `admin@demo.test` | `/admin` |
 | Client | `client@demo.test` | |
-| Provider, Andijan | `jasur@demo.test` | packages 300 000, 700 000, 1 500 000 UZS |
-| Provider, Andijan | `madina@demo.test` | packages 450 000, 900 000 UZS |
-| Provider, Andijan | `bobur@demo.test` | packages 150 000, 600 000 UZS |
-| Provider, Tashkent | `dilshod@demo.test` | used to test the city filter |
+| Provider, Andijon | `jasur@demo.test` | packages 300 000, 700 000, 1 500 000 UZS |
+| Provider, Andijon | `madina@demo.test` | packages 450 000, 900 000 UZS |
+| Provider, Andijon | `bobur@demo.test` | packages 150 000, 600 000 UZS |
+| Provider, Toshkent | `dilshod@demo.test` | used to test the city filter |
 | Provider, **pending approval** | `sevara@demo.test` | used to test admin approval |
 
 ## 7. Payment sandbox
@@ -111,28 +114,28 @@ A unique database index guarantees an order can have only one successful payment
 
 Open two browsers (or one normal and one private window).
 
-1. **Register** a new client at `/register` ("I want to hire").
-2. Go to **Find creators**. Set City = Andijan, Category = Mobile videography, Min price 250000, Max price 350000, **Apply filters**. Only **Jasur Karimov** is shown.
-3. Open his **profile**, click **Order** on "Instagram Reel (up to 60s)".
-4. Write a brief (20+ characters) and **Send order request**. Status: *Requested*.
-5. In the other browser sign in as `jasur@demo.test`, open the order, **Send terms to client**. Status: *Agreement pending*.
-6. As the client, reload, tick "I have read and accept these terms", **Accept agreement**. Status: *Awaiting payment*. (The acceptance time, IP and terms hash are stored.)
-7. Click **Pay securely (sandbox)**, use `4242 4242 4242 4242`, **Pay**. Status: *In progress*.
-8. As the provider, reload, choose a small `.mp4`, **Upload delivery**. Status: *Delivered*.
-9. As the client, reload: play the video, **Approve & release payment**. Status: *Completed*, and the **Transaction** panel shows "Released to provider".
-10. **Submit a review**. It appears on Jasur's public profile and updates his rating.
+1. **Register** a new client at `/register` ("Buyurtma bermoqchiman", I want to order).
+2. Go to **Ijodkorlar** (creators). Set Shahar (city) = Andijon, Yoʻnalish (category) = Mobilografiya, Eng kam narx (min price) 250000, Eng yuqori narx (max price) 350000, **Filtrlarni qoʻllash** (apply filters). Only **Jasur Karimov** is shown.
+3. Open his **profile**, click **Buyurtma berish** (order) on "Instagram Reel (60 soniyagacha)".
+4. Write a brief (20+ characters) and **Buyurtma yuborish** (send order request). Status: *Soʻrov yuborildi* (requested).
+5. In the other browser sign in as `jasur@demo.test`, open the order, **Shartlarni mijozga yuborish** (send terms to client). Status: *Kelishuv kutilmoqda* (agreement pending).
+6. As the client, reload, tick "Shartlar bilan tanishib chiqdim va qabul qilaman" (I have read and accept these terms), **Kelishuvni qabul qilish** (accept agreement). Status: *Toʻlov kutilmoqda* (awaiting payment). (The acceptance time, IP and terms hash are stored.)
+7. Click **Xavfsiz toʻlash (sinov rejimi)** (pay securely, sandbox), use `4242 4242 4242 4242`, then the **… soʻm toʻlash** (pay) button. Status: *Jarayonda* (in progress).
+8. As the provider, reload, choose a small `.mp4`, **Ishni topshirish** (upload delivery). Status: *Topshirildi* (delivered).
+9. As the client, reload: play the video, **Qabul qilish va toʻlovni oʻtkazish** (approve & release payment). Status: *Yakunlandi* (completed), and the **Tranzaksiya** (transaction) panel shows "Ijodkorga oʻtkazildi" (released to provider).
+10. **Sharhni yuborish** (submit a review). It appears on Jasur's public profile and updates his rating.
 
 ### 8.2 Permission checks
 
 - Signed out: `/admin`, `/dashboard/client`, `/messages` redirect to sign in.
-- As `client@demo.test`: `/admin` shows "No access". `GET /api/admin/stats` returns 403.
+- As `client@demo.test`: `/admin` shows the "Ruxsat yoʻq" (no access) page. `GET /api/admin/stats` returns 403.
 - As `jasur@demo.test`: `POST /api/orders` returns 403 (providers cannot order). Another provider (`madina@demo.test`) gets 404 on Jasur's order.
 - A second client gets 404 on the first client's order and conversation.
-- As `admin@demo.test`: `/admin/providers` → **Approve** Sevara; she then appears in `/search?q=Sevara`.
+- As `admin@demo.test`: `/admin/providers` → **Tasdiqlash** (approve) Sevara; she then appears in `/search?q=Sevara`.
 
 ### 8.3 Dispute and refund
 
-After step 7 above, as either party click **Open a dispute** (reason 10+ characters). As admin open **Admin → Orders**, read the reason, and choose **Release to provider** or **Refund client**.
+After step 7 above, as either party click **Nizo ochish** (open a dispute, reason 10+ characters). As admin open **Admin → Buyurtmalar** (orders), read the reason, and choose **Ijodkorga oʻtkazish** (release to provider) or **Mijozga qaytarish** (refund client).
 
 ### 8.4 Automated tests
 
@@ -182,7 +185,7 @@ The sandbox is real code with a real state machine, but it does not talk to a ba
 - **Messaging uses 5-second polling**, not websockets. Fine for this scale; use a realtime service if you need instant delivery.
 - **Video uploads pass through the server** and are held in memory (limit `MAX_UPLOAD_MB`, default 100). For larger files, switch to direct-to-bucket (presigned) uploads.
 - **Rate limiting is in-memory** (per server instance). Use Redis or your proxy's rate limiting when running several instances.
-- Dates are shown in UTC.
+- Dates are shown in Tashkent time (UTC+5, a fixed offset: Uzbekistan has no daylight saving).
 - Search is a database `ILIKE` query, which is fine for thousands of profiles; consider Postgres full-text search or a search service beyond that.
 
 ## 12. Project layout
@@ -191,3 +194,25 @@ See `ARCHITECTURE.md` for the design and `src/` for the code. Key conventions:
 - Every API route is wrapped in `handle()` (consistent JSON errors) and starts with `requireRole(...)` or `requireUser()`.
 - Order status changes go through `assertTransition()` and are applied with conditional `updateMany` so double clicks and races cannot apply twice.
 - Pages call `requirePageRole(...)`; middleware is only a first line of defence.
+
+## 13. Free deployment (Render + Supabase)
+
+The site is one Next.js app, so pages and API deploy together. Everything below is on free plans and needs no credit card.
+
+| Part | Where |
+|---|---|
+| App (pages + API) | Render free web service, built from `Dockerfile`, described by `render.yaml` |
+| Database | Supabase free Postgres (use the **Session pooler** connection string, port 5432) |
+| Delivered videos | Supabase Storage, private bucket `deliveries` (S3-compatible, `STORAGE_DRIVER=s3`) |
+| Keep awake | UptimeRobot free monitor: `GET /` every 5 minutes |
+
+1. **Supabase:** create a project (region `eu-central-1`) and a private bucket `deliveries` (25 MB limit). In *Storage > S3 connection* create access keys. In *Connect* copy the **Session pooler** string (put your database password into it).
+2. **GitHub:** push this repo to your own repository (the `.env` file is git-ignored and never leaves your machine).
+3. **Render:** *New > Blueprint*, pick the repository. Fill the three prompted secrets: `DATABASE_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`. The container applies migrations and DB constraints on every start.
+4. **Seed demo data (once).** Never with the public default password. From your machine, with `DATABASE_URL` pointing at the production database:
+   `NODE_ENV=production ALLOW_SEED_IN_PRODUCTION=true SEED_DEMO_PASSWORD="<long random>" npm run db:seed`
+5. **Make yourself admin:** register on the site, then run in the Supabase SQL editor:
+   `UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';`
+6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.
+
+Free-plan limits to know: videos up to 25 MB (set by `MAX_UPLOAD_MB`), 512 MB RAM, shared CPU, no SLA. Payments are still the sandbox.

@@ -5,11 +5,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 const PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "Demo12345!";
 
+// Slugs are stable keys (used in URLs and tests); only the names are shown to people.
 const categories = [
-  { slug: "mobile-videography", name: "Mobile videography" },
-  { slug: "photography", name: "Photography" },
-  { slug: "video-editing", name: "Video editing" },
-  { slug: "drone", name: "Drone filming" },
+  { slug: "mobile-videography", name: "Mobilografiya" },
+  { slug: "photography", name: "Fotografiya" },
+  { slug: "video-editing", name: "Video montaj" },
+  { slug: "drone", name: "Dron bilan suratga olish" },
 ];
 
 type Svc = { title: string; description: string; price: number; deliveryDays: number; revisions: number };
@@ -22,53 +23,53 @@ type SeedProvider = {
 const providers: SeedProvider[] = [
   {
     email: "jasur@demo.test", name: "Jasur Karimov", slug: "jasur-karimov",
-    headline: "Mobile videographer: reels, events and weddings",
-    bio: "I shoot and edit vertical and horizontal video entirely on flagship smartphones with gimbal and wireless mics. Fast turnaround, clean color, subtitles in Uzbek and Russian.",
-    city: "Andijan", district: "Center", status: "APPROVED",
-    equipment: "iPhone 15 Pro, DJI Osmo Mobile, wireless lav mics", languages: ["Uzbek", "Russian", "English"],
+    headline: "Mobilograf: reels, tadbirlar va toʻylar",
+    bio: "Vertikal va gorizontal videolarni toʻliq flagman smartfonlarda, gimbal va simsiz mikrofon bilan suratga olaman va oʻzim montaj qilaman. Tez topshiraman, ranglar toza, subtitrlar oʻzbek va rus tillarida.",
+    city: "Andijon", district: "Markaz", status: "APPROVED",
+    equipment: "iPhone 15 Pro, DJI Osmo Mobile, yoqaga qadaladigan simsiz mikrofonlar", languages: ["Oʻzbek", "Rus", "Ingliz"],
     services: [
-      { title: "Instagram Reel (up to 60s)", description: "One shoot session, edited reel with music and subtitles.", price: 300000, deliveryDays: 2, revisions: 1 },
-      { title: "Event highlight video", description: "Up to 3 hours of coverage, 2–3 minute highlight edit.", price: 700000, deliveryDays: 4, revisions: 2 },
-      { title: "Full wedding by mobile", description: "Full-day coverage with cinematic edit.", price: 1500000, deliveryDays: 7, revisions: 2 },
+      { title: "Instagram Reel (60 soniyagacha)", description: "Bitta syomka sessiyasi, musiqa va subtitrli tayyor reel.", price: 300000, deliveryDays: 2, revisions: 1 },
+      { title: "Tadbir videosi (eng yorqin lahzalar)", description: "3 soatgacha suratga olish, 2–3 daqiqalik montaj.", price: 700000, deliveryDays: 4, revisions: 2 },
+      { title: "Toʻy: kun boʻyi mobil suratga olish", description: "Toʻliq kun davomida suratga olish va kinematografik montaj.", price: 1500000, deliveryDays: 7, revisions: 2 },
     ],
   },
   {
     email: "madina@demo.test", name: "Madina Yusupova", slug: "madina-yusupova",
-    headline: "Product and restaurant videos shot on mobile",
-    bio: "Specializing in short product, cafe and restaurant promos for local businesses in Andijan.",
-    city: "Andijan", district: "Bobur", status: "APPROVED",
-    equipment: "Samsung S24 Ultra, tripod, LED panels", languages: ["Uzbek", "Russian"],
+    headline: "Mahsulot va restoran videolari mobil telefonda",
+    bio: "Mahalliy bizneslar uchun mahsulot, kafe va restoran reklama roliklariga ixtisoslashganman.",
+    city: "Andijon", district: "Bobur", status: "APPROVED",
+    equipment: "Samsung S24 Ultra, shtativ, LED panellar", languages: ["Oʻzbek", "Rus"],
     services: [
-      { title: "Product promo (30s)", description: "Styled shoot of up to 5 products, edited promo.", price: 450000, deliveryDays: 3, revisions: 1 },
-      { title: "Cafe/restaurant package", description: "3 short clips for social media.", price: 900000, deliveryDays: 5, revisions: 2 },
+      { title: "Mahsulot reklamasi (30 soniya)", description: "5 tagacha mahsulotni bezab suratga olish va tayyor reklama roligi.", price: 450000, deliveryDays: 3, revisions: 1 },
+      { title: "Kafe va restoran paketi", description: "Ijtimoiy tarmoqlar uchun 3 ta qisqa lavha.", price: 900000, deliveryDays: 5, revisions: 2 },
     ],
   },
   {
     email: "bobur@demo.test", name: "Bobur Tursunov", slug: "bobur-tursunov",
-    headline: "Affordable short clips for TikTok and Telegram",
-    bio: "Quick, budget-friendly vertical clips for small businesses and personal brands.",
-    city: "Andijan", district: "Shahrikhon", status: "APPROVED",
-    equipment: "iPhone 13, clip-on mic", languages: ["Uzbek"],
+    headline: "TikTok va Telegram uchun hamyonbop qisqa roliklar",
+    bio: "Kichik bizneslar va shaxsiy brendlar uchun tez va arzon vertikal roliklar.",
+    city: "Andijon", district: "Shahrixon", status: "APPROVED",
+    equipment: "iPhone 13, yoqaga qadaladigan mikrofon", languages: ["Oʻzbek"],
     services: [
-      { title: "TikTok clip", description: "One short clip, basic edit.", price: 150000, deliveryDays: 2, revisions: 1 },
-      { title: "5-clip monthly pack", description: "Five short clips over one month.", price: 600000, deliveryDays: 7, revisions: 1 },
+      { title: "TikTok roligi", description: "Bitta qisqa rolik, oddiy montaj.", price: 150000, deliveryDays: 2, revisions: 1 },
+      { title: "Oyiga 5 ta rolik", description: "Bir oy davomida beshta qisqa rolik.", price: 600000, deliveryDays: 7, revisions: 1 },
     ],
   },
   {
     email: "dilshod@demo.test", name: "Dilshod Rahimov", slug: "dilshod-rahimov",
-    headline: "Mobile videographer based in Tashkent",
-    bio: "Corporate and event videos on mobile. Based in Tashkent (used to test city filtering).",
-    city: "Tashkent", district: "Chilanzar", status: "APPROVED",
-    equipment: "iPhone 15, gimbal", languages: ["Uzbek", "Russian", "English"],
-    services: [{ title: "Corporate promo", description: "Up to 2 minutes, one location.", price: 800000, deliveryDays: 5, revisions: 2 }],
+    headline: "Toshkentdagi mobilograf",
+    bio: "Mobil telefonda korporativ va tadbir videolari. Toshkentda ishlayman.",
+    city: "Toshkent", district: "Chilonzor", status: "APPROVED",
+    equipment: "iPhone 15, gimbal", languages: ["Oʻzbek", "Rus", "Ingliz"],
+    services: [{ title: "Korporativ rolik", description: "2 daqiqagacha, bitta joyda suratga olish.", price: 800000, deliveryDays: 5, revisions: 2 }],
   },
   {
     email: "sevara@demo.test", name: "Sevara Aliyeva", slug: "sevara-aliyeva",
-    headline: "Mobile videographer (awaiting admin approval)",
-    bio: "New provider whose profile is pending review. Used to test the admin approval flow.",
-    city: "Andijan", district: "Asaka", status: "PENDING_REVIEW",
-    equipment: "iPhone 14 Pro", languages: ["Uzbek", "Russian"],
-    services: [{ title: "Short clip", description: "One short clip, basic edit.", price: 250000, deliveryDays: 3, revisions: 1 }],
+    headline: "Mobilograf (admin tasdigʻini kutmoqda)",
+    bio: "Profili hozir koʻrib chiqilayotgan yangi ijodkor. Admin tasdiqlash jarayonini sinash uchun.",
+    city: "Andijon", district: "Asaka", status: "PENDING_REVIEW",
+    equipment: "iPhone 14 Pro", languages: ["Oʻzbek", "Rus"],
+    services: [{ title: "Qisqa rolik", description: "Bitta qisqa rolik, oddiy montaj.", price: 250000, deliveryDays: 3, revisions: 1 }],
   },
 ];
 
@@ -89,7 +90,7 @@ async function main() {
   });
   await prisma.user.upsert({
     where: { email: "client@demo.test" }, update: {},
-    create: { email: "client@demo.test", name: "Demo Client", phone: "+998901234567", role: "CLIENT", passwordHash },
+    create: { email: "client@demo.test", name: "Demo Mijoz", phone: "+998901234567", role: "CLIENT", passwordHash },
   });
 
   for (const p of providers) {

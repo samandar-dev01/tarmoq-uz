@@ -24,7 +24,7 @@ export function useAction() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(data.error ?? "Nimadir xato ketdi. Qayta urinib koʻring.");
         setIssues(data.issues ?? []);
         return false;
       }
@@ -32,7 +32,7 @@ export function useAction() {
       router.refresh();
       return true;
     } catch {
-      setError("Network error. Please try again.");
+      setError("Internet aloqasida muammo. Qayta urinib koʻring.");
       return false;
     } finally {
       setLoading(false);

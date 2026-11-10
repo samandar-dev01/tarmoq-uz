@@ -2,4 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-slate-50 text-slate-900 antialiased; }
+@layer base {
+  /* The theme. Change a colour here and the whole site follows. Values are RGB triplets (see tailwind.config.ts). */
+  :root {
+    --c-ink: 27 18 53;
+    --c-ink-soft: 75 68 104;
+    --c-ink-mute: 106 99 133;
+    --c-paper: 237 248 242;
+    --c-paper-deep: 220 240 229;
+    --c-cobalt: 42 59 234;
+    --c-cobalt-dark: 31 45 192;
+    --c-cobalt-tint: 225 228 255;
+    --c-saffron: 255 196 46;
+    --c-saffron-deep: 240 168 0;
+    --c-saffron-tint: 255 240 191;
+    --c-pomegranate: 232 54 93;
+    --c-pomegranate-deep: 194 31 69;
+    --c-pomegranate-tint: 255 223 230;
+    --c-turquoise: 16 181 163;
+    --c-turquoise-deep: 9 107 96;
+    --c-turquoise-tint: 207 244 236;
+    --c-lilac: 182 165 255;
+    --c-lilac-tint: 235 230 255;
+  }
+
+  html {
+    @apply scroll-smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-base leading-relaxed text-ink antialiased;
+  }
+
+  /* Headings get their look here, so pages never restyle them. */
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+  h1 {
+    @apply font-display font-bold leading-[1.08] tracking-[-0.03em];
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
+  }
+  h2 {
+    @apply font-display font-bold leading-[1.15] tracking-[-0.025em];
+    font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  }
+  h3 {
+    @apply font-sans text-[1.0625rem] font-bold leading-snug tracking-[-0.01em];
+  }
+
+  ::selection {
+    @apply bg-saffron text-ink;
+  }
+
+  /* Visible keyboard focus everywhere. On dark blocks the ring turns saffron. */
+  :focus-visible {
+    outline: 3px solid rgb(var(--c-cobalt));
+    outline-offset: 3px;
+  }
+  .on-ink :focus-visible {
+    outline-color: rgb(var(--c-saffron));
+  }
+
+  summary {
+    @apply cursor-pointer;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: rgb(var(--c-cobalt));
+  }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231B1235' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    padding-right: 2.75rem;
+  }
+  input[type="file"] {
+    @apply text-sm;
+  }
+  input[type="file"]::file-selector-button {
+    @apply mr-3 cursor-pointer rounded-ctl border-2 border-ink bg-white px-4 py-2 text-sm font-bold text-ink;
+  }
+}
+
+@layer components {
+  /* Feathered, slightly slipping colour edges: the look of ikat weaving. Used only on creator art. */
+  .ikat {
+    filter: url(#ikat);
+  }
+  /* The hero feed pauses while you point at it or tab into it. */
+  .marquee:hover .marquee-col,
+  .marquee:focus-within .marquee-col {
+    animation-play-state: paused;
+  }
+  .skeleton {
+    background: linear-gradient(100deg, rgb(var(--c-paper-deep)) 30%, #fff 50%, rgb(var(--c-paper-deep)) 70%);
+    background-size: 200% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .marquee-col {
+    animation: none !important;
+  }
+}

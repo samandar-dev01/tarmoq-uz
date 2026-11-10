@@ -9,7 +9,7 @@ export const POST = handle(async (req) => {
 
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) {
-    throw new HttpError(409, "An account with this email already exists.", { field: "email" });
+    throw new HttpError(409, "Bu email bilan hisob allaqachon mavjud.", { field: "email" });
   }
 
   const user = await prisma.user.create({

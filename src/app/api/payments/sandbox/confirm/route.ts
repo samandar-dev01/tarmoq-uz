@@ -9,15 +9,15 @@ const schema = z.object({
   orderId: z.string().min(1),
   paymentId: z.string().min(1),
   // NOTE: there is deliberately no "success" field. The server alone decides the outcome.
-  cardNumber: z.string().min(1, "Enter a card number").max(30),
-  expMonth: z.number({ required_error: "Enter expiry", invalid_type_error: "Enter expiry" }).int(),
-  expYear: z.number({ required_error: "Enter expiry", invalid_type_error: "Enter expiry" }).int(),
-  cvc: z.string().min(3, "Enter the security code").max(4),
+  cardNumber: z.string().min(1, "Karta raqamini kiriting").max(30),
+  expMonth: z.number({ required_error: "Amal qilish muddatini kiriting", invalid_type_error: "Amal qilish muddatini kiriting" }).int(),
+  expYear: z.number({ required_error: "Amal qilish muddatini kiriting", invalid_type_error: "Amal qilish muddatini kiriting" }).int(),
+  cvc: z.string().min(3, "Xavfsizlik kodini kiriting").max(4),
 });
 
 export const POST = handle(async (req) => {
   const user = await requireRole("CLIENT");
-  if (!rateLimit(`pay:${user.id}`, 15, 15 * 60 * 1000)) throw new HttpError(429, "Too many payment attempts. Please wait a few minutes.");
+  if (!rateLimit(`pay:${user.id}`, 15, 15 * 60 * 1000)) throw new HttpError(429, "Toʻlov urinishlari juda koʻp. Bir necha daqiqa kuting.");
   const input = schema.parse(await readJson(req));
 
   const result = await confirmPayment({

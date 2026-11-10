@@ -7,24 +7,24 @@ import { logAudit } from "@/lib/audit";
 
 const schema = z.object({
   serviceId: z.string().min(1),
-  brief: z.string().trim().min(20, "Describe what you need (20+ characters)").max(2000),
+  brief: z.string().trim().min(20, "Nima kerakligini yozing (kamida 20 ta belgi)").max(2000),
   eventDate: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
-    z.coerce.date({ invalid_type_error: "Enter a valid date" }).optional(),
+    z.coerce.date({ invalid_type_error: "Sanani toʻgʻri kiriting" }).optional(),
   ),
 });
 
 export const POST = handle(async (req) => {
   const user = await requireRole("CLIENT");
   if (!rateLimit(`order:${user.id}`, 20, 60 * 60 * 1000)) {
-    throw new HttpError(429, "You have created many orders recently. Please try again later.");
+    throw new HttpError(429, "Yaqinda juda koʻp buyurtma yaratdingiz. Keyinroq qayta urinib koʻring.");
   }
   const input = schema.parse(await readJson(req));
 
   if (input.eventDate) {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    if (input.eventDate < today) throw new HttpError(400, "The event date cannot be in the past.", { field: "eventDate" });
+    if (input.eventDate < today) throw new HttpError(400, "Tadbir sanasi oʻtib ketgan boʻlishi mumkin emas.", { field: "eventDate" });
   }
 
   const service = await prisma.service.findUnique({
@@ -32,7 +32,7 @@ export const POST = handle(async (req) => {
     include: { profile: { include: { user: { select: { isActive: true } } } } },
   });
   if (!service || !service.isActive || service.profile.status !== "APPROVED" || !service.profile.user.isActive) {
-    throw new HttpError(404, "This package is no longer available.");
+    throw new HttpError(404, "Bu paket endi mavjud emas.");
   }
 
   const order = await prisma.$transaction(async (tx) => {
@@ -52,7 +52,7 @@ export const POST = handle(async (req) => {
       data: { userAId: user.id, userBId: service.profile.userId, orderId: created.id },
     });
     await tx.message.create({
-      data: { conversationId: conversation.id, senderId: user.id, body: `New order request:\n${input.brief}` },
+      data: { conversationId: conversation.id, senderId: user.id, body: `Yangi buyurtma soʻrovi:\n${input.brief}` },
     });
     return created;
   });

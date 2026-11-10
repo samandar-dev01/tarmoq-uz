@@ -25,6 +25,8 @@ export function canTransition(from: OrderStatus, to: OrderStatus, actor: Actor):
 
 export function assertTransition(from: OrderStatus, to: OrderStatus, actor: Actor): void {
   if (!canTransition(from, to, actor)) {
-    throw new HttpError(409, `This order cannot move from ${from} to ${to} right now.`);
+    // The statuses stay in the log of the error for developers; people get a plain sentence.
+    console.warn(`Blocked order transition ${from} -> ${to} by ${actor}`);
+    throw new HttpError(409, "Buyurtma holatini hozir bunday oʻzgartirib boʻlmaydi. Sahifani yangilab, qayta urinib koʻring.");
   }
 }

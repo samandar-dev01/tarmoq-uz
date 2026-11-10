@@ -3,10 +3,12 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { useHydrated } from "@/components/ui/useHydrated";
 import { useAction } from "./useAction";
 
 export function NewOrderForm({ serviceId }: { serviceId: string }) {
   const { run, loading, error, fe, router } = useAction();
+  const ready = useHydrated();
   const [brief, setBrief] = useState("");
   const [eventDate, setEventDate] = useState("");
 
@@ -16,20 +18,20 @@ export function NewOrderForm({ serviceId }: { serviceId: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
-      <div>
-        <label htmlFor="brief" className="mb-1 block text-sm font-medium text-slate-700">Describe what you need</label>
-        <textarea
-          id="brief" rows={6} value={brief} onChange={(e) => setBrief(e.target.value)}
-          placeholder="What is the video for, where and when will you shoot, and any style you like?"
-          className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${fe("brief") ? "border-red-500" : "border-slate-300"}`}
-        />
-        {fe("brief") && <p className="mt-1 text-xs text-red-600">{fe("brief")}</p>}
-      </div>
-      <Field label="Event or shoot date (optional)" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} error={fe("eventDate")} />
-      <p className="text-xs text-slate-500">You won’t be charged yet. The provider will first send you terms to review and accept.</p>
-      <Button type="submit" loading={loading} className="w-full sm:w-auto">{loading ? "Sending…" : "Send order request"}</Button>
+      <Field
+        as="textarea"
+        label="Nima kerakligini yozing"
+        rows={6}
+        value={brief}
+        onChange={(e) => setBrief(e.target.value)}
+        placeholder="Video nima uchun, qayerda va qachon suratga olinadi? Qanday uslub yoqadi?"
+        error={fe("brief")}
+      />
+      <Field label="Tadbir yoki syomka sanasi (ixtiyoriy)" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} error={fe("eventDate")} />
+      <p className="text-sm text-ink-soft">Hozircha pul yechilmaydi. Ijodkor avval shartlarni yuboradi, siz koʻrib chiqib qabul qilasiz.</p>
+      <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full sm:w-auto">{loading ? "Yuborilmoqda…" : "Buyurtma yuborish"}</Button>
     </form>
   );
 }

@@ -1,12 +1,17 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 
-export const metadata = { title: "Create account" };
+export const metadata = { title: "Roʻyxatdan oʻtish" };
 
 export default function RegisterPage() {
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="mb-6 text-2xl font-bold">Create your account</h1>
-      <RegisterForm />
-    </div>
+    <Container size="sm">
+      <h1>Hisob yarating</h1>
+      <p className="mt-2 text-ink-soft">Bir daqiqa ichida tayyor boʻladi. Bank kartasi shart emas.</p>
+      <Card padding="lg" className="mt-6">
+        <RegisterForm />
+      </Card>
+    </Container>
   );
 }

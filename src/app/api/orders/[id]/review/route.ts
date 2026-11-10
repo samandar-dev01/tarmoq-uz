@@ -8,8 +8,8 @@ import { logAudit } from "@/lib/audit";
 
 type Ctx = { params: { id: string } };
 const schema = z.object({
-  rating: z.number({ required_error: "Choose a rating", invalid_type_error: "Choose a rating" }).int().min(1, "Choose a rating").max(5),
-  comment: z.string().trim().min(10, "Write at least 10 characters").max(1000),
+  rating: z.number({ required_error: "Bahoni tanlang", invalid_type_error: "Bahoni tanlang" }).int().min(1, "Bahoni tanlang").max(5),
+  comment: z.string().trim().min(10, "Kamida 10 ta belgi yozing").max(1000),
 });
 
 export const POST = handle(async (req, { params }: Ctx) => {
@@ -17,8 +17,8 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const input = schema.parse(await readJson(req));
 
   const order = await prisma.order.findUnique({ where: { id: params.id } });
-  if (!order || order.clientId !== user.id) throw new HttpError(404, "Order not found.");
-  if (order.status !== "COMPLETED") throw new HttpError(409, "You can review an order once it is completed.");
+  if (!order || order.clientId !== user.id) throw new HttpError(404, "Buyurtma topilmadi.");
+  if (order.status !== "COMPLETED") throw new HttpError(409, "Sharhni buyurtma yakunlangandan keyin qoldirish mumkin.");
 
   try {
     const review = await prisma.$transaction(async (tx) => {
@@ -32,7 +32,7 @@ export const POST = handle(async (req, { params }: Ctx) => {
     return ok({ review: { id: review.id } }, 201);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      throw new HttpError(409, "You have already reviewed this order.");
+      throw new HttpError(409, "Siz bu buyurtmaga allaqachon sharh qoldirgansiz.");
     }
     throw e;
   }

@@ -17,19 +17,19 @@ const CONTENT_TYPE: Record<string, string> = { ".mp4": "video/mp4", ".mov": "vid
 export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("PROVIDER");
   const { order, actor } = await getParticipantOrder(params.id, user.id);
-  if (actor !== "provider") throw new HttpError(403, "Only the provider can deliver work.");
+  if (actor !== "provider") throw new HttpError(403, "Ishni faqat ijodkor topshira oladi.");
   assertTransition(order.status, "DELIVERED", "provider");
 
   const form = await req.formData();
   const file = form.get("file");
-  if (!(file instanceof File)) throw new HttpError(400, "Choose a video file to upload.");
+  if (!(file instanceof File)) throw new HttpError(400, "Yuklash uchun video faylni tanlang.");
   const maxBytes = Number(process.env.MAX_UPLOAD_MB ?? 100) * 1024 * 1024;
-  if (file.size === 0) throw new HttpError(400, "The file is empty.");
-  if (file.size > maxBytes) throw new HttpError(413, `The file is too large (maximum ${Math.round(maxBytes / 1024 / 1024)} MB).`);
+  if (file.size === 0) throw new HttpError(400, "Fayl boʻsh.");
+  if (file.size > maxBytes) throw new HttpError(413, `Fayl juda katta (eng koʻpi ${Math.round(maxBytes / 1024 / 1024)} MB).`);
   const ext = path.extname(file.name).toLowerCase();
-  if (!ALLOWED_EXT.has(ext)) throw new HttpError(400, "Upload an MP4, MOV, M4V or WebM video.");
+  if (!ALLOWED_EXT.has(ext)) throw new HttpError(400, "MP4, MOV, M4V yoki WebM formatidagi video yuklang.");
   if (file.type && !file.type.startsWith("video/") && file.type !== "application/octet-stream") {
-    throw new HttpError(400, "That file does not look like a video.");
+    throw new HttpError(400, "Bu fayl videoga oʻxshamaydi.");
   }
   const note = String(form.get("note") ?? "").trim().slice(0, 500) || null;
   const contentType = CONTENT_TYPE[ext]!;
@@ -39,11 +39,11 @@ export const POST = handle(async (req, { params }: Ctx) => {
   try {
     const delivery = await prisma.$transaction(async (tx) => {
       const moved = await tx.order.updateMany({ where: { id: order.id, status: "IN_PROGRESS" }, data: { status: "DELIVERED" } });
-      if (moved.count !== 1) throw new HttpError(409, "The order changed. Reload the page.");
+      if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
       const d = await tx.delivery.create({
         data: { orderId: order.id, fileKey: key, fileName: file.name.slice(0, 200), fileSize: file.size, mimeType: contentType, note },
       });
-      await postOrderMessage(order.id, user.id, `I uploaded the delivery: ${file.name}${note ? `\n${note}` : ""}`, tx);
+      await postOrderMessage(order.id, user.id, `Ishni topshirdim: ${file.name}${note ? `\n${note}` : ""}`, tx);
       return d;
     });
     await logAudit({ actorId: user.id, action: "DELIVERY_UPLOADED", entity: "Delivery", entityId: delivery.id, meta: { size: file.size } });

@@ -1,15 +1,20 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 
-export const metadata = { title: "Sign in" };
+export const metadata = { title: "Kirish" };
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="mb-6 text-2xl font-bold">Sign in</h1>
-      <Suspense fallback={<p className="text-sm text-slate-500">Loading…</p>}>
-        <LoginForm />
-      </Suspense>
-    </div>
+    <Container size="sm">
+      <h1>Hisobingizga kiring</h1>
+      <p className="mt-2 text-ink-soft">Buyurtmalaringiz va xabarlaringiz shu yerda.</p>
+      <Card padding="lg" className="mt-6">
+        <Suspense fallback={<p className="text-sm text-ink-soft">Yuklanmoqda…</p>}>
+          <LoginForm />
+        </Suspense>
+      </Card>
+    </Container>
   );
 }

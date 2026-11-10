@@ -18,7 +18,7 @@ export function handle<A extends unknown[]>(fn: (req: Request, ...args: A) => Pr
       if (e instanceof ZodError) {
         return NextResponse.json(
           {
-            error: "Please check the highlighted fields.",
+            error: "Belgilangan maydonlarni tekshiring.",
             fieldErrors: e.flatten().fieldErrors,
             issues: e.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
           },
@@ -26,7 +26,7 @@ export function handle<A extends unknown[]>(fn: (req: Request, ...args: A) => Pr
         );
       }
       console.error("Unhandled API error:", e);
-      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+      return NextResponse.json({ error: "Nimadir xato ketdi. Qayta urinib koʻring." }, { status: 500 });
     }
   };
 }
@@ -35,7 +35,7 @@ export async function readJson(req: Request): Promise<unknown> {
   try {
     return await req.json();
   } catch {
-    throw new HttpError(400, "Invalid request body.");
+    throw new HttpError(400, "Soʻrov notoʻgʻri shaklda yuborildi.");
   }
 }
 

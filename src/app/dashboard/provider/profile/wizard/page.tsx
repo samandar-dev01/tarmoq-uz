@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { Alert } from "@/components/ui/Alert";
+import { Container } from "@/components/ui/Container";
 import { ProfileWizard, type WizardInitial } from "@/components/wizard/ProfileWizard";
 
-export const metadata = { title: "Your creator profile" };
+export const metadata = { title: "Ijodkor profilingiz" };
 
 export default async function WizardPage() {
   const user = await requirePageRole("PROVIDER");
@@ -11,7 +12,7 @@ export default async function WizardPage() {
     prisma.providerProfile.findUnique({
       where: { userId: user.id },
       include: {
-        services: { where: { isActive: true }, orderBy: { createdAt: "asc" } },
+        services: { where: { isActive: true }, orderBy: { id: "asc" } }, // ids are time-ordered; Service has no createdAt column
         portfolio: { orderBy: { sortOrder: "asc" } },
       },
     }),
@@ -20,9 +21,9 @@ export default async function WizardPage() {
 
   if (profile?.status === "SUSPENDED") {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <Alert variant="error">Your profile is suspended. Please contact support to restore access.</Alert>
-      </div>
+      <Container size="md" pad="section">
+        <Alert variant="error">Profilingiz toʻxtatilgan. Kirishni tiklash uchun qoʻllab-quvvatlash xizmatiga murojaat qiling.</Alert>
+      </Container>
     );
   }
 
@@ -44,12 +45,12 @@ export default async function WizardPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold">Your creator profile</h1>
-      <p className="mt-1 text-sm text-slate-600">Complete the steps below. An admin reviews new profiles before they go public.</p>
-      <div className="mt-6">
+    <Container size="lg">
+      <h1>Ijodkor profilingiz</h1>
+      <p className="mt-2 text-ink-soft">Quyidagi qadamlarni bajaring. Yangi profillarni admin tekshiradi, shundan keyin ular ommaga chiqadi.</p>
+      <div className="mt-8">
         <ProfileWizard initial={initial} categories={categories} />
       </div>
-    </div>
+    </Container>
   );
 }

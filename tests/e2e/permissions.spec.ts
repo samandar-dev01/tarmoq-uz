@@ -18,9 +18,9 @@ test.describe("anonymous visitors", () => {
   });
 
   test("can browse public pages", async ({ page }) => {
-    await page.goto("/search?city=Andijan");
+    await page.goto("/search?city=Andijon");
     await expect(page.getByText("Jasur Karimov")).toBeVisible();
-    // pending and non-Andijan providers are not listed
+    // pending and non-Andijon providers are not listed
     await expect(page.getByText("Dilshod Rahimov")).toHaveCount(0);
   });
 });

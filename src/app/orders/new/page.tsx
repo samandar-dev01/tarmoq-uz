@@ -1,12 +1,14 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { formatUZS } from "@/lib/format";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card, tagClasses } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
 
-export const metadata = { title: "New order" };
+export const metadata = { title: "Yangi buyurtma" };
 
 export default async function NewOrderPage({ searchParams }: { searchParams: { service?: string } }) {
   await requirePageRole("CLIENT");
@@ -20,31 +22,33 @@ export default async function NewOrderPage({ searchParams }: { searchParams: { s
 
   if (!available) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
+      <Container size="md" pad="section">
         <EmptyState
-          title="This package isn’t available"
-          description="It may have been removed or the creator is not accepting orders."
-          action={<Link href="/search" className="text-sm font-medium text-indigo-600 hover:underline">Find other creators</Link>}
+          title="Bu paket mavjud emas"
+          description="U oʻchirilgan boʻlishi yoki ijodkor hozir buyurtma qabul qilmayotgan boʻlishi mumkin."
+          action={<ButtonLink href="/search">Boshqa ijodkorlarni topish</ButtonLink>}
         />
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold">Order: {service.title}</h1>
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
-        <p className="font-medium">
-          <Link href={`/providers/${service.profile.slug}`} className="text-indigo-600 hover:underline">{service.profile.user.name}</Link>
+    <Container size="md">
+      <h1>Buyurtma: {service.title}</h1>
+      <Card tone="tint" className="mt-6">
+        <p className="font-bold">
+          <ButtonLink href={`/providers/${service.profile.slug}`} variant="link">{service.profile.user.name}</ButtonLink>
         </p>
-        <p className="mt-1 text-slate-600">{service.description}</p>
-        <p className="mt-2 text-xs text-slate-500">
-          {formatUZS(service.price)} · delivery in {service.deliveryDays} {service.deliveryDays === 1 ? "day" : "days"} · {service.revisions} {service.revisions === 1 ? "revision" : "revisions"}
+        <p className="mt-1.5 text-ink-soft">{service.description}</p>
+        <p className="mt-3 flex flex-wrap gap-2">
+          <span className={tagClasses("saffron")}>{formatUZS(service.price)}</span>
+          <span className={tagClasses("white")}>{service.deliveryDays} kunda topshiriladi</span>
+          <span className={tagClasses("white")}>{service.revisions} ta tuzatish</span>
         </p>
-      </div>
-      <div className="mt-6">
+      </Card>
+      <div className="mt-8">
         <NewOrderForm serviceId={service.id} />
       </div>
-    </div>
+    </Container>
   );
 }

@@ -21,17 +21,17 @@ export const PATCH = handle(async (req, { params }: Ctx) => {
   const rule = RULES[action]!;
 
   const profile = await prisma.providerProfile.findUnique({ where: { id: params.id }, select: { id: true } });
-  if (!profile) throw new HttpError(404, "Provider profile not found.");
+  if (!profile) throw new HttpError(404, "Ijodkor profili topilmadi.");
   if (action === "approve" || action === "reinstate") {
     if ((await prisma.service.count({ where: { profileId: params.id, isActive: true } })) === 0) {
-      throw new HttpError(422, "This profile has no active packages, so it cannot go live.");
+      throw new HttpError(422, "Bu profilda faol paket yoʻq, shuning uchun uni faollashtirib boʻlmaydi.");
     }
   }
   const moved = await prisma.providerProfile.updateMany({
     where: { id: params.id, status: { in: rule.from } },
     data: { status: rule.to, ...(action === "reject" ? { wizardStep: 5 } : {}) },
   });
-  if (moved.count !== 1) throw new HttpError(409, "The profile is not in a state that allows this action.");
+  if (moved.count !== 1) throw new HttpError(409, "Profil holati bu amalga ruxsat bermaydi.");
 
   await logAudit({ actorId: admin.id, action: `PROVIDER_${action.toUpperCase()}`, entity: "ProviderProfile", entityId: params.id });
   return ok({ status: rule.to });

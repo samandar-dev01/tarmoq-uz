@@ -15,7 +15,7 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const admin = await requireRole("ADMIN");
   const { resolution } = schema.parse(await readJson(req));
   const order = await prisma.order.findUnique({ where: { id: params.id } });
-  if (!order) throw new HttpError(404, "Order not found.");
+  if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   const target = resolution === "release" ? "COMPLETED" : "CANCELLED";
   assertTransition(order.status, target, "admin");
 
@@ -24,11 +24,11 @@ export const POST = handle(async (req, { params }: Ctx) => {
       where: { id: order.id, status: "DISPUTED" },
       data: { status: target, ...(target === "COMPLETED" ? { completedAt: new Date() } : {}) },
     });
-    if (moved.count !== 1) throw new HttpError(409, "The order changed. Reload the page.");
+    if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     const result = resolution === "release" ? await releaseEscrow(tx, order.id) : await refundEscrow(tx, order.id);
     await postOrderMessage(
       order.id, admin.id,
-      resolution === "release" ? "An administrator resolved the dispute: the payment was released to the provider." : "An administrator resolved the dispute: the payment was refunded to the client.",
+      resolution === "release" ? "Administrator nizoni hal qildi: toʻlov ijodkorga oʻtkazildi." : "Administrator nizoni hal qildi: toʻlov mijozga qaytarildi.",
       tx,
     );
     return result;

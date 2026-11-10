@@ -13,16 +13,16 @@ export const POST = handle(async (req) => {
 
   const limitKey = `login:${clientIp(req)}:${input.email}`;
   if (isLimited(limitKey, 10)) {
-    throw new HttpError(429, "Too many failed attempts. Please wait a few minutes and try again.");
+    throw new HttpError(429, "Urinishlar juda koʻp. Bir necha daqiqadan keyin qayta urinib koʻring.");
   }
 
   const user = await prisma.user.findUnique({ where: { email: input.email } });
   const valid = await verifyPassword(input.password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) {
     recordFailure(limitKey, 15 * 60 * 1000);
-    throw new HttpError(401, "Invalid email or password.");
+    throw new HttpError(401, "Email yoki parol notoʻgʻri.");
   }
-  if (!user.isActive) throw new HttpError(403, "This account has been deactivated.");
+  if (!user.isActive) throw new HttpError(403, "Bu hisob faolsizlantirilgan.");
   resetLimit(limitKey);
 
   await startSession({ id: user.id, role: user.role, name: user.name });

@@ -13,7 +13,7 @@ export async function getParticipantConversation(conversationId: string, userId:
     where: { id: conversationId },
     include: { userA: { select: { id: true, name: true } }, userB: { select: { id: true, name: true } } },
   });
-  if (!c || (c.userAId !== userId && c.userBId !== userId)) throw new HttpError(404, "Conversation not found.");
+  if (!c || (c.userAId !== userId && c.userBId !== userId)) throw new HttpError(404, "Suhbat topilmadi.");
   const other = c.userAId === userId ? c.userB : c.userA;
   return { conversation: c, other };
 }

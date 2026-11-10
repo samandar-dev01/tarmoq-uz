@@ -1,4 +1,4 @@
-# Andijan Creators Marketplace — Architecture (Phase 1)
+# Tarmoq.uz Marketplace — Architecture (Phase 1)
 
 Place this file at the repo root: `marketplace/ARCHITECTURE.md`.
 
@@ -11,7 +11,7 @@ Place this file at the repo root: `marketplace/ARCHITECTURE.md`.
 | ORM / migrations | Prisma | Typed queries, real migration files |
 | Auth | Custom credentials auth: bcryptjs + signed JWT in httpOnly cookie (jose) | No external service needed; role in token, re-checked against DB on sensitive routes |
 | Validation | Zod | Shared client/server schemas |
-| Styling | Tailwind CSS | Responsive, fast |
+| Styling | Tailwind CSS with design tokens (CSS variables) | One place for colours, type, radii and shadows; responsive |
 | Messaging | DB-backed conversations, polling every 5s (route handlers) | Works on any host, no websocket infra |
 | Files | Storage driver: `local` (dev) / `s3` (prod, S3-compatible) | Video delivery |
 | Payments | Internal **sandbox gateway** with escrow ledger | Real state machine, no fake success (see §5) |
@@ -126,7 +126,7 @@ Transitions live only in `lib/orderMachine.ts`; routes call it, never set status
 
 ## 6. Main user flows
 
-1. **Client journey**: register → search (city=Andijan, category=Mobile videography, price range) → open profile → create order (brief, date, package) → provider accepts → both accept agreement (timestamp, IP, terms hash stored) → sandbox pay → provider delivers video → client approves → transaction shows `COMPLETED` → review.
+1. **Client journey**: register → search (city=Andijon, category=Mobilografiya, price range) → open profile → create order (brief, date, package) → provider accepts → both accept agreement (timestamp, IP, terms hash stored) → sandbox pay → provider delivers video → client approves → transaction shows `COMPLETED` → review.
 2. **Provider journey**: register as provider → 5-step wizard (basics, location, services/packages, portfolio, review & submit) → admin approval → receive orders → accept → deliver → get payout ledger entry.
 3. **Admin journey**: login → approve/suspend providers → view orders → hide abusive reviews.
 4. **Messaging**: conversation auto-created per order (and from profile "Contact"); polling chat with unread counts.
@@ -159,3 +159,6 @@ Nothing in this document has been run yet; test results will be reported only on
 - Disputes store their reason in `AuditLog` (`ORDER_DISPUTED`), shown on the admin Orders page.
 - `lib/errors.ts` holds `HttpError` so pure modules can be unit-tested without Next.js.
 - Database rules that Prisma cannot express are in `prisma/constraints.sql` (rating range, positive amounts, one successful payment per order).
+- The interface is in Uzbek (Latin script). Strings are written inline in components, API routes and `lib/` messages (there is no translation layer). City, language and category names are stored in Uzbek (`src/lib/constants.ts`, `prisma/seed.ts`).
+- Design tokens live in `tailwind.config.ts` and the `:root` variables in `src/app/globals.css`. Shared UI pieces are in `src/components/ui` (`buttonClasses` and `cardClasses` give non-button elements the same looks).
+- Dates are formatted by `src/lib/format.ts` in Tashkent time (UTC+5) with Uzbek month names.

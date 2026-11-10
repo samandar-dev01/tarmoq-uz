@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
 type Ctx = { params: { id: string } };
-const schema = z.object({ reason: z.string().trim().min(10, "Explain the problem (10+ characters)").max(1000) });
+const schema = z.object({ reason: z.string().trim().min(10, "Muammoni tushuntiring (kamida 10 ta belgi)").max(1000) });
 
 export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("CLIENT", "PROVIDER");
@@ -18,8 +18,8 @@ export const POST = handle(async (req, { params }: Ctx) => {
 
   await prisma.$transaction(async (tx) => {
     const moved = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: "DISPUTED" } });
-    if (moved.count !== 1) throw new HttpError(409, "The order changed. Reload the page.");
-    await postOrderMessage(order.id, user.id, `Dispute opened: ${reason}`, tx);
+    if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
+    await postOrderMessage(order.id, user.id, `Nizo ochildi: ${reason}`, tx);
   });
   await logAudit({ actorId: user.id, action: "ORDER_DISPUTED", entity: "Order", entityId: order.id, meta: { by: actor, reason } });
   return ok({ status: "DISPUTED" });

@@ -1,12 +1,13 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { getParticipantConversation, markRead } from "@/lib/messaging";
 import { HttpError } from "@/lib/errors";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Container } from "@/components/ui/Container";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 
-export const metadata = { title: "Conversation" };
+export const metadata = { title: "Suhbat" };
 
 export default async function ConversationPage({ params }: { params: { conversationId: string } }) {
   const user = await requirePageRole("CLIENT", "PROVIDER");
@@ -29,16 +30,14 @@ export default async function ConversationPage({ params }: { params: { conversat
   await markRead(conversation.id, user.id);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
+    <Container size="lg">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href="/messages" className="text-sm text-indigo-600 hover:underline">← All messages</Link>
-          <h1 className="text-xl font-bold">{other.name}</h1>
+          <ButtonLink href="/messages" variant="link" className="text-sm">Barcha xabarlar</ButtonLink>
+          <h1 className="mt-1">{other.name}</h1>
         </div>
         {conversation.orderId && (
-          <Link href={`/orders/${conversation.orderId}`} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">
-            View order
-          </Link>
+          <ButtonLink href={`/orders/${conversation.orderId}`} variant="secondary" size="sm">Buyurtmani koʻrish</ButtonLink>
         )}
       </div>
       <ChatWindow
@@ -46,6 +45,6 @@ export default async function ConversationPage({ params }: { params: { conversat
         meId={user.id}
         initialMessages={messages.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
       />
-    </div>
+    </Container>
   );
 }

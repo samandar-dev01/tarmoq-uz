@@ -30,6 +30,6 @@ describe("parseSearch", () => {
   });
 
   it("reads the first value of repeated params", () => {
-    expect(parseSearch({ city: ["Andijan", "Tashkent"] }).city).toBe("Andijan");
+    expect(parseSearch({ city: ["Andijon", "Toshkent"] }).city).toBe("Andijon");
   });
 });

@@ -19,9 +19,9 @@ export const POST = handle(async (req, { params }: Ctx) => {
 
   await prisma.$transaction(async (tx) => {
     const moved = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: "CANCELLED" } });
-    if (moved.count !== 1) throw new HttpError(409, "The order changed. Reload the page.");
+    if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     await tx.payment.updateMany({ where: { orderId: order.id, status: "REQUIRES_PAYMENT" }, data: { status: "FAILED", failureCode: "order_cancelled" } });
-    await postOrderMessage(order.id, user.id, `Order cancelled${reason ? `: ${reason}` : "."}`, tx);
+    await postOrderMessage(order.id, user.id, `Buyurtma bekor qilindi${reason ? `: ${reason}` : "."}`, tx);
   });
   await logAudit({ actorId: user.id, action: "ORDER_CANCELLED", entity: "Order", entityId: order.id, meta: { by: actor, reason } });
   return ok({ status: "CANCELLED" });

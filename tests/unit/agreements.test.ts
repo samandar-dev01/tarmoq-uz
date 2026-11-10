@@ -9,9 +9,9 @@ const base = {
 describe("agreements", () => {
   it("states price, delivery, revisions and fee in the terms", () => {
     const text = buildTermsText(base);
-    expect(text).toContain("version 1");
+    expect(text).toContain("1-versiya");
     expect(text).toContain("Instagram Reel");
-    expect(text).toContain("2 days");
+    expect(text).toContain("2 kun");
     expect(text).toContain("10%");
     expect(text).toContain("Jasur Karimov");
   });

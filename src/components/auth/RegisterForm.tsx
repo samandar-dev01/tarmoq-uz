@@ -1,15 +1,22 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
+import { useHydrated } from "@/components/ui/useHydrated";
 
 type Role = "CLIENT" | "PROVIDER";
 
+const ROLES: { value: Role; title: string; hint: string }[] = [
+  { value: "CLIENT", title: "Buyurtma bermoqchiman", hint: "Ijodkor topib, video buyurtma qilaman" },
+  { value: "PROVIDER", title: "Ijodkorman", hint: "Xizmatlarimni taklif qilaman" },
+];
+
 export function RegisterForm() {
   const router = useRouter();
+  const ready = useHydrated();
   const [role, setRole] = useState<Role>("CLIENT");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -36,49 +43,50 @@ export function RegisterForm() {
       const data = await res.json();
       if (!res.ok) {
         setFieldErrors(data.fieldErrors ?? (data.details?.field ? { [data.details.field]: [data.error] } : {}));
-        setError(data.error ?? "Could not create your account.");
+        setError(data.error ?? "Hisob yaratib boʻlmadi.");
         return;
       }
       router.replace(role === "PROVIDER" ? "/dashboard/provider/profile/wizard" : "/search");
       router.refresh();
     } catch {
-      setError("Network error. Check your connection and try again.");
+      setError("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
-      <div role="radiogroup" aria-label="Account type" className="grid grid-cols-2 gap-2">
-        {(["CLIENT", "PROVIDER"] as Role[]).map((r) => (
-          <button
-            key={r}
-            type="button"
-            role="radio"
-            aria-checked={role === r}
-            onClick={() => setRole(r)}
-            className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
-              role === r ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-slate-300 bg-white"
-            }`}
-          >
-            {r === "CLIENT" ? "I want to hire" : "I offer services"}
-          </button>
-        ))}
+      <div role="radiogroup" aria-label="Hisob turi" className="grid gap-3">
+        {ROLES.map((r) => {
+          const selected = role === r.value;
+          return (
+            <button
+              key={r.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setRole(r.value)}
+              className={`rounded-card border-2 border-ink p-4 text-left transition-[transform,box-shadow,background-color] duration-150 ${
+                selected ? "-translate-x-px -translate-y-px bg-cobalt text-white shadow-pop-sm" : "bg-white hover:bg-paper-deep"
+              }`}
+            >
+              <span className="block font-bold">{r.title}</span>
+              <span className={`mt-1 block text-sm ${selected ? "text-white/85" : "text-ink-soft"}`}>{r.hint}</span>
+            </button>
+          );
+        })}
       </div>
-      <Field label="Full name" name="name" autoComplete="name" required error={fieldErrors.name?.[0]} />
+      <Field label="Ism-familiya" name="name" autoComplete="name" required error={fieldErrors.name?.[0]} />
       <Field label="Email" name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
-      <Field label="Phone (optional)" name="phone" type="tel" autoComplete="tel" placeholder="+998 90 123 45 67" error={fieldErrors.phone?.[0]} />
-      <Field label="Password" name="password" type="password" autoComplete="new-password" required minLength={8} error={fieldErrors.password?.[0]} />
-      <Button type="submit" loading={loading} className="w-full">
-        {loading ? "Creating account…" : "Create account"}
+      <Field label="Telefon (ixtiyoriy)" name="phone" type="tel" autoComplete="tel" placeholder="+998 90 123 45 67" error={fieldErrors.phone?.[0]} />
+      <Field label="Parol" name="password" type="password" autoComplete="new-password" required minLength={8} hint="Kamida 8 ta belgi" error={fieldErrors.password?.[0]} />
+      <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
+        {loading ? "Yaratilmoqda…" : "Roʻyxatdan oʻtish"}
       </Button>
-      <p className="text-center text-sm text-slate-600">
-        Already registered?{" "}
-        <Link href="/login" className="font-medium text-indigo-600 hover:underline">
-          Sign in
-        </Link>
+      <p className="text-center text-ink-soft">
+        Hisobingiz bormi? <ButtonLink href="/login" variant="link">Kiring</ButtonLink>
       </p>
     </form>
   );

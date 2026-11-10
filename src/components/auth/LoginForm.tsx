@@ -1,10 +1,11 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
+import { useHydrated } from "@/components/ui/useHydrated";
 
 const ROLE_HOME = { CLIENT: "/dashboard/client", PROVIDER: "/dashboard/provider", ADMIN: "/admin" } as const;
 
@@ -13,6 +14,7 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
 
 export function LoginForm() {
   const router = useRouter();
+  const ready = useHydrated();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -33,31 +35,28 @@ export function LoginForm() {
       const data = await res.json();
       if (!res.ok) {
         setFieldErrors(data.fieldErrors ?? {});
-        setError(data.error ?? "Could not sign in.");
+        setError(data.error ?? "Kirib boʻlmadi.");
         return;
       }
       router.replace(safeNext(params.get("next")) ?? ROLE_HOME[data.user.role as keyof typeof ROLE_HOME]);
       router.refresh();
     } catch {
-      setError("Network error. Check your connection and try again.");
+      setError("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
       <Field label="Email" name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
-      <Field label="Password" name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
-      <Button type="submit" loading={loading} className="w-full">
-        {loading ? "Signing in…" : "Sign in"}
+      <Field label="Parol" name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
+      <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
+        {loading ? "Kirilmoqda…" : "Kirish"}
       </Button>
-      <p className="text-center text-sm text-slate-600">
-        New here?{" "}
-        <Link href="/register" className="font-medium text-indigo-600 hover:underline">
-          Create an account
-        </Link>
+      <p className="text-center text-ink-soft">
+        Yangimisiz? <ButtonLink href="/register" variant="link">Roʻyxatdan oʻting</ButtonLink>
       </p>
     </form>
   );

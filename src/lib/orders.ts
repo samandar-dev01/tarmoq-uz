@@ -6,7 +6,7 @@ import type { Actor } from "./orderMachine";
 export async function getParticipantOrder(orderId: string, userId: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order || (order.clientId !== userId && order.providerId !== userId)) {
-    throw new HttpError(404, "Order not found.");
+    throw new HttpError(404, "Buyurtma topilmadi.");
   }
   const actor: Actor = order.clientId === userId ? "client" : "provider";
   return { order, actor };

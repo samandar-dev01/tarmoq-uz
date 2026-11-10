@@ -3,11 +3,20 @@ import { request as pwRequest, expect, type APIRequestContext, type Page } from 
 export const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 export const PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "Demo12345!";
 
+/**
+ * Waits until React is live on the page (the app sets data-hydrated on <html>). After a full page load in dev mode this
+ * takes a moment, and anything typed or clicked before then is lost. Call it after goto() and reload() before interacting.
+ */
+export async function settled(page: Page) {
+  await page.waitForFunction(() => document.documentElement.dataset.hydrated === "true");
+}
+
 export async function login(page: Page, email: string, password = PASSWORD) {
   await page.goto("/login");
+  await settled(page);
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Parol").fill(password);
+  await page.getByRole("button", { name: "Kirish" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 }
 
@@ -36,4 +45,4 @@ export async function jasurServiceId(ctx: APIRequestContext): Promise<string> {
   return m[1]!;
 }
 
-export const goodBrief = "I need a 45 second vertical reel for my new cafe opening next week, with subtitles.";
+export const goodBrief = "Keyingi hafta ochiladigan kafem uchun subtitrli, 45 soniyalik vertikal reel kerak.";

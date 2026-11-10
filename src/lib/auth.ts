@@ -46,14 +46,14 @@ export async function getCurrentUser() {
 /** For API route handlers (throws HttpError). */
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) throw new HttpError(401, "Please sign in to continue.");
+  if (!user) throw new HttpError(401, "Davom etish uchun tizimga kiring.");
   return user;
 }
 
 export async function requireRole(...roles: AppRole[]) {
   const user = await requireUser();
   if (!roles.includes(user.role)) {
-    throw new HttpError(403, "You do not have permission to do this.");
+    throw new HttpError(403, "Buning uchun sizda ruxsat yoʻq.");
   }
   return user;
 }

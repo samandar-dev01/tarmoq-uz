@@ -1,12 +1,14 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { formatUZS } from "@/lib/format";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 
-export const metadata = { title: "Checkout (sandbox)" };
+export const metadata = { title: "Toʻlov (sinov rejimi)" };
 
 export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
   const user = await requirePageRole("CLIENT");
@@ -19,26 +21,26 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
 
   if (order.status !== "AWAITING_PAYMENT") {
     return (
-      <div className="mx-auto max-w-md px-4 py-12">
+      <Container size="sm" pad="section">
         <EmptyState
-          title="This order isn’t ready for payment"
-          description="Payment opens after both you and the provider have accepted the terms."
-          action={<Link href={`/orders/${order.id}`} className="text-sm font-medium text-indigo-600 hover:underline">Back to the order</Link>}
+          title="Bu buyurtma hali toʻlovga tayyor emas"
+          description="Toʻlov siz va ijodkor shartlarni qabul qilgandan keyin ochiladi."
+          action={<ButtonLink href={`/orders/${order.id}`}>Buyurtmaga qaytish</ButtonLink>}
         />
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="text-2xl font-bold">Checkout</h1>
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
-        <p className="font-medium">{order.service.title}</p>
-        <p className="text-slate-600">with {order.provider.name}</p>
-        <p className="mt-2 text-lg font-bold">{order.agreedPrice ? formatUZS(order.agreedPrice) : "—"}</p>
-        <p className="mt-1 text-xs text-slate-500">Held until you approve the finished video.</p>
-      </div>
+    <Container size="sm">
+      <h1>Toʻlov</h1>
+      <Card tone="tint" className="mt-6">
+        <p className="font-bold">{order.service.title}</p>
+        <p className="text-ink-soft">{order.provider.name} bilan</p>
+        <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight">{order.agreedPrice ? formatUZS(order.agreedPrice) : "—"}</p>
+        <p className="mt-1 text-sm text-ink-soft">Siz tayyor videoni qabul qilmaguncha ushlab turiladi.</p>
+      </Card>
       <div className="mt-6"><CheckoutForm orderId={order.id} /></div>
-    </div>
+    </Container>
   );
 }

@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Field } from "@/components/ui/Field";
+import { formatMoment } from "@/lib/format";
 
 export type ChatMessage = { id: string; senderId: string; body: string; createdAt: string };
 
@@ -65,13 +67,13 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.fieldErrors?.body?.[0] ?? json.error ?? "Could not send your message.");
+        setError(json.fieldErrors?.body?.[0] ?? json.error ?? "Xabarni yuborib boʻlmadi.");
         return;
       }
       append([json.message]);
       setText("");
     } catch {
-      setError("Network error. Your message was not sent.");
+      setError("Internet aloqasida muammo. Xabaringiz yuborilmadi.");
     } finally {
       setSending(false);
     }
@@ -85,37 +87,43 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
   };
 
   return (
-    <div className="flex h-[70vh] flex-col rounded-xl border border-slate-200 bg-white">
-      <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
-        {messages.length === 0 && <p className="py-10 text-center text-sm text-slate-500">No messages yet. Say hello!</p>}
+    <div className="flex h-[70vh] flex-col overflow-hidden rounded-card border-2 border-ink bg-white">
+      <div className="flex-1 space-y-3 overflow-y-auto bg-paper p-4" aria-live="polite">
+        {messages.length === 0 && <p className="py-10 text-center text-ink-soft">Hali xabarlar yoʻq. Salom yozing!</p>}
         {messages.map((m) => {
           const mine = m.senderId === meId;
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${mine ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900"}`}>
+              <div
+                className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl border-2 border-ink px-4 py-2.5 ${
+                  mine ? "rounded-br-md bg-cobalt text-white" : "rounded-bl-md bg-white text-ink"
+                }`}
+              >
                 {m.body}
-                <div className={`mt-1 text-[10px] ${mine ? "text-indigo-200" : "text-slate-400"}`}>
-                  {new Date(m.createdAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
-                </div>
+                <div className={`mt-1 text-xs ${mine ? "text-white/70" : "text-ink-mute"}`}>{formatMoment(new Date(m.createdAt))}</div>
               </div>
             </div>
           );
         })}
         <div ref={bottom} />
       </div>
-      {pollError && <div className="px-4 pb-2"><Alert variant="info">Connection problem. Retrying…</Alert></div>}
-      {error && <div className="px-4 pb-2"><Alert variant="error">{error}</Alert></div>}
-      <form onSubmit={send} className="flex items-end gap-2 border-t border-slate-200 p-3">
-        <textarea
-          aria-label="Message"
-          rows={2}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKey}
-          placeholder="Write a message (Enter to send, Shift+Enter for a new line)"
-          className="min-h-[44px] flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <Button type="submit" loading={sending} disabled={!text.trim()}>Send</Button>
+      {pollError && <div className="border-t-2 border-ink px-4 py-2"><Alert variant="info">Aloqa muammosi. Qayta uriniladi…</Alert></div>}
+      {error && <div className="border-t-2 border-ink px-4 py-2"><Alert variant="error">{error}</Alert></div>}
+      <form onSubmit={send} className="flex items-end gap-3 border-t-2 border-ink bg-white p-3">
+        <div className="flex-1">
+          <Field
+            as="textarea"
+            hideLabel
+            label="Xabar"
+            rows={2}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={onKey}
+            placeholder="Xabar yozing (Enter: yuborish, Shift+Enter: yangi qator)"
+            className="resize-none"
+          />
+        </div>
+        <Button type="submit" loading={sending} disabled={!text.trim()}>Yuborish</Button>
       </form>
     </div>
   );

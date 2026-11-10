@@ -1,15 +1,15 @@
 export const CITIES = [
-  "Andijan", "Tashkent", "Samarkand", "Bukhara", "Namangan",
-  "Fergana", "Kokand", "Nukus", "Karshi", "Termez",
+  "Andijon", "Toshkent", "Samarqand", "Buxoro", "Namangan",
+  "Fargʻona", "Qoʻqon", "Nukus", "Qarshi", "Termiz",
 ] as const;
 
-export const LANGUAGES = ["Uzbek", "Russian", "English", "Karakalpak", "Tajik"] as const;
+export const LANGUAGES = ["Oʻzbek", "Rus", "Ingliz", "Qoraqalpoq", "Tojik"] as const;
 
 export const SORTS = {
-  rating: "Top rated",
-  price_asc: "Price: low to high",
-  price_desc: "Price: high to low",
-  newest: "Newest",
+  rating: "Reyting boʻyicha",
+  price_asc: "Narx: arzondan qimmatga",
+  price_desc: "Narx: qimmatdan arzonga",
+  newest: "Eng yangilari",
 } as const;
 
 export const PAGE_SIZE = 12;
