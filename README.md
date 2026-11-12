@@ -59,7 +59,7 @@ npm run db:seed                      # demo accounts and providers
 Commit the generated `prisma/migrations` folder. On other machines and in production use:
 
 ```bash
-npm run db:setup    # = prisma migrate deploy + db:constraints + db:seed (seed refuses to run in production)
+npm run db:setup    # = prisma migrate deploy + db:constraints + db:seed (in production the seed creates categories only)
 ```
 
 > If you change `prisma/schema.prisma`, create a new migration with `npx prisma migrate dev --name <change>`.
@@ -209,8 +209,9 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
 1. **Supabase:** create a project (region `eu-central-1`) and a private bucket `deliveries` (25 MB limit). In *Storage > S3 connection* create access keys. In *Connect* copy the **Session pooler** string (put your database password into it).
 2. **GitHub:** push this repo to your own repository (the `.env` file is git-ignored and never leaves your machine).
 3. **Render:** *New > Blueprint*, pick the repository. Fill the three prompted secrets: `DATABASE_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`. The container applies migrations and DB constraints on every start.
-4. **Seed demo data (once).** Never with the public default password. From your machine, with `DATABASE_URL` pointing at the production database:
-   `NODE_ENV=production ALLOW_SEED_IN_PRODUCTION=true SEED_DEMO_PASSWORD="<long random>" npm run db:seed`
+4. **Seed the categories (once).** From your machine, with `DATABASE_URL` pointing at the production database:
+   `npm run db:seed` on the live database creates the categories and nothing else. **Do not put demo accounts on the live site** (they are fake people). For a staging copy only: `NODE_ENV=production SEED_DEMO=true SEED_DEMO_PASSWORD="<long random>" npm run db:seed`.
+   To remove demo and test data that is already there: `npm run db:purge-demo` (a dry run that lists what would go), then `npm run db:purge-demo -- --confirm`.
 5. **Make yourself admin:** register on the site, then run in the Supabase SQL editor:
    `UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';`
 6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.

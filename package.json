@@ -10,6 +10,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:constraints": "prisma db execute --file prisma/constraints.sql --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
+    "db:purge-demo": "tsx prisma/scripts/purge-demo-data.ts",
     "db:setup": "prisma migrate deploy && npm run db:constraints && npm run db:seed",
     "test": "vitest run",
     "test:e2e": "playwright test",
