@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Stars } from "@/components/ui/Stars";
+import { TestModeBadge } from "@/components/ui/TestModeBadge";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
 import { ReviewForm } from "@/components/orders/ReviewForm";
@@ -115,7 +116,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
         <Card as="section">
           <h2>Toʻlov</h2>
           <p className="mt-2 text-ink-soft">
-            Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi.
+            Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi. <TestModeBadge />
           </p>
           <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">Xavfsiz toʻlash (sinov rejimi)</ButtonLink>
         </Card>

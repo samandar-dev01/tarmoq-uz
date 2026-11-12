@@ -12,7 +12,8 @@ const sans = Onest({ subsets: ["latin", "latin-ext", "cyrillic"], variable: "--f
 
 export const metadata: Metadata = {
   title: { default: "Tarmoq.uz: ijodkorlar tarmogʻi", template: "%s · Tarmoq.uz" },
-  description: "Oʻzbekistondagi ishonchli videograf, fotograf va montajchilarni toping. Shartlar yozma kelishiladi, toʻlov esa ish qabul qilinguncha himoyada turadi.",
+  // No payment promise here: a meta description cannot carry the "Sinov rejimi" badge (hard rule 2).
+  description: "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.",
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#EDF8F2" };
 
