@@ -51,7 +51,7 @@ export default async function ProviderPage({ params }: Props) {
 
   const orderHref = (serviceId: string) => {
     const target = `/orders/new?service=${serviceId}`;
-    return viewer ? target : `/login?next=${encodeURIComponent(target)}`;
+    return viewer ? target : `/login?role=client&next=${encodeURIComponent(target)}`;
   };
   const canOrder = !viewer || viewer.role === "CLIENT";
   const approved = profile.status === "APPROVED";
@@ -78,7 +78,7 @@ export default async function ProviderPage({ params }: Props) {
                 <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">Profilni tahrirlash</ButtonLink>
               ) : canOrder && approved ? (
                 <ButtonLink
-                  href={viewer ? `/messages/new?to=${profile.userId}` : `/login?next=${encodeURIComponent(`/providers/${profile.slug}`)}`}
+                  href={viewer ? `/messages/new?to=${profile.userId}` : `/login?role=client&next=${encodeURIComponent(`/messages/new?to=${profile.userId}`)}`}
                   variant="secondary"
                 >
                   Xabar yozish

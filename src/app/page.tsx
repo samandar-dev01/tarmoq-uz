@@ -98,7 +98,7 @@ export default async function HomePage() {
           <EmptyState
             title="Hozircha ijodkorlar yoʻq"
             description="Tasdiqlangan ijodkorlar tez orada shu yerda paydo boʻladi."
-            action={<ButtonLink href="/register">Ijodkor boʻlib qoʻshilish</ButtonLink>}
+            action={<ButtonLink href="/register?role=provider">Ijodkor boʻlib qoʻshilish</ButtonLink>}
           />
         ) : (
           // Four across when the count divides by four, otherwise three, so the last row is never a lone card.
@@ -145,7 +145,7 @@ export default async function HomePage() {
             <h2>Ijodkormisiz? Buyurtmalar sizni kutmoqda.</h2>
             <p className="mt-2 max-w-xl text-paper/80">Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.</p>
           </div>
-          <ButtonLink href="/register" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
+          <ButtonLink href="/register?role=provider" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
         </Card>
       </Container>
     </>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
 import { useHydrated } from "@/components/ui/useHydrated";
+import { authHref, type EntryRole } from "@/lib/authRole";
 
 type Role = "CLIENT" | "PROVIDER";
 
@@ -14,10 +15,10 @@ const ROLES: { value: Role; title: string; hint: string }[] = [
   { value: "PROVIDER", title: "Ijodkorman", hint: "Xizmatlarimni taklif qilaman" },
 ];
 
-export function RegisterForm() {
+export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; next: string | null }) {
   const router = useRouter();
   const ready = useHydrated();
-  const [role, setRole] = useState<Role>("CLIENT");
+  const [role, setRole] = useState<Role>(initialRole === "provider" ? "PROVIDER" : "CLIENT");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,8 @@ export function RegisterForm() {
         setError(data.error ?? "Hisob yaratib boʻlmadi.");
         return;
       }
-      router.replace(role === "PROVIDER" ? "/dashboard/provider/profile/wizard" : "/search");
+      // `next` (already checked on the server) is a client destination, such as the package they wanted to order.
+      router.replace(role === "PROVIDER" ? "/dashboard/provider/profile/wizard" : next ?? "/search");
       router.refresh();
     } catch {
       setError("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.");
@@ -86,7 +88,7 @@ export function RegisterForm() {
         {loading ? "Yaratilmoqda…" : "Roʻyxatdan oʻtish"}
       </Button>
       <p className="text-center text-ink-soft">
-        Hisobingiz bormi? <ButtonLink href="/login" variant="link">Kiring</ButtonLink>
+        Hisobingiz bormi? <ButtonLink href={authHref("/login", role === "PROVIDER" ? "provider" : "client", next)} variant="link">Kiring</ButtonLink>
       </p>
     </form>
   );

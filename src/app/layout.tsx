@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { FlashToast } from "@/components/ui/FlashToast";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </svg>
         <Header />
         <main className="flex-1">{children}</main>
+        <FlashToast />
         <footer className="mt-20 border-t-2 border-ink bg-white">
           <Container pad="none" className="grid gap-8 py-10 sm:grid-cols-[1.4fr_1fr] sm:items-start">
             <div>
@@ -41,8 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-2 sm:justify-end">
               <ButtonLink href="/search" variant="link">Ijodkorlar</ButtonLink>
-              <ButtonLink href="/register" variant="link">Ijodkor boʻlib qoʻshilish</ButtonLink>
-              <ButtonLink href="/login" variant="link">Kirish</ButtonLink>
+              <ButtonLink href="/register?role=provider" variant="link">Ijodkor boʻlib qoʻshilish</ButtonLink>
+              <ButtonLink href="/register?role=client" variant="link">Buyurtma bermoqchiman</ButtonLink>
             </nav>
           </Container>
           <div className="border-t-2 border-ink bg-paper-deep">
