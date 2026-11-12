@@ -23,11 +23,11 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("PROVIDER");
   const input = schema.parse(await readJson(req));
 
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, providerId: user.id },
     include: { service: { select: { title: true } }, client: { select: { name: true } }, provider: { select: { name: true } } },
   });
-  if (!order || order.providerId !== user.id) throw new HttpError(404, "Buyurtma topilmadi.");
+  if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   if (order.status !== "REQUESTED" && order.status !== "AGREEMENT_PENDING") {
     throw new HttpError(409, "Bu buyurtma shartlarini endi oʻzgartirib boʻlmaydi.");
   }

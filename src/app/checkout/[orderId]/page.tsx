@@ -12,11 +12,11 @@ export const metadata = { title: "Toʻlov (sinov rejimi)" };
 
 export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
   const user = await requirePageRole("CLIENT");
-  const order = await prisma.order.findUnique({
-    where: { id: params.orderId },
+  const order = await prisma.order.findFirst({
+    where: { id: params.orderId, clientId: user.id },
     include: { service: { select: { title: true } }, provider: { select: { name: true } } },
   });
-  if (!order || order.clientId !== user.id) notFound();
+  if (!order) notFound();
   if (["IN_PROGRESS", "DELIVERED", "COMPLETED"].includes(order.status)) redirect(`/orders/${order.id}`);
 
   if (order.status !== "AWAITING_PAYMENT") {

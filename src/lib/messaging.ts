@@ -9,11 +9,12 @@ export async function postOrderMessage(orderId: string, senderId: string, body: 
 }
 
 export async function getParticipantConversation(conversationId: string, userId: string) {
-  const c = await prisma.conversation.findUnique({
-    where: { id: conversationId },
+  // Ownership is part of the query itself: a conversation the user is not in is never loaded.
+  const c = await prisma.conversation.findFirst({
+    where: { id: conversationId, OR: [{ userAId: userId }, { userBId: userId }] },
     include: { userA: { select: { id: true, name: true } }, userB: { select: { id: true, name: true } } },
   });
-  if (!c || (c.userAId !== userId && c.userBId !== userId)) throw new HttpError(404, "Suhbat topilmadi.");
+  if (!c) throw new HttpError(404, "Suhbat topilmadi.");
   const other = c.userAId === userId ? c.userB : c.userA;
   return { conversation: c, other };
 }

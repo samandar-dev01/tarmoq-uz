@@ -16,8 +16,8 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("CLIENT");
   const input = schema.parse(await readJson(req));
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
-  if (!order || order.clientId !== user.id) throw new HttpError(404, "Buyurtma topilmadi.");
+  const order = await prisma.order.findFirst({ where: { id: params.id, clientId: user.id } });
+  if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   if (order.status !== "COMPLETED") throw new HttpError(409, "Sharhni buyurtma yakunlangandan keyin qoldirish mumkin.");
 
   try {

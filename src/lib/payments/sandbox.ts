@@ -12,8 +12,8 @@ export function feePercent(): number {
 
 /** Creates (or reuses) the payment attempt for an order. The amount always comes from the order, never from the client. */
 export async function getOrCreateIntent(orderId: string, clientId: string) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || order.clientId !== clientId) throw new HttpError(404, "Buyurtma topilmadi.");
+  const order = await prisma.order.findFirst({ where: { id: orderId, clientId } });
+  if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   if (order.status !== "AWAITING_PAYMENT") throw new HttpError(409, "Bu buyurtma hozir toʻlov kutmayapti.");
   if (!order.agreedPrice) throw new HttpError(409, "Bu buyurtma uchun hali narx kelishilmagan.");
 
@@ -35,11 +35,11 @@ export async function confirmPayment(args: { orderId: string; paymentId: string;
   let result: ConfirmResult;
   try {
     result = await prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({ where: { id: orderId } });
-      if (!order || order.clientId !== clientId) throw new HttpError(404, "Buyurtma topilmadi.");
+      const order = await tx.order.findFirst({ where: { id: orderId, clientId } });
+      if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
       if (order.status !== "AWAITING_PAYMENT") throw new HttpError(409, "Bu buyurtma hozir toʻlov kutmayapti.");
-      const payment = await tx.payment.findUnique({ where: { id: paymentId } });
-      if (!payment || payment.orderId !== orderId) throw new HttpError(404, "Toʻlov topilmadi.");
+      const payment = await tx.payment.findFirst({ where: { id: paymentId, orderId } });
+      if (!payment) throw new HttpError(404, "Toʻlov topilmadi.");
       if (payment.status !== "REQUIRES_PAYMENT") throw new HttpError(409, "Bu toʻlov allaqachon bajarilgan. Sahifani yangilang.");
       if (payment.amount !== order.agreedPrice) throw new HttpError(409, "Narx oʻzgargan. Sahifani yangilang.");
 

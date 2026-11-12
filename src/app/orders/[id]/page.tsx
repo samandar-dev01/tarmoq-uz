@@ -17,8 +17,9 @@ export const metadata = { title: "Buyurtma" };
 
 export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { paid?: string } }) {
   const user = await requirePageRole("CLIENT", "PROVIDER", "ADMIN");
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const order = await prisma.order.findFirst({
+    // Admins may open any order; everyone else only an order they are on.
+    where: { id: params.id, ...(user.role === "ADMIN" ? {} : { OR: [{ clientId: user.id }, { providerId: user.id }] }) },
     include: {
       service: true,
       client: { select: { id: true, name: true } },
