@@ -103,7 +103,7 @@ Use any future expiry (for example `12/34`) and any 3-digit CVC. The checkout pa
 
 How money moves (all recorded in the `LedgerEntry` table):
 1. **Pay** → `ESCROW_HOLD`, payment status `HELD`.
-2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (`PLATFORM_FEE_PERCENT`, default 10%).
+2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (10%, minimum 15 000 UZS; the one constant in `src/lib/fees.ts`).
 3. **Dispute resolved as refund** → `HELD → REFUNDED`: `REFUND` entry.
 
 A unique database index guarantees an order can have only one successful payment. Card numbers are never stored, only brand and last 4 digits.
@@ -154,7 +154,6 @@ See `.env.example`. The important ones:
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
 | `AUTH_SECRET` | Signs session cookies. Required, 16+ random characters. **Change in production.** |
-| `PLATFORM_FEE_PERCENT` | Fee deducted from the provider payout on release (default 10) |
 | `STORAGE_DRIVER` | `local` (dev) or `s3` |
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
@@ -162,7 +161,7 @@ See `.env.example`. The important ones:
 ## 10. Production deployment
 
 1. **Provision** a managed PostgreSQL database and (recommended) an S3-compatible bucket (AWS S3, Cloudflare R2, MinIO, ...). Keep the bucket **private**; the app serves files through signed URLs.
-2. **Set environment variables** on your host: `DATABASE_URL`, a fresh `AUTH_SECRET`, `NODE_ENV=production`, `STORAGE_DRIVER=s3` plus the `S3_*` values, `APP_URL`, `PLATFORM_FEE_PERCENT`, `MAX_UPLOAD_MB`.
+2. **Set environment variables** on your host: `DATABASE_URL`, a fresh `AUTH_SECRET`, `NODE_ENV=production`, `STORAGE_DRIVER=s3` plus the `S3_*` values, `APP_URL`, `MAX_UPLOAD_MB`.
 3. **Build and run**, either:
    - Docker: `docker build -t creators . && docker run -p 3000:3000 --env-file .env creators` (the container applies migrations and DB constraints on start), or
    - Node host: `npm ci && npm run build && npm run db:deploy && npm run db:constraints && npm start`.

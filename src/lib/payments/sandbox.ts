@@ -3,12 +3,8 @@ import { prisma } from "../db";
 import { HttpError } from "../errors";
 import { assertTransition } from "../orderMachine";
 import { logAudit } from "../audit";
-import { computeFees, evaluateTestCard, type CardInput } from "./pure";
-
-export function feePercent(): number {
-  const n = Number(process.env.PLATFORM_FEE_PERCENT ?? 10);
-  return Number.isFinite(n) && n >= 0 && n <= 50 ? n : 10;
-}
+import { platformFee } from "../fees";
+import { evaluateTestCard, type CardInput } from "./pure";
 
 /** Creates (or reuses) the payment attempt for an order. The amount always comes from the order, never from the client. */
 export async function getOrCreateIntent(orderId: string, clientId: string) {
@@ -88,7 +84,7 @@ export async function releaseEscrow(tx: Prisma.TransactionClient, orderId: strin
   if (!payment) throw new HttpError(409, "Oʻtkazish uchun ushlab turilgan toʻlov yoʻq.");
   const claimed = await tx.payment.updateMany({ where: { id: payment.id, status: "HELD" }, data: { status: "RELEASED" } });
   if (claimed.count !== 1) throw new HttpError(409, "Toʻlov allaqachon oʻtkazilgan.");
-  const { fee, payout } = computeFees(payment.amount, feePercent());
+  const { fee, payout } = platformFee(payment.amount);
   await tx.ledgerEntry.createMany({
     data: [
       { paymentId: payment.id, type: "PROVIDER_PAYOUT", amount: payout },

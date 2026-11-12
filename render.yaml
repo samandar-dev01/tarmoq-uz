@@ -34,8 +34,6 @@ services:
         value: deliveries
       - key: PAYMENT_PROVIDER
         value: sandbox
-      - key: PLATFORM_FEE_PERCENT
-        value: "10"
       - key: SESSION_MAX_AGE_DAYS
         value: "7"
       # Uploads are buffered in memory and a free instance has 512 MB, so keep videos short (Supabase's free limit is 50 MB anyway).

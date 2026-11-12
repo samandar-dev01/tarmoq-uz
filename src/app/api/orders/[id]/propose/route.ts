@@ -5,7 +5,6 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, clientIp, handle, ok, readJson } from "@/lib/http";
 import { assertTransition } from "@/lib/orderMachine";
 import { buildTermsText, hashTerms } from "@/lib/agreements";
-import { feePercent } from "@/lib/payments/sandbox";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
@@ -43,7 +42,7 @@ export const POST = handle(async (req, { params }: Ctx) => {
         orderId: order.id, version, serviceTitle: order.service.title,
         clientName: order.client.name, providerName: order.provider.name,
         price: input.price, deliveryDays: input.deliveryDays, revisions: input.revisions,
-        notes: input.notes, feePercent: feePercent(),
+        notes: input.notes,
       });
       const created = await tx.agreement.create({
         data: {

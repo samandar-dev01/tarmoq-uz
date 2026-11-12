@@ -34,8 +34,3 @@ export function evaluateTestCard(input: CardInput, now: Date = new Date()): Card
   if (declined) return { outcome: "declined", brand, last4, failureCode: declined.code, message: declined.message };
   return invalid("Sinov rejimi: 4242 4242 4242 4242 kabi test kartasidan foydalaning.");
 }
-
-export function computeFees(amount: number, percent: number): { fee: number; payout: number } {
-  const fee = Math.floor((amount * percent) / 100);
-  return { fee, payout: amount - fee };
-}

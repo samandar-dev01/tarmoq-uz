@@ -2,8 +2,8 @@ import { z } from "zod";
 import { paymentsAreTest } from "@/lib/payments/mode";
 import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
-import { computeFees } from "@/lib/payments/pure";
-import { feePercent, getOrCreateIntent } from "@/lib/payments/sandbox";
+import { platformFee } from "@/lib/fees";
+import { getOrCreateIntent } from "@/lib/payments/sandbox";
 
 const schema = z.object({ orderId: z.string().min(1) });
 
@@ -15,6 +15,6 @@ export const POST = handle(async (req) => {
   const payment = await getOrCreateIntent(orderId, user.id);
   return ok({
     payment: { id: payment.id, amount: payment.amount, currency: payment.currency, sandbox: true },
-    fees: computeFees(payment.amount, feePercent()),
+    fees: platformFee(payment.amount),
   });
 });
