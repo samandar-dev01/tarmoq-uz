@@ -6,11 +6,10 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
 import { useHydrated } from "@/components/ui/useHydrated";
+import { safeNext } from "@/lib/safeNext";
 
 const ROLE_HOME = { CLIENT: "/dashboard/client", PROVIDER: "/dashboard/provider", ADMIN: "/admin" } as const;
 
-// Only allow same-site relative paths (prevents open-redirect).
-const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") ? n : null);
 
 export function LoginForm() {
   const router = useRouter();
