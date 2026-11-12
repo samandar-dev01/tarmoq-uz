@@ -34,6 +34,12 @@ export function LoginForm({ role, next }: { role: EntryRole; next: string | null
         body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        // The server answers a blocked attempt with the same body as a wrong password; the status tells us.
+        const minutes = Math.max(1, Math.ceil(Number(res.headers.get("Retry-After") ?? 60) / 60));
+        setError(`Urinishlar juda koʻp. ${minutes} daqiqadan keyin qayta urinib koʻring.`);
+        return;
+      }
       if (!res.ok) {
         setFieldErrors(data.fieldErrors ?? {});
         setError(data.error ?? "Kirib boʻlmadi.");
