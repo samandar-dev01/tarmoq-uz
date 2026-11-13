@@ -5,6 +5,7 @@ import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { CITIES, LANGUAGES } from "@/lib/constants";
 import { slugify } from "@/lib/format";
 import { logAudit } from "@/lib/audit";
+import { notifyProfileSubmitted } from "@/lib/notify";
 
 const httpsUrl = z
   .string()
@@ -173,6 +174,9 @@ export const PUT = handle(async (req) => {
     if (problems.length) throw new HttpError(422, `Profilingiz hali toʻliq emas: ${problems.join(" ")}`, { problems });
     await prisma.providerProfile.update({ where: { id: profile!.id }, data: { status: "PENDING_REVIEW" } });
     await logAudit({ actorId: user.id, action: "PROFILE_SUBMITTED", entity: "ProviderProfile", entityId: profile!.id });
+    // Tell the admin on Telegram. Not awaited, so a slow or unreachable Telegram never delays the creator's
+    // submit; the helper never throws and is a no-op when Telegram is not configured.
+    void notifyProfileSubmitted({ name: user.name, city: profile!.city });
   }
 
   return ok({ profile: await summary(user.id) });
