@@ -157,6 +157,7 @@ See `.env.example`. The important ones:
 | `STORAGE_DRIVER` | `local` (dev) or `s3` |
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Optional. When both are set, a Telegram message (creator name and city, plus a link to `/admin/providers`) is sent to the admin each time a creator submits a profile for review. Create the bot with @BotFather, message it once, and use your chat id. Both empty = off. A Telegram failure never affects the creator's submit. The link uses `APP_URL`, or Render's `RENDER_EXTERNAL_URL` if that is unset. |
 
 ## 10. Production deployment
 
