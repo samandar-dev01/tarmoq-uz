@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { authHref } from "@/lib/authRole";
 import { formatDay, formatUZS, shortName } from "@/lib/format";
 import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
 import { Alert } from "@/components/ui/Alert";
@@ -55,6 +56,8 @@ export default async function ProviderPage({ params }: Props) {
     return viewer ? target : `/login?role=client&next=${encodeURIComponent(target)}`;
   };
   const canOrder = !viewer || viewer.role === "CLIENT";
+  // Admins and creators cannot order. Instead of showing nothing, point them to a client sign-in that comes back here.
+  const clientLoginHref = authHref("/login", "client", `/providers/${profile.slug}`);
   const approved = profile.status === "APPROVED";
 
   return (
@@ -113,6 +116,14 @@ export default async function ProviderPage({ params }: Props) {
 
           <section>
             <h2>Paketlar</h2>
+            {!canOrder && approved && !isOwner && profile.services.length > 0 && (
+              <div className="mt-4">
+                <Alert variant="info">
+                  Buyurtma berish uchun mijoz hisobi kerak.{" "}
+                  <ButtonLink href={clientLoginHref} variant="link">Mijoz sifatida kirish</ButtonLink>
+                </Alert>
+              </div>
+            )}
             {profile.services.length === 0 ? (
               <div className="mt-4"><EmptyState title="Hozircha paketlar yoʻq" description="Bu ijodkor hali paket qoʻshmagan." /></div>
             ) : (
