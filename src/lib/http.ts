@@ -13,7 +13,7 @@ export function handle<A extends unknown[]>(fn: (req: Request, ...args: A) => Pr
       return await fn(req, ...args);
     } catch (e) {
       if (e instanceof HttpError) {
-        return NextResponse.json({ error: e.message, details: e.details }, { status: e.status });
+        return NextResponse.json({ error: e.message, details: e.details }, { status: e.status, headers: e.headers });
       }
       if (e instanceof ZodError) {
         return NextResponse.json(

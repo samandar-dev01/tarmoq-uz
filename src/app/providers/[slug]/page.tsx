@@ -12,6 +12,7 @@ import { Card, cardClasses, tagClasses } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Stars } from "@/components/ui/Stars";
+import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
 type Props = { params: { slug: string } };
 
@@ -51,7 +52,7 @@ export default async function ProviderPage({ params }: Props) {
 
   const orderHref = (serviceId: string) => {
     const target = `/orders/new?service=${serviceId}`;
-    return viewer ? target : `/login?next=${encodeURIComponent(target)}`;
+    return viewer ? target : `/login?role=client&next=${encodeURIComponent(target)}`;
   };
   const canOrder = !viewer || viewer.role === "CLIENT";
   const approved = profile.status === "APPROVED";
@@ -78,7 +79,7 @@ export default async function ProviderPage({ params }: Props) {
                 <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">Profilni tahrirlash</ButtonLink>
               ) : canOrder && approved ? (
                 <ButtonLink
-                  href={viewer ? `/messages/new?to=${profile.userId}` : `/login?next=${encodeURIComponent(`/providers/${profile.slug}`)}`}
+                  href={viewer ? `/messages/new?to=${profile.userId}` : `/login?role=client&next=${encodeURIComponent(`/messages/new?to=${profile.userId}`)}`}
                   variant="secondary"
                 >
                   Xabar yozish
@@ -211,7 +212,7 @@ export default async function ProviderPage({ params }: Props) {
           </Card>
           <Card tone="turquoise">
             <h2 className="font-sans text-base tracking-normal">Himoyalangan buyurtma</h2>
-            <p className="mt-2 text-[0.9375rem]">Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi.</p>
+            <p className="mt-2 text-[0.9375rem]">Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi. <TestModeBadge /></p>
           </Card>
         </aside>
       </div>

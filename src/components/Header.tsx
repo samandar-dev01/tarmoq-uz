@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { buttonClasses } from "@/components/ui/Button";
-import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { NavLink } from "@/components/ui/NavLink";
 
@@ -19,8 +18,9 @@ export async function Header() {
         </>
       ) : (
         <>
-          <NavLink href="/login">Kirish</NavLink>
-          <ButtonLink href="/register" size="sm">Qoʻshilish</ButtonLink>
+          {/* Two ways in, never one: a client and a creator each get their own button. */}
+          <NavLink href="/login?role=client" variant="plain" className={buttonClasses({ variant: "secondary", size: "sm" })}>Mijoz sifatida kirish</NavLink>
+          <NavLink href="/login?role=provider" variant="plain" className={buttonClasses({ size: "sm" })}>Ijodkor sifatida kirish</NavLink>
         </>
       )}
     </>
@@ -41,10 +41,10 @@ export async function Header() {
             tarmoq<span className="text-cobalt">.uz</span>
           </span>
         </Link>
-        <nav aria-label="Asosiy menyu" className="hidden items-center gap-1 sm:flex">{links}</nav>
-        <details className="relative sm:hidden">
+        <nav aria-label="Asosiy menyu" className="hidden items-center gap-2 md:flex">{links}</nav>
+        <details className="relative md:hidden">
           <summary className={buttonClasses({ variant: "secondary", size: "sm" })}>Menyu</summary>
-          <div className="absolute right-0 mt-3 flex w-64 flex-col items-stretch gap-1 rounded-card border-2 border-ink bg-white p-3 shadow-pop">{links}</div>
+          <div className="absolute right-0 mt-3 flex w-64 flex-col items-stretch gap-2 rounded-card border-2 border-ink bg-white p-3 shadow-pop">{links}</div>
         </details>
       </Container>
     </header>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeFees, evaluateTestCard } from "@/lib/payments/pure";
+import { evaluateTestCard } from "@/lib/payments/pure";
 
 const NOW = new Date("2026-06-15T12:00:00Z");
 const card = (number: string, over: Partial<{ expMonth: number; expYear: number; cvc: string }> = {}) =>
@@ -44,18 +44,5 @@ describe("sandbox cards", () => {
     expect(card("4242424242424242", { expMonth: 5, expYear: 2026 }).outcome).toBe("invalid");
     expect(card("4242424242424242", { expMonth: 6, expYear: 2026 }).outcome).toBe("success");
     expect(card("4242424242424242", { expMonth: 12, expYear: 34 }).outcome).toBe("success");
-  });
-});
-
-describe("platform fees", () => {
-  it("splits an amount into fee and payout", () => {
-    expect(computeFees(300000, 10)).toEqual({ fee: 30000, payout: 270000 });
-    expect(computeFees(150000, 0)).toEqual({ fee: 0, payout: 150000 });
-  });
-
-  it("rounds the fee down and always adds up to the amount", () => {
-    const r = computeFees(333333, 10);
-    expect(r.fee).toBe(33333);
-    expect(r.fee + r.payout).toBe(333333);
   });
 });

@@ -74,14 +74,22 @@ const providers: SeedProvider[] = [
 ];
 
 async function main() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED_IN_PRODUCTION !== "true") {
-    throw new Error("Refusing to seed demo accounts in production (set ALLOW_SEED_IN_PRODUCTION=true to override).");
-  }
-  const passwordHash = await bcrypt.hash(PASSWORD, 12);
-
+  // Categories are reference data, not demo data: every environment needs them.
   for (const c of categories) {
     await prisma.category.upsert({ where: { slug: c.slug }, update: { name: c.name }, create: c });
   }
+
+  // Demo accounts and providers are fake people. They are created only outside production, or when
+  // someone asks for them by name with SEED_DEMO=true (a staging copy, never the live site).
+  const demoAllowed = process.env.NODE_ENV !== "production" || process.env.SEED_DEMO === "true";
+  if (!demoAllowed) {
+    console.log("Categories are in place. Demo accounts skipped (production; set SEED_DEMO=true to force).");
+    return;
+  }
+  if (process.env.NODE_ENV === "production" && PASSWORD === "Demo12345!") {
+    throw new Error("Refusing to create demo accounts with the public default password. Set SEED_DEMO_PASSWORD to a long random value.");
+  }
+  const passwordHash = await bcrypt.hash(PASSWORD, 12);
   const mobile = await prisma.category.findUniqueOrThrow({ where: { slug: "mobile-videography" } });
 
   await prisma.user.upsert({

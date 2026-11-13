@@ -5,7 +5,6 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, clientIp, handle, ok, readJson } from "@/lib/http";
 import { assertTransition } from "@/lib/orderMachine";
 import { buildTermsText, hashTerms } from "@/lib/agreements";
-import { feePercent } from "@/lib/payments/sandbox";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
@@ -23,11 +22,11 @@ export const POST = handle(async (req, { params }: Ctx) => {
   const user = await requireRole("PROVIDER");
   const input = schema.parse(await readJson(req));
 
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, providerId: user.id },
     include: { service: { select: { title: true } }, client: { select: { name: true } }, provider: { select: { name: true } } },
   });
-  if (!order || order.providerId !== user.id) throw new HttpError(404, "Buyurtma topilmadi.");
+  if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   if (order.status !== "REQUESTED" && order.status !== "AGREEMENT_PENDING") {
     throw new HttpError(409, "Bu buyurtma shartlarini endi oʻzgartirib boʻlmaydi.");
   }
@@ -43,7 +42,7 @@ export const POST = handle(async (req, { params }: Ctx) => {
         orderId: order.id, version, serviceTitle: order.service.title,
         clientName: order.client.name, providerName: order.provider.name,
         price: input.price, deliveryDays: input.deliveryDays, revisions: input.revisions,
-        notes: input.notes, feePercent: feePercent(),
+        notes: input.notes,
       });
       const created = await tx.agreement.create({
         data: {

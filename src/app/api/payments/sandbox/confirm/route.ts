@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paymentsAreTest } from "@/lib/payments/mode";
 import { requireRole } from "@/lib/auth";
 import { handle, ok, readJson } from "@/lib/http";
 import { rateLimit } from "@/lib/rateLimit";
@@ -16,6 +17,8 @@ const schema = z.object({
 });
 
 export const POST = handle(async (req) => {
+  // Test cards must stop working the day a real gateway is switched on.
+  if (!paymentsAreTest()) throw new HttpError(404, "Topilmadi.");
   const user = await requireRole("CLIENT");
   if (!rateLimit(`pay:${user.id}`, 15, 15 * 60 * 1000)) throw new HttpError(429, "Toʻlov urinishlari juda koʻp. Bir necha daqiqa kuting.");
   const input = schema.parse(await readJson(req));

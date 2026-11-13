@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Stars } from "@/components/ui/Stars";
+import { TestModeBadge } from "@/components/ui/TestModeBadge";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
 import { ReviewForm } from "@/components/orders/ReviewForm";
@@ -17,8 +18,9 @@ export const metadata = { title: "Buyurtma" };
 
 export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { paid?: string } }) {
   const user = await requirePageRole("CLIENT", "PROVIDER", "ADMIN");
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const order = await prisma.order.findFirst({
+    // Admins may open any order; everyone else only an order they are on.
+    where: { id: params.id, ...(user.role === "ADMIN" ? {} : { OR: [{ clientId: user.id }, { providerId: user.id }] }) },
     include: {
       service: true,
       client: { select: { id: true, name: true } },
@@ -114,7 +116,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
         <Card as="section">
           <h2>Toʻlov</h2>
           <p className="mt-2 text-ink-soft">
-            Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi.
+            Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi. <TestModeBadge />
           </p>
           <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">Xavfsiz toʻlash (sinov rejimi)</ButtonLink>
         </Card>

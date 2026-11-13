@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { PLATFORM_FEE, platformFee } from "./fees";
 import { formatUZS } from "./format";
 
 export type TermsInput = {
@@ -11,7 +12,6 @@ export type TermsInput = {
   deliveryDays: number;
   revisions: number;
   notes?: string;
-  feePercent: number;
 };
 
 export function buildTermsText(t: TermsInput): string {
@@ -26,7 +26,7 @@ export function buildTermsText(t: TermsInput): string {
     `7. Qabul qilish va pulni oʻtkazish: mijoz topshirilgan ishni qabul qilganda, ushlab turilgan pul platforma komissiyasi chegirilgan holda ijodkorga oʻtkaziladi.`,
     `8. Bekor qilish: toʻlovdan oldin har ikki tomon hech qanday xarajatsiz bekor qilishi mumkin. Toʻlovdan keyingi muammolar nizo jarayoni orqali hal qilinadi.`,
     `9. Nizolar: ish jarayonda yoki topshirilgan boʻlsa, har ikki tomon nizo ochishi mumkin. Administrator pulni ijodkorga oʻtkazish yoki mijozga qaytarishni hal qiladi.`,
-    `10. Platforma komissiyasi: pul oʻtkazilganda ijodkor oladigan summadan narxning ${t.feePercent}% miqdorida komissiya ushlab qolinadi.`,
+    `10. Platforma komissiyasi: narxning ${PLATFORM_FEE.percent}%, lekin kamida ${formatUZS(PLATFORM_FEE.minimumUZS)}. Komissiya ijodkor oladigan summadan ushlab qolinadi; mijoz faqat kelishilgan narxni toʻlaydi. Bu buyurtmada komissiya ${formatUZS(platformFee(t.price).fee)}, ijodkor oladigan summa ${formatUZS(platformFee(t.price).payout)}.`,
     `11. Videodan foydalanish: mijoz topshirilgan videodan buyurtma tavsifida koʻrsatilgan maqsadda foydalanishi mumkin.`,
   ].join("\n");
 }

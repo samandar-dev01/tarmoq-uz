@@ -59,7 +59,7 @@ npm run db:seed                      # demo accounts and providers
 Commit the generated `prisma/migrations` folder. On other machines and in production use:
 
 ```bash
-npm run db:setup    # = prisma migrate deploy + db:constraints + db:seed (seed refuses to run in production)
+npm run db:setup    # = prisma migrate deploy + db:constraints + db:seed (in production the seed creates categories only)
 ```
 
 > If you change `prisma/schema.prisma`, create a new migration with `npx prisma migrate dev --name <change>`.
@@ -103,7 +103,7 @@ Use any future expiry (for example `12/34`) and any 3-digit CVC. The checkout pa
 
 How money moves (all recorded in the `LedgerEntry` table):
 1. **Pay** → `ESCROW_HOLD`, payment status `HELD`.
-2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (`PLATFORM_FEE_PERCENT`, default 10%).
+2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (10%, minimum 15 000 UZS; the one constant in `src/lib/fees.ts`).
 3. **Dispute resolved as refund** → `HELD → REFUNDED`: `REFUND` entry.
 
 A unique database index guarantees an order can have only one successful payment. Card numbers are never stored, only brand and last 4 digits.
@@ -154,7 +154,6 @@ See `.env.example`. The important ones:
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
 | `AUTH_SECRET` | Signs session cookies. Required, 16+ random characters. **Change in production.** |
-| `PLATFORM_FEE_PERCENT` | Fee deducted from the provider payout on release (default 10) |
 | `STORAGE_DRIVER` | `local` (dev) or `s3` |
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
@@ -162,7 +161,7 @@ See `.env.example`. The important ones:
 ## 10. Production deployment
 
 1. **Provision** a managed PostgreSQL database and (recommended) an S3-compatible bucket (AWS S3, Cloudflare R2, MinIO, ...). Keep the bucket **private**; the app serves files through signed URLs.
-2. **Set environment variables** on your host: `DATABASE_URL`, a fresh `AUTH_SECRET`, `NODE_ENV=production`, `STORAGE_DRIVER=s3` plus the `S3_*` values, `APP_URL`, `PLATFORM_FEE_PERCENT`, `MAX_UPLOAD_MB`.
+2. **Set environment variables** on your host: `DATABASE_URL`, a fresh `AUTH_SECRET`, `NODE_ENV=production`, `STORAGE_DRIVER=s3` plus the `S3_*` values, `APP_URL`, `MAX_UPLOAD_MB`.
 3. **Build and run**, either:
    - Docker: `docker build -t creators . && docker run -p 3000:3000 --env-file .env creators` (the container applies migrations and DB constraints on start), or
    - Node host: `npm ci && npm run build && npm run db:deploy && npm run db:constraints && npm start`.
@@ -209,8 +208,9 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
 1. **Supabase:** create a project (region `eu-central-1`) and a private bucket `deliveries` (25 MB limit). In *Storage > S3 connection* create access keys. In *Connect* copy the **Session pooler** string (put your database password into it).
 2. **GitHub:** push this repo to your own repository (the `.env` file is git-ignored and never leaves your machine).
 3. **Render:** *New > Blueprint*, pick the repository. Fill the three prompted secrets: `DATABASE_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`. The container applies migrations and DB constraints on every start.
-4. **Seed demo data (once).** Never with the public default password. From your machine, with `DATABASE_URL` pointing at the production database:
-   `NODE_ENV=production ALLOW_SEED_IN_PRODUCTION=true SEED_DEMO_PASSWORD="<long random>" npm run db:seed`
+4. **Seed the categories (once).** From your machine, with `DATABASE_URL` pointing at the production database:
+   `npm run db:seed` on the live database creates the categories and nothing else. **Do not put demo accounts on the live site** (they are fake people). For a staging copy only: `NODE_ENV=production SEED_DEMO=true SEED_DEMO_PASSWORD="<long random>" npm run db:seed`.
+   To remove demo and test data that is already there: `npm run db:purge-demo` (a dry run that lists what would go), then `npm run db:purge-demo -- --confirm`.
 5. **Make yourself admin:** register on the site, then run in the Supabase SQL editor:
    `UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';`
 6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
+import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +16,14 @@ export const dynamic = "force-dynamic";
 const STEPS = [
   ["Toping", "Shahar, yoʻnalish va byudjet boʻyicha ijodkorlarni qidiring."],
   ["Kelishing", "Topshiriqni yuboring, narx va muddatni kelishing. Ikkala tomon shartlarni qabul qiladi."],
-  ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi."],
+  ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi.", "escrow"],
   ["Qabul qiling", "Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring."],
 ] as const;
 const STEP_COLORS = ["bg-cobalt text-white", "bg-saffron text-ink", "bg-turquoise text-ink", "bg-pomegranate text-white"];
 
 const PROMISES = [
   { title: "Shartlar yozma", text: "Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi.", tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },
-  { title: "Pul himoyada", text: "Toʻlov ish qabul qilinmaguncha ushlab turiladi, shundan keyingina ijodkorga oʻtadi.", tone: "turquoise", icon: "M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6zM9 12l2.2 2.2L15.5 10" },
+  { title: "Pul himoyada", escrow: true, text: "Toʻlov ish qabul qilinmaguncha ushlab turiladi, shundan keyingina ijodkorga oʻtadi.", tone: "turquoise", icon: "M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6zM9 12l2.2 2.2L15.5 10" },
   { title: "Haqiqiy sharhlar", text: "Sharhni faqat buyurtmasi yakunlangan mijoz qoldira oladi.", tone: "saffron", icon: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" },
 ] as const;
 
@@ -51,7 +52,7 @@ export default async function HomePage() {
           <div>
             <h1 className="animate-rise text-display">Ijodkorni shu yerdan toping.</h1>
             <p className="mt-5 max-w-xl animate-rise text-lg text-ink-soft [animation-delay:120ms]">
-              Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi.
+              Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi. <TestModeBadge />
             </p>
             <form action="/search" method="get" className="mt-8 grid animate-rise gap-3 [animation-delay:240ms] sm:grid-cols-[1fr_auto]">
               <div className="sm:col-span-2">
@@ -98,7 +99,7 @@ export default async function HomePage() {
           <EmptyState
             title="Hozircha ijodkorlar yoʻq"
             description="Tasdiqlangan ijodkorlar tez orada shu yerda paydo boʻladi."
-            action={<ButtonLink href="/register">Ijodkor boʻlib qoʻshilish</ButtonLink>}
+            action={<ButtonLink href="/register?role=provider">Ijodkor boʻlib qoʻshilish</ButtonLink>}
           />
         ) : (
           // Four across when the count divides by four, otherwise three, so the last row is never a lone card.
@@ -112,12 +113,12 @@ export default async function HomePage() {
         <Container pad="section">
           <h2>Buyurtma qanday ishlaydi</h2>
           <ol className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-            {STEPS.map(([title, text], i) => (
+            {STEPS.map(([title, text, promise], i) => (
               <li key={title} className="relative">
                 {i < STEPS.length - 1 && <span aria-hidden="true" className="absolute left-16 top-7 -right-6 hidden border-t-2 border-dashed border-ink/40 lg:block" />}
                 <span className={`relative grid h-14 w-14 place-items-center rounded-full border-2 border-ink font-display text-xl font-bold shadow-pop-sm ${STEP_COLORS[i]}`}>{i + 1}</span>
                 <h3 className="mt-4 text-xl">{title}</h3>
-                <p className="mt-1.5 text-ink-soft">{text}</p>
+                <p className="mt-1.5 text-ink-soft">{text} {promise === "escrow" && <TestModeBadge />}</p>
               </li>
             ))}
           </ol>
@@ -133,7 +134,7 @@ export default async function HomePage() {
                 <path d={x.icon} />
               </svg>
               <h3 className="mt-4 text-xl">{x.title}</h3>
-              <p className="mt-1.5 text-ink-soft">{x.text}</p>
+              <p className="mt-1.5 text-ink-soft">{x.text} {"escrow" in x && <TestModeBadge />}</p>
             </Card>
           ))}
         </ul>
@@ -145,7 +146,7 @@ export default async function HomePage() {
             <h2>Ijodkormisiz? Buyurtmalar sizni kutmoqda.</h2>
             <p className="mt-2 max-w-xl text-paper/80">Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.</p>
           </div>
-          <ButtonLink href="/register" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
+          <ButtonLink href="/register?role=provider" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
         </Card>
       </Container>
     </>

@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { buildTermsText, hashTerms } from "@/lib/agreements";
+import { formatUZS } from "@/lib/format";
 
 const base = {
   orderId: "order_1", version: 1, serviceTitle: "Instagram Reel", clientName: "Demo Client",
-  providerName: "Jasur Karimov", price: 300000, deliveryDays: 2, revisions: 1, feePercent: 10,
+  providerName: "Jasur Karimov", price: 300000, deliveryDays: 2, revisions: 1,
 };
 
 describe("agreements", () => {
@@ -13,6 +14,8 @@ describe("agreements", () => {
     expect(text).toContain("Instagram Reel");
     expect(text).toContain("2 kun");
     expect(text).toContain("10%");
+    expect(text).toContain(formatUZS(30000)); // the fee on 300 000
+    expect(text).toContain(formatUZS(270000)); // the payout
     expect(text).toContain("Jasur Karimov");
   });
 
