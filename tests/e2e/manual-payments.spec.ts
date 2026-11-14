@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
-import { apiAs, registerApi, jasurServiceId, goodBrief, login, settled } from "./helpers";
+import { apiAs, registerApi, jasurServiceId, goodBrief, login, settled, tinyMp4 } from "./helpers";
 
 /**
  * Manual card-transfer mode (real money moved by hand). Runs only against a server started with
@@ -22,7 +22,7 @@ const CLIENT_PASSWORD = "Passw0rd!x"; // what registerApi() uses
 // The smallest valid PNG (one pixel).
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 const receipt = (name = "chek.png") => ({ name, mimeType: "image/png", buffer: PNG });
-const video = { name: "reel.mp4", mimeType: "video/mp4", buffer: Buffer.from("not a real video, but a valid upload for the test") };
+const video = { name: "reel.mp4", mimeType: "video/mp4", buffer: tinyMp4 };
 
 /** A fresh client and an order that is waiting for payment (agreed at 300 000 soʻm, so the creator's share is 270 000). */
 async function orderAwaitingPayment() {

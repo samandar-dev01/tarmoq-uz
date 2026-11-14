@@ -6,10 +6,14 @@ export type SessionPayload = { sub: string; role: AppRole; name: string };
 
 const ROLES: AppRole[] = ["CLIENT", "PROVIDER", "ADMIN"];
 
+// SECURITY FIX (vibeguard #11): 32+ characters (`openssl rand -base64 32` gives 44), and never the placeholder
+// text from .env.example, which used to pass the old 16-character check.
+const PLACEHOLDER = /change[-_ ]?me/i;
+
 function key() {
   const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("AUTH_SECRET must be set to a random string of 16+ characters");
+  if (!secret || secret.length < 32 || PLACEHOLDER.test(secret)) {
+    throw new Error("AUTH_SECRET must be a random string of 32+ characters, not the placeholder (openssl rand -base64 32)");
   }
   return new TextEncoder().encode(secret);
 }

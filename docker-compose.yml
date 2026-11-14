@@ -1,13 +1,16 @@
+# Local development database only. Never run this on a server.
+# SECURITY FIX (vibeguard #13): the port is bound to this machine alone (it used to be open to the whole network),
+# and the password can be changed with POSTGRES_PASSWORD (then change DATABASE_URL in .env to match).
 services:
   db:
     image: postgres:15
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: marketplace
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 volumes:

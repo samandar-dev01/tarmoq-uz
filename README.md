@@ -107,7 +107,7 @@ Set `PAYMENT_PROVIDER=manual` plus `MANUAL_PAY_CARD`, `MANUAL_PAY_HOLDER` (and o
 
 1. Checkout shows the owner's card, the exact amount and a short order code to put in the transfer comment. The client sends the money, attaches the bank receipt (a JPG, PNG, WebP or PDF up to 5 MB, checked by its real contents; the button stays disabled without one) and presses **Men toʻladim** (I paid). The payment becomes *awaiting confirmation* and the admin gets a Telegram alert if Telegram is set up. Receipts are stored like delivery files and only admins can open them (images in the page, PDFs as a download).
 2. An admin checks the bank app, then confirms or rejects it under **Admin, Toʻlovlar**. Confirming holds the payment and starts the order (the same `markPaymentHeld` code the sandbox uses). Rejecting lets the client try again. An order cannot be cancelled while a transfer is awaiting confirmation.
-3. When the client approves the video, the creator's share (after the platform fee) appears under **Admin, Ijodkorlarga toʻlov** as *pending*. The admin sends the money to the creator's saved card by hand and presses **Oʻtkazdim**. Creators save their payout card on their dashboard; it is stored encrypted (`PAYOUT_ENCRYPTION_KEY`, or a key derived from `AUTH_SECRET`).
+3. When the client approves the video, the creator's share (after the platform fee) appears under **Admin, Ijodkorlarga toʻlov** as *pending*. The admin sends the money to the creator's saved card by hand and presses **Oʻtkazdim**. Creators save their payout card on their dashboard; it is stored encrypted under `PAYOUT_ENCRYPTION_KEY` (required in production before the first card is saved; in development a key is derived from `AUTH_SECRET`).
 4. A dispute that ends in a refund only marks the payment refunded in the database: the admin must also send the money back to the client by hand.
 
 Confirm a transfer only after you see the money in your own bank app, never from a screenshot alone.
@@ -170,7 +170,8 @@ See `.env.example`. The important ones:
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
-| `AUTH_SECRET` | Signs session cookies. Required, 16+ random characters. **Change in production.** |
+| `AUTH_SECRET` | Signs session cookies. Required, 32+ random characters (`openssl rand -base64 32`); the placeholder from `.env.example` is refused. **Change in production.** |
+| `PAYOUT_ENCRYPTION_KEY` | Encrypts creators' payout card numbers: 32 random bytes, base64. **Required in production** before a card can be saved. Set it once and keep it. |
 | `STORAGE_DRIVER` | `local` (dev) or `s3` |
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
@@ -184,7 +185,7 @@ See `.env.example`. The important ones:
    - Docker: `docker build -t creators . && docker run -p 3000:3000 --env-file .env creators` (the container applies migrations and DB constraints on start), or
    - Node host: `npm ci && npm run build && npm run db:deploy && npm run db:constraints && npm start`.
 4. **Create the first admin** (do not run the demo seed in production). Register normally, then in the database run: `UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';`
-5. **Put it behind HTTPS** (a reverse proxy such as Caddy or nginx, or your platform's TLS). Cookies are marked `secure` in production. Make sure the proxy forwards `X-Forwarded-For` (used for the agreement acceptance IP and rate limiting).
+5. **Put it behind HTTPS** (a reverse proxy such as Caddy or nginx, or your platform's TLS). Cookies are marked `secure` in production. The visitor's address (used for rate limiting and the agreement acceptance IP) is read from Cloudflare's `CF-Connecting-IP` header, else from the **last** `X-Forwarded-For` entry. Never from the first entry, which a visitor can write themselves. If you host somewhere without Cloudflare in front, remove the `CF-Connecting-IP` line in `clientIp()` (`src/lib/http.ts`).
 6. **Back up** the database regularly and enable versioning or lifecycle rules on the bucket.
 7. **Set a request body limit** on the proxy at least as large as `MAX_UPLOAD_MB`.
 
@@ -194,6 +195,10 @@ The sandbox is real code with a real state machine, but it does not talk to a ba
 - Implement a gateway adapter (for example Payme, Click or Stripe) that creates the payment, confirms it from the **gateway's signed webhook** (not from the browser), and calls the same hold/release/refund functions in `src/lib/payments/escrow.ts` (`markPaymentHeld`, `releaseEscrow`, `refundEscrow`).
 - Check the legal and tax requirements for holding client funds and paying providers in Uzbekistan; many gateways do this through their own marketplace or split-payment products.
 - Run the payment tests (`tests/e2e/payments.spec.ts`) against the new adapter.
+
+### Database lock-down (Supabase)
+
+Supabase also publishes every table in the `public` schema over its public Data API, to anyone holding the project's public (anon) key. This app never uses that API: it connects as `postgres`, which owns the tables and bypasses row level security. So `prisma/constraints.sql` (it runs on every start) turns row level security on for every table, with no policies, and removes every right from the `anon` and `authenticated` roles. Check it any time with Supabase's Security Advisor (it should report no "RLS Disabled in Public").
 
 ## 11. Known limitations (be aware before launch)
 

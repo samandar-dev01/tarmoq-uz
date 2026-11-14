@@ -9,20 +9,41 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("rate limiter (P0-2)", () => {
-  it("blocks an email after 5 failed logins, for the rest of the 15 minutes", () => {
+  it("blocks one address for one email after 5 failed logins, for the rest of the 15 minutes", () => {
+    const { limit, windowMs } = LIMITS.loginPerPair;
+    const key = "login:pair:a@b.c|1.2.3.4";
+    for (let i = 0; i < 4; i++) recordFailure(key, windowMs);
+    expect(isLimited(key, limit)).toBe(false);
+    recordFailure(key, windowMs);
+    expect(isLimited(key, limit)).toBe(true);
+    expect(retryAfterSeconds(key)).toBe(900);
+
+    vi.advanceTimersByTime(10 * 60 * 1000);
+    expect(isLimited(key, limit)).toBe(true);
+    expect(retryAfterSeconds(key)).toBe(300);
+
+    vi.advanceTimersByTime(5 * 60 * 1000 + 1);
+    expect(isLimited(key, limit)).toBe(false);
+  });
+
+  // SECURITY FIX (vibeguard #6): a stranger's wrong guesses must not lock the real owner out.
+  it("a stranger's 5 failures lock out only the stranger's address, not the owner's", () => {
+    const { limit, windowMs } = LIMITS.loginPerPair;
+    for (let i = 0; i < 5; i++) recordFailure("login:pair:owner@b.c|9.9.9.9", windowMs); // the stranger
+    expect(isLimited("login:pair:owner@b.c|9.9.9.9", limit)).toBe(true);
+    expect(isLimited("login:pair:owner@b.c|5.5.5.5", limit)).toBe(false); // the owner, elsewhere
+    // ...and the email-wide counter stays far below its own cap, so the owner is not blocked there either.
+    for (let i = 0; i < 5; i++) recordFailure("login:email:owner@b.c", LIMITS.loginPerEmail.windowMs);
+    expect(isLimited("login:email:owner@b.c", LIMITS.loginPerEmail.limit)).toBe(false);
+  });
+
+  it("still stops guessing spread over many addresses: 30 failures for one email, from anywhere", () => {
     const { limit, windowMs } = LIMITS.loginPerEmail;
-    for (let i = 0; i < 4; i++) recordFailure("login:email:a@b.c", windowMs);
+    expect(limit).toBe(30);
+    for (let i = 0; i < 29; i++) recordFailure("login:email:a@b.c", windowMs);
     expect(isLimited("login:email:a@b.c", limit)).toBe(false);
     recordFailure("login:email:a@b.c", windowMs);
     expect(isLimited("login:email:a@b.c", limit)).toBe(true);
-    expect(retryAfterSeconds("login:email:a@b.c")).toBe(900);
-
-    vi.advanceTimersByTime(10 * 60 * 1000);
-    expect(isLimited("login:email:a@b.c", limit)).toBe(true);
-    expect(retryAfterSeconds("login:email:a@b.c")).toBe(300);
-
-    vi.advanceTimersByTime(5 * 60 * 1000 + 1);
-    expect(isLimited("login:email:a@b.c", limit)).toBe(false);
   });
 
   it("keeps keys apart and can be reset", () => {

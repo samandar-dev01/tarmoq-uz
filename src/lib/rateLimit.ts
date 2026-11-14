@@ -57,7 +57,12 @@ export function resetLimit(key: string) {
 
 /** The limits themselves, in one place (P0-2). */
 export const LIMITS = {
-  loginPerEmail: { limit: 5, windowMs: 15 * 60 * 1000 }, // failed attempts
+  // SECURITY FIX (vibeguard #6): failures are counted per email AND address together. Counted per email alone, a
+  // stranger's five wrong guesses locked the real owner out of their own account (the admin's too). Now a stranger
+  // only locks out their own address. The email-wide cap is much higher, so spreading guesses over many
+  // addresses is still stopped without letting five requests silence an account.
+  loginPerPair: { limit: 5, windowMs: 15 * 60 * 1000 }, // failed attempts from one address for one email
+  loginPerEmail: { limit: 30, windowMs: 15 * 60 * 1000 }, // failed attempts for one email from anywhere
   loginPerIp: { limit: 20, windowMs: 15 * 60 * 1000 }, // failed attempts
   registerPerIp: { limit: 5, windowMs: 60 * 60 * 1000 },
   otpPerPhone: { limit: 3, windowMs: 10 * 60 * 1000 },
