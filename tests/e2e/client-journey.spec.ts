@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { login, goodBrief, settled } from "./helpers";
+import { login, goodBrief, settled, tinyMp4 } from "./helpers";
 
 // The required end-to-end scenario, driven through the real UI (which is in Uzbek).
 test("mijoz Andijondagi mobilografni topadi, buyurtma beradi, kelishadi, toʻlaydi (sinov), videoni oladi, qabul qiladi va sharh qoldiradi", async ({ page, browser }) => {
@@ -69,7 +69,7 @@ test("mijoz Andijondagi mobilografni topadi, buyurtma beradi, kelishadi, toʻlay
   // 8. Provider uploads the video
   await provider.reload();
   await settled(provider);
-  await provider.getByLabel("Video fayl").setInputFiles({ name: "reel.mp4", mimeType: "video/mp4", buffer: Buffer.from("not a real video, but a valid upload for the test") });
+  await provider.getByLabel("Video fayl").setInputFiles({ name: "reel.mp4", mimeType: "video/mp4", buffer: tinyMp4 });
   await provider.getByRole("button", { name: "Ishni topshirish" }).click();
   await expect(provider.getByTestId("order-status")).toHaveText("Topshirildi");
 

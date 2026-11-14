@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { readFormLimited } from "@/lib/body";
 import { manualPaymentsOn } from "@/lib/payments/mode";
 import { orderReference } from "@/lib/payments/manualPure";
 import { checkReceipt, receiptTooBigMessage, RECEIPT_MAX_BYTES } from "@/lib/payments/receiptPure";
@@ -19,13 +20,10 @@ export const POST = handle(async (req) => {
   const user = await requireRole("CLIENT");
   if (!rateLimit(`manual-pay:${user.id}`, 10, 15 * 60 * 1000)) throw new HttpError(429, "Juda koʻp urinish. Bir necha daqiqa kuting.");
 
-  // Refuse an obviously huge body before reading it into memory (the form adds a little to the file's size).
-  if (Number(req.headers.get("content-length") ?? 0) > RECEIPT_MAX_BYTES + 100_000) {
-    throw new HttpError(413, receiptTooBigMessage);
-  }
-  const form = await req.formData().catch(() => {
-    throw new HttpError(400, "Soʻrov notoʻgʻri shaklda yuborildi.");
-  });
+  // SECURITY FIX (vibeguard #4): the body is counted while it is read. The old check trusted the Content-Length
+  // header, which a chunked upload simply leaves out, and then loaded everything into memory. The form adds a
+  // little to the file's own size.
+  const form = await readFormLimited(req, RECEIPT_MAX_BYTES + 100_000, receiptTooBigMessage);
   const orderId = String(form.get("orderId") ?? "");
   if (!orderId) throw new HttpError(400, "Buyurtma topilmadi.");
   const file = form.get("receipt");

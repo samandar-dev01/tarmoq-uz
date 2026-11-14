@@ -45,4 +45,13 @@ export async function jasurServiceId(ctx: APIRequestContext): Promise<string> {
   return m[1]!;
 }
 
+/**
+ * A tiny file the server accepts as an MP4: it checks the first bytes (an `ftyp` box), not just the name, so a text file
+ * called reel.mp4 is refused. The rest is filler: it will not play, but the upload, storage and download paths all run.
+ */
+export const tinyMp4 = Buffer.concat([
+  Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32, 0x00, 0x00, 0x00, 0x00, 0x6d, 0x70, 0x34, 0x32, 0x69, 0x73, 0x6f, 0x6d]),
+  Buffer.from("filler bytes, not a playable video"),
+]);
+
 export const goodBrief = "Keyingi hafta ochiladigan kafem uchun subtitrli, 45 soniyalik vertikal reel kerak.";

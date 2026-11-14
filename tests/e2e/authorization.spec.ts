@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
-import { apiAs, registerApi, jasurServiceId, goodBrief } from "./helpers";
+import { apiAs, registerApi, jasurServiceId, goodBrief, tinyMp4 } from "./helpers";
 
 /**
  * P0-5: one check per authed route. User A (a stranger: another client, and another provider) must get
@@ -10,7 +10,7 @@ import { apiAs, registerApi, jasurServiceId, goodBrief } from "./helpers";
  * would succeed. A stranger being refused there is what proves the ownership check, not the state check.
  */
 const DENIED = [403, 404];
-const tinyVideo = { name: "clip.mp4", mimeType: "video/mp4", buffer: Buffer.from("not really a video, the server checks the extension") };
+const tinyVideo = { name: "clip.mp4", mimeType: "video/mp4", buffer: tinyMp4 };
 
 test("strangers are refused on every order, conversation, delivery, payment and review route", async () => {
   const owner = await registerApi("CLIENT");

@@ -10,6 +10,7 @@ import { notifyProfileSubmitted } from "@/lib/notify";
 const httpsUrl = z
   .string()
   .trim()
+  .max(2048, "Havola juda uzun")
   .url("Havolani toʻgʻri kiriting")
   .refine((u) => u.startsWith("https://"), "Havola https:// bilan boshlanishi kerak");
 const optionalUrl = z.preprocess((v) => (v === "" || v == null ? undefined : v), httpsUrl.optional());

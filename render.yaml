@@ -16,6 +16,11 @@ services:
       # Signs session cookies. Render generates a long random value; nobody ever sees it.
       - key: AUTH_SECRET
         generateValue: true
+      # Encrypts creators' payout card numbers: 32 random bytes, base64 (openssl rand -base64 32). Required before the first
+      # card is saved on the live site (without it the app refuses to store one). Set it ONCE and keep it: changing it later
+      # makes saved cards unreadable. It is deliberately separate from AUTH_SECRET.
+      - key: PAYOUT_ENCRYPTION_KEY
+        sync: false
       # Supabase "Session pooler" connection string (IPv4, port 5432), with the database password.
       - key: DATABASE_URL
         sync: false

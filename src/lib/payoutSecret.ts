@@ -11,12 +11,18 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 
 const VERSION = "v1";
 
-function key(): Buffer {
+function key(forNewCard = false): Buffer {
   const explicit = process.env.PAYOUT_ENCRYPTION_KEY?.trim();
   if (explicit) {
     const k = Buffer.from(explicit, "base64");
     if (k.length !== 32) throw new Error("PAYOUT_ENCRYPTION_KEY must be 32 bytes, base64 encoded.");
     return k;
+  }
+  // SECURITY FIX (vibeguard #11): on the live site a NEW card is only stored under its own key. Derived from AUTH_SECRET,
+  // one leaked secret would both forge sign-ins and decrypt every card. Reading is still allowed, so a card saved
+  // under the derived key before this check existed stays readable.
+  if (forNewCard && process.env.NODE_ENV === "production") {
+    throw new Error("Set PAYOUT_ENCRYPTION_KEY (openssl rand -base64 32) before saving payout cards in production.");
   }
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("Set PAYOUT_ENCRYPTION_KEY (or AUTH_SECRET) to store payout cards.");
@@ -25,7 +31,7 @@ function key(): Buffer {
 
 export function encryptCard(digits: string): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key(), iv);
+  const cipher = createCipheriv("aes-256-gcm", key(true), iv);
   const body = Buffer.concat([cipher.update(digits, "utf8"), cipher.final()]);
   return [VERSION, iv.toString("base64"), cipher.getAuthTag().toString("base64"), body.toString("base64")].join(".");
 }

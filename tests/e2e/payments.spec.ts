@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { apiAs, registerApi, jasurServiceId, goodBrief } from "./helpers";
+import { apiAs, registerApi, jasurServiceId, goodBrief, tinyMp4 } from "./helpers";
 
 // A page may say "payments are a test" only while they are. With real money moving (manual mode) it must not.
 test("the footer admits test mode only while payments are the sandbox", async ({ page }) => {
@@ -56,7 +56,12 @@ test("sandbox payments cannot be faked", async () => {
   // now the provider may deliver, but a non-video is rejected
   const bad = await jasur.post(`/api/orders/${orderId}/delivery`, { multipart: { file: { name: "virus.exe", mimeType: "application/octet-stream", buffer: Buffer.from("x") } } });
   expect(bad.status()).toBe(400);
-  const good = await jasur.post(`/api/orders/${orderId}/delivery`, { multipart: { file: { name: "reel.mp4", mimeType: "video/mp4", buffer: Buffer.from("fake video bytes") } } });
+  // SECURITY (vibeguard #10): a text file or a WebM renamed .mp4 is refused: the first bytes must agree with the name
+  const renamed = await jasur.post(`/api/orders/${orderId}/delivery`, { multipart: { file: { name: "notes.mp4", mimeType: "video/mp4", buffer: Buffer.from("just some text, not a video") } } });
+  expect(renamed.status()).toBe(400);
+  const htmlAsVideo = await jasur.post(`/api/orders/${orderId}/delivery`, { multipart: { file: { name: "page.mp4", mimeType: "video/mp4", buffer: Buffer.from("<html><script>alert(1)</script></html>") } } });
+  expect(htmlAsVideo.status()).toBe(400);
+  const good = await jasur.post(`/api/orders/${orderId}/delivery`, { multipart: { file: { name: "reel.mp4", mimeType: "video/mp4", buffer: tinyMp4 } } });
   expect(good.status()).toBe(201);
 
   // the client cannot upload deliveries, and the provider cannot approve their own work

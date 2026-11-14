@@ -13,6 +13,10 @@ function s3() {
       endpoint: S3_ENDPOINT || undefined,
       forcePathStyle: !!S3_ENDPOINT,
       credentials: { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY },
+      // Newer SDK versions add a CRC32 checksum to every request by default, which some S3-compatible stores
+      // refuse. Ask for one only when the operation requires it, as older versions did.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     });
   }
   return client;
