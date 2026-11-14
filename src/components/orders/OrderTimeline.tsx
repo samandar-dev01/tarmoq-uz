@@ -18,11 +18,11 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
         return (
           <li key={label} aria-current={current ? "step" : undefined} className="relative flex flex-col items-center gap-2 px-0.5">
             {i > 0 && (
-              <span aria-hidden="true" className={`absolute right-1/2 top-4 h-0 w-full -translate-y-px border-t-2 ${complete ? "border-ink" : "border-dashed border-ink/30"}`} />
+              <span aria-hidden="true" className={`absolute right-1/2 top-4 h-0 w-full -translate-y-px border-t ${complete ? "border-cobalt" : "border-dashed border-line-strong"}`} />
             )}
             <span
-              className={`relative z-10 grid h-8 w-8 place-items-center rounded-full border-2 text-xs font-bold ${
-                complete ? "border-ink bg-cobalt text-white" : current ? "border-ink bg-saffron text-ink" : "border-ink/30 bg-white text-ink-mute"
+              className={`relative z-10 grid h-8 w-8 place-items-center rounded-full border text-xs font-bold ${
+                complete ? "border-transparent bg-cobalt text-white" : current ? "border-transparent bg-saffron text-night" : "border-line-strong bg-surface text-ink-mute"
               }`}
             >
               {complete ? (

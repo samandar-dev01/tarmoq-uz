@@ -7,8 +7,8 @@ export function Stars({ value, count, size = 16, className = "" }: { value: numb
     <span className={`inline-flex items-center gap-1 ${className}`}>
       <span role="img" aria-label={`Reyting: ${value.toFixed(1)} / 5`} className="inline-flex gap-0.5">
         {[0, 1, 2, 3, 4].map((i) => (
-          <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={i < filled ? "text-saffron" : "text-paper-deep"}>
-            <path d={STAR} fill="currentColor" stroke="rgb(var(--c-ink))" strokeWidth="1.8" strokeLinejoin="round" />
+          <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={i < filled ? "text-saffron" : "text-ink-mute/30"}>
+            <path d={STAR} fill="currentColor" stroke="none" />
           </svg>
         ))}
       </span>

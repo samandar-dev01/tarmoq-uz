@@ -70,8 +70,8 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
               role="radio"
               aria-checked={selected}
               onClick={() => setRole(r.value)}
-              className={`rounded-card border-2 border-ink p-4 text-left transition-[transform,box-shadow,background-color] duration-150 ${
-                selected ? "-translate-x-px -translate-y-px bg-cobalt text-white shadow-pop-sm" : "bg-white hover:bg-paper-deep"
+              className={`rounded-card border p-4 text-left transition-[transform,box-shadow,background-color,border-color] duration-200 ease-snap ${
+                selected ? "border-transparent bg-cobalt text-white shadow-lift-sm" : "border-line-strong bg-surface hover:bg-paper-deep"
               }`}
             >
               <span className="block font-bold">{r.title}</span>

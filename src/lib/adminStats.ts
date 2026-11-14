@@ -6,7 +6,8 @@ export async function getAdminStats() {
     prisma.providerProfile.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.payment.aggregate({ where: { status: "HELD" }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { status: "RELEASED" }, _sum: { amount: true } }),
+    // Only money that has really gone out: sandbox payments (no payout record) and payouts an admin marked paid.
+    prisma.payment.aggregate({ where: { status: "RELEASED", OR: [{ payout: { is: null } }, { payout: { status: "PAID" } }] }, _sum: { amount: true } }),
     prisma.ledgerEntry.aggregate({ where: { type: "PLATFORM_FEE" }, _sum: { amount: true } }),
     prisma.review.count(),
   ]);

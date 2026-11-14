@@ -87,7 +87,7 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
   };
 
   return (
-    <div className="flex h-[70vh] flex-col overflow-hidden rounded-card border-2 border-ink bg-white">
+    <div className="flex h-[70vh] flex-col overflow-hidden rounded-card border border-line bg-surface">
       <div className="flex-1 space-y-3 overflow-y-auto bg-paper p-4" aria-live="polite">
         {messages.length === 0 && <p className="py-10 text-center text-ink-soft">Hali xabarlar yoʻq. Salom yozing!</p>}
         {messages.map((m) => {
@@ -95,8 +95,8 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
           return (
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl border-2 border-ink px-4 py-2.5 ${
-                  mine ? "rounded-br-md bg-cobalt text-white" : "rounded-bl-md bg-white text-ink"
+                className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl border px-4 py-2.5 ${
+                  mine ? "rounded-br-md border-white/10 bg-cobalt text-white" : "rounded-bl-md border-line-strong bg-paper-deep text-ink"
                 }`}
               >
                 {m.body}
@@ -107,9 +107,9 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
         })}
         <div ref={bottom} />
       </div>
-      {pollError && <div className="border-t-2 border-ink px-4 py-2"><Alert variant="info">Aloqa muammosi. Qayta uriniladi…</Alert></div>}
-      {error && <div className="border-t-2 border-ink px-4 py-2"><Alert variant="error">{error}</Alert></div>}
-      <form onSubmit={send} className="flex items-end gap-3 border-t-2 border-ink bg-white p-3">
+      {pollError && <div className="border-t border-line px-4 py-2"><Alert variant="info">Aloqa muammosi. Qayta uriniladi…</Alert></div>}
+      {error && <div className="border-t border-line px-4 py-2"><Alert variant="error">{error}</Alert></div>}
+      <form onSubmit={send} className="flex items-end gap-3 border-t border-line bg-surface p-3">
         <div className="flex-1">
           <Field
             as="textarea"

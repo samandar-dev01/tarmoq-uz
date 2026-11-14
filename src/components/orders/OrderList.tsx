@@ -8,7 +8,7 @@ export type OrderRow = { id: string; status: OrderStatus; title: string; other: 
 
 export function OrderList({ rows }: { rows: OrderRow[] }) {
   return (
-    <ul className={cardClasses({ padding: "none", className: "divide-y-2 divide-ink/10 overflow-hidden" })}>
+    <ul className={cardClasses({ padding: "none", className: "divide-y divide-line overflow-hidden" })}>
       {rows.map((o) => (
         <li key={o.id}>
           <Link href={`/orders/${o.id}`} className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-saffron-tint sm:flex-row sm:items-center sm:justify-between">

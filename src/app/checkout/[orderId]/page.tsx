@@ -6,10 +6,14 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Alert } from "@/components/ui/Alert";
 import { TestModeBadge } from "@/components/ui/TestModeBadge";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
+import { ManualTransfer } from "@/components/checkout/ManualTransfer";
+import { manualPaymentsOn, paymentsAreTest } from "@/lib/payments/mode";
+import { manualInstructions, orderReference } from "@/lib/payments/manualPure";
 
-export const metadata = { title: "Toʻlov (sinov rejimi)" };
+export const generateMetadata = () => ({ title: paymentsAreTest() ? "Toʻlov (sinov rejimi)" : "Toʻlov" });
 
 export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
   const user = await requirePageRole("CLIENT");
@@ -32,6 +36,10 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
     );
   }
 
+  const manual = manualPaymentsOn();
+  const instructions = manual ? manualInstructions() : null;
+  const waiting = manual && (await prisma.payment.count({ where: { orderId: order.id, status: "AWAITING_CONFIRMATION" } })) > 0;
+
   return (
     <Container size="sm">
       <h1>Toʻlov</h1>
@@ -41,7 +49,23 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
         <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight">{order.agreedPrice ? formatUZS(order.agreedPrice) : "—"}</p>
         <p className="mt-1 text-sm text-ink-soft">Siz tayyor videoni qabul qilmaguncha ushlab turiladi. <TestModeBadge /></p>
       </Card>
-      <div className="mt-6"><CheckoutForm orderId={order.id} /></div>
+      <div className="mt-6">
+        {!manual ? (
+          <CheckoutForm orderId={order.id} />
+        ) : instructions && order.agreedPrice ? (
+          <ManualTransfer
+            orderId={order.id}
+            amount={order.agreedPrice}
+            reference={orderReference(order.id)}
+            card={instructions.card}
+            holder={instructions.holder}
+            bank={instructions.bank}
+            waiting={waiting}
+          />
+        ) : (
+          <Alert variant="error">Toʻlov rekvizitlari hali sozlanmagan. Administrator bilan bogʻlaning.</Alert>
+        )}
+      </div>
     </Container>
   );
 }

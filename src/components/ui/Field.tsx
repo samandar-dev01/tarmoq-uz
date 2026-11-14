@@ -9,6 +9,8 @@ type Shared = {
   hideLabel?: boolean;
   /** A taller control, for the one field a page is built around. */
   big?: boolean;
+  /** No border or fill of its own, for a control that sits inside a bar which draws them (the hero search). The bar shows focus. */
+  bare?: boolean;
 };
 type InputProps = Shared & { as?: "input" } & InputHTMLAttributes<HTMLInputElement>;
 type TextAreaProps = Shared & { as: "textarea" } & TextareaHTMLAttributes<HTMLTextAreaElement>;
@@ -17,15 +19,17 @@ export type FieldProps = InputProps | TextAreaProps | SelectProps;
 
 /** A labelled control with its hint and error tied to it. `as` picks an input (default), a textarea or a select. */
 export function Field(props: FieldProps) {
-  const { label, error, hint, hideLabel, big, as = "input", id, className = "", ...rest } = props;
+  const { label, error, hint, hideLabel, big, bare, as = "input", id, className = "", ...rest } = props;
   const height = big ? "h-14" : "h-12";
   const autoId = useId();
   const fieldId = id ?? (rest as { name?: string }).name ?? autoId;
   const describedBy = [error ? `${fieldId}-error` : null, hint ? `${fieldId}-hint` : null].filter(Boolean).join(" ") || undefined;
 
-  const control = `block w-full rounded-ctl border-2 bg-white px-4 text-base text-ink transition-[border-color,box-shadow] placeholder:text-ink-mute focus:outline-none focus-visible:border-cobalt focus-visible:shadow-[3px_3px_0_0_rgb(var(--c-cobalt))] ${
-    error ? "border-pomegranate" : "border-ink"
-  } ${className}`;
+  const control = bare
+    ? `block w-full rounded-ctl bg-transparent px-4 text-base text-ink transition-colors duration-150 ease-snap placeholder:text-ink-mute hover:bg-ink/5 focus:outline-none focus-visible:bg-ink/10 ${className}`
+    : `block w-full rounded-ctl border bg-surface px-4 text-base text-ink transition-[border-color,box-shadow,background-color] duration-150 ease-snap placeholder:text-ink-mute focus:outline-none focus-visible:border-cobalt focus-visible:shadow-[0_0_0_3px_rgb(var(--c-cobalt)/0.35)] ${
+        error ? "border-pomegranate" : "border-line-strong hover:border-ink-mute/50"
+      } ${className}`;
   const aria = { id: fieldId, "aria-invalid": !!error, "aria-describedby": describedBy };
 
   return (

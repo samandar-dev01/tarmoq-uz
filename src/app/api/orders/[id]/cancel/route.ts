@@ -18,6 +18,10 @@ export const POST = handle(async (req, { params }: Ctx) => {
   assertTransition(order.status, "CANCELLED", actor);
 
   await prisma.$transaction(async (tx) => {
+    // A manual transfer an admin has not checked yet may already be real money. Cancelling now would strand it.
+    if ((await tx.payment.count({ where: { orderId: order.id, status: "AWAITING_CONFIRMATION" } })) > 0) {
+      throw new HttpError(409, "Toʻlov tekshirilmoqda. Hozir buyurtmani bekor qilib boʻlmaydi.");
+    }
     const moved = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: "CANCELLED" } });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     await tx.payment.updateMany({ where: { orderId: order.id, status: "REQUIRES_PAYMENT" }, data: { status: "FAILED", failureCode: "order_cancelled" } });

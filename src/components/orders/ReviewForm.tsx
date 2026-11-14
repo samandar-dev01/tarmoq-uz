@@ -34,8 +34,8 @@ export function ReviewForm({ orderId }: { orderId: string }) {
               onMouseEnter={() => setHover(n)}
               className="rounded-ctl p-1 transition-transform duration-150 hover:scale-110"
             >
-              <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true" className={`${n <= shown ? "text-saffron" : "text-white"} ${rating === n ? "animate-star-pop" : ""}`}>
-                <path d={STAR} fill="currentColor" stroke="rgb(var(--c-ink))" strokeWidth="1.6" strokeLinejoin="round" />
+              <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true" className={`${n <= shown ? "text-saffron" : "text-ink-mute/30"} ${rating === n ? "animate-star-pop" : ""}`}>
+                <path d={STAR} fill="currentColor" stroke="none" />
               </svg>
             </button>
           ))}

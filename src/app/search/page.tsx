@@ -25,6 +25,16 @@ export default async function SearchPage({ searchParams }: Props) {
     if (page > 1) qs.set("page", String(page));
     return `/search?${qs.toString()}`;
   };
+  // A pill changes only the category: every other filter stays, and the page number starts over.
+  const categoryHref = (slug?: string) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(filters)) {
+      if (v !== undefined && v !== "" && k !== "page" && k !== "category") qs.set(k, String(v));
+    }
+    if (slug) qs.set("category", slug);
+    const query = qs.toString();
+    return query ? `/search?${query}` : "/search";
+  };
 
   return (
     <Container>
@@ -33,6 +43,13 @@ export default async function SearchPage({ searchParams }: Props) {
       <div className="mt-6">
         <FilterPanel filters={filters} categories={categories} />
       </div>
+      {/* Named like the first pill, not like the select above it: two controls named "Yoʻnalish" cannot be told apart. */}
+      <nav aria-label="Barcha yoʻnalishlar" className="mt-5 flex flex-wrap gap-2">
+        <ButtonLink href={categoryHref()} variant="chip" aria-current={filters.category ? undefined : "true"}>Barcha yoʻnalishlar</ButtonLink>
+        {categories.map((c) => (
+          <ButtonLink key={c.slug} href={categoryHref(c.slug)} variant="chip" aria-current={filters.category === c.slug ? "true" : undefined}>{c.name}</ButtonLink>
+        ))}
+      </nav>
 
       <p className="mt-8 font-semibold" aria-live="polite">
         {result.total} ta ijodkor topildi

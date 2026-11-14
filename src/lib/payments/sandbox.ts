@@ -1,10 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { HttpError } from "../errors";
-import { assertTransition } from "../orderMachine";
 import { logAudit } from "../audit";
-import { platformFee } from "../fees";
 import { evaluateTestCard, type CardInput } from "./pure";
+import { markPaymentHeld } from "./escrow";
 
 /** Creates (or reuses) the payment attempt for an order. The amount always comes from the order, never from the client. */
 export async function getOrCreateIntent(orderId: string, clientId: string) {
@@ -47,17 +46,10 @@ export async function confirmPayment(args: { orderId: string; paymentId: string;
         return { ok: false as const, code: evaluated.failureCode, message: evaluated.message };
       }
 
-      const claimed = await tx.payment.updateMany({
-        where: { id: paymentId, status: "REQUIRES_PAYMENT" },
-        data: { status: "HELD", cardBrand: evaluated.brand, cardLast4: evaluated.last4 },
+      await markPaymentHeld(tx, {
+        orderId, paymentId, from: "REQUIRES_PAYMENT",
+        data: { cardBrand: evaluated.brand, cardLast4: evaluated.last4 },
       });
-      if (claimed.count !== 1) throw new HttpError(409, "Bu toʻlov allaqachon bajarilgan.");
-
-      assertTransition("AWAITING_PAYMENT", "IN_PROGRESS", "system");
-      const moved = await tx.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT" }, data: { status: "IN_PROGRESS" } });
-      if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
-
-      await tx.ledgerEntry.create({ data: { paymentId, type: "ESCROW_HOLD", amount: payment.amount } });
       return { ok: true as const };
     });
   } catch (e) {
@@ -76,30 +68,4 @@ export async function confirmPayment(args: { orderId: string; paymentId: string;
     meta: { orderId, provider: "sandbox", last4: evaluated.last4, ...(result.ok ? {} : { code: result.code }) },
   });
   return result;
-}
-
-/** HELD -> RELEASED: provider payout + platform fee. Must run inside the caller's transaction. */
-export async function releaseEscrow(tx: Prisma.TransactionClient, orderId: string) {
-  const payment = await tx.payment.findFirst({ where: { orderId, status: "HELD" } });
-  if (!payment) throw new HttpError(409, "Oʻtkazish uchun ushlab turilgan toʻlov yoʻq.");
-  const claimed = await tx.payment.updateMany({ where: { id: payment.id, status: "HELD" }, data: { status: "RELEASED" } });
-  if (claimed.count !== 1) throw new HttpError(409, "Toʻlov allaqachon oʻtkazilgan.");
-  const { fee, payout } = platformFee(payment.amount);
-  await tx.ledgerEntry.createMany({
-    data: [
-      { paymentId: payment.id, type: "PROVIDER_PAYOUT", amount: payout },
-      { paymentId: payment.id, type: "PLATFORM_FEE", amount: fee },
-    ],
-  });
-  return { paymentId: payment.id, amount: payment.amount, fee, payout };
-}
-
-/** HELD -> REFUNDED. Must run inside the caller's transaction. */
-export async function refundEscrow(tx: Prisma.TransactionClient, orderId: string) {
-  const payment = await tx.payment.findFirst({ where: { orderId, status: "HELD" } });
-  if (!payment) throw new HttpError(409, "Qaytarish uchun ushlab turilgan toʻlov yoʻq.");
-  const claimed = await tx.payment.updateMany({ where: { id: payment.id, status: "HELD" }, data: { status: "REFUNDED" } });
-  if (claimed.count !== 1) throw new HttpError(409, "Toʻlov allaqachon bajarilgan.");
-  await tx.ledgerEntry.create({ data: { paymentId: payment.id, type: "REFUND", amount: payment.amount } });
-  return { paymentId: payment.id, amount: payment.amount };
 }

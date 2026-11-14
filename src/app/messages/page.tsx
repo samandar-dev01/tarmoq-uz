@@ -23,7 +23,7 @@ export default async function MessagesPage() {
             action={<ButtonLink href="/search">Ijodkorlarni topish</ButtonLink>}
           />
         ) : (
-          <ul className={cardClasses({ padding: "none", className: "divide-y-2 divide-ink/10 overflow-hidden" })}>
+          <ul className={cardClasses({ padding: "none", className: "divide-y divide-line overflow-hidden" })}>
             {conversations.map((c) => (
               <li key={c.id}>
                 <Link href={`/messages/${c.id}`} className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-saffron-tint">
@@ -35,7 +35,7 @@ export default async function MessagesPage() {
                     <p className="truncate text-ink-soft">{c.last ? c.last.body.replace(/\s+/g, " ") : "Hali xabarlar yoʻq"}</p>
                   </div>
                   {c.unread > 0 && (
-                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full border-2 border-ink bg-pomegranate px-2 text-sm font-bold text-white" aria-label={`${c.unread} ta oʻqilmagan`}>
+                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-pomegranate px-2 text-sm font-bold text-white" aria-label={`${c.unread} ta oʻqilmagan`}>
                       {c.unread}
                     </span>
                   )}

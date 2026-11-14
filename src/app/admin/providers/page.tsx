@@ -40,7 +40,7 @@ export default async function AdminProviders() {
                   <ButtonLink href={`/providers/${p.slug}`} variant="link" className="mt-2 inline-block text-sm">Profilni koʻrish</ButtonLink>
                 </div>
                 <span
-                  className={`rounded-full border-2 border-ink px-3 py-1 text-xs font-bold ${PROFILE_STATUS_STYLE[p.status]}`}
+                  className={`rounded-full border border-line px-3 py-1 text-xs font-bold ${PROFILE_STATUS_STYLE[p.status]}`}
                   data-testid="profile-status"
                   data-status={p.status}
                 >

@@ -6,6 +6,8 @@
  * Nothing in this file throws. A notification problem must never break the user's request.
  */
 
+import { formatUZS } from "./format";
+
 const TIMEOUT_MS = 4000;
 
 /**
@@ -64,3 +66,16 @@ export async function sendTelegram(text: string): Promise<boolean> {
 
 export const notifyProfileSubmitted = (p: { name: string; city?: string | null }) =>
   sendTelegram(profileSubmittedMessage(p));
+
+/** Amount and order code only. No names, emails or phone numbers ever go into a Telegram message. */
+export function paymentClaimedMessage(p: { amount: number; reference: string }): string {
+  const base = baseUrl();
+  return [
+    `A client says they sent ${formatUZS(p.amount)} (order code ${oneLine(p.reference, 12)}).`,
+    "Check your bank app, then confirm or reject it.",
+    base ? `Open: ${base}/admin/payments` : "Open /admin/payments",
+  ].join("\n");
+}
+
+export const notifyPaymentClaimed = (p: { amount: number; reference: string }) =>
+  sendTelegram(paymentClaimedMessage(p));
