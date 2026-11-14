@@ -52,7 +52,7 @@ export function ProviderCard({ p, variant = "card" }: { p: ProviderCardData; var
         )}
       </span>
       <span className="flex flex-1 flex-col px-5 pb-5">
-        <Avatar name={p.user.name} seed={p.slug} size="lg" className="-mt-8 ring-4 ring-surface" />
+        <Avatar name={p.user.name} size="lg" className="-mt-8 ring-4 ring-surface" />
         <h3 className="mt-3 font-display text-lg font-semibold tracking-tight">{p.user.name}</h3>
         <span className="mt-2 flex flex-wrap gap-1.5">
           <span className={tagClasses("paper")}>

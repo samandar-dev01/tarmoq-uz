@@ -42,21 +42,18 @@ export function coverArt(seed: string): string {
 }
 
 const SIZES = {
-  sm: { box: "h-8 w-8", text: "text-[9px]" },
-  md: { box: "h-12 w-12", text: "text-[11px]" },
-  lg: { box: "h-16 w-16", text: "text-sm" },
-  xl: { box: "h-24 w-24", text: "text-xl" },
+  sm: { box: "h-8 w-8", text: "text-xs" },
+  md: { box: "h-12 w-12", text: "text-sm" },
+  lg: { box: "h-16 w-16", text: "text-lg" },
+  xl: { box: "h-24 w-24", text: "text-2xl" },
 } as const;
 
-/** Initials on creator colour art. Decorative: the name is always written next to it. */
-export function Avatar({ name, seed, size = "md", className = "" }: { name: string; seed?: string; size?: keyof typeof SIZES; className?: string }) {
+/** A creator's initials on a plain disc. Decorative: the name is always written next to it. */
+export function Avatar({ name, size = "md", className = "" }: { name: string; size?: keyof typeof SIZES; className?: string }) {
   const s = SIZES[size];
   return (
-    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-line-strong bg-surface ${s.box} ${className}`}>
-      <span className="ikat absolute -inset-2" style={{ background: coverArt(seed ?? name) }} />
-      <span className={`relative grid h-[62%] w-[62%] place-items-center rounded-full border border-line-strong bg-surface font-display font-bold text-ink ${s.text}`}>
-        {initials(name)}
-      </span>
+    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center rounded-full border border-line-strong bg-paper-deep font-display font-bold text-ink ${s.box} ${s.text} ${className}`}>
+      {initials(name)}
     </span>
   );
 }
