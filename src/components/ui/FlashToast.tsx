@@ -28,7 +28,7 @@ export function FlashToast() {
   if (!message) return null;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-      <div className="pointer-events-auto w-full max-w-md shadow-pop">
+      <div className="pointer-events-auto w-full max-w-md shadow-lift-lg">
         <Alert variant="info">{message}</Alert>
       </div>
     </div>

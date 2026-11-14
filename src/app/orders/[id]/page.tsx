@@ -109,7 +109,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
       {agreement && (
         <Card as="section">
           <h2>Kelishuv ({agreement.version}-versiya)</h2>
-          <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-ctl border-2 border-ink bg-paper p-4 font-sans text-sm leading-6">{agreement.termsText}</pre>
+          <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-ctl border border-line-strong bg-paper p-4 font-sans text-sm leading-6">{agreement.termsText}</pre>
           <ul className="mt-4 space-y-1">
             <li>Ijodkor qabul qildi: {agreement.providerAcceptedAt ? formatMoment(agreement.providerAcceptedAt) : "kutilmoqda"}</li>
             <li>Mijoz qabul qildi: {agreement.clientAcceptedAt ? formatMoment(agreement.clientAcceptedAt) : "kutilmoqda"}</li>
@@ -150,7 +150,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
         <Card as="section">
           <h2>Topshirilgan ish</h2>
           {latestDelivery && (
-            <video controls preload="metadata" className="mt-4 w-full rounded-ctl border-2 border-ink bg-black" src={`/api/orders/${order.id}/delivery/${latestDelivery.id}`} />
+            <video controls preload="metadata" className="mt-4 w-full rounded-ctl border border-line-strong bg-black" src={`/api/orders/${order.id}/delivery/${latestDelivery.id}`} />
           )}
           <ul className="mt-4 space-y-3">
             {order.deliveries.map((d) => (
@@ -167,7 +167,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
             ))}
           </ul>
           {isClient && order.status === "DELIVERED" && (
-            <div className="mt-6 border-t-2 border-dashed border-ink/25 pt-6"><ClientDecision orderId={order.id} revisionsLeft={revisionsLeft} /></div>
+            <div className="mt-6 border-t border-dashed border-line-strong pt-6"><ClientDecision orderId={order.id} revisionsLeft={revisionsLeft} /></div>
           )}
         </Card>
       )}

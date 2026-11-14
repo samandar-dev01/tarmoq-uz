@@ -16,7 +16,9 @@ export const metadata: Metadata = {
   // No payment promise here: a meta description cannot carry the "Sinov rejimi" badge (hard rule 2).
   description: "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#EDF8F2" };
+// The browser bar colour cannot read CSS variables, so this mirrors --c-paper in globals.css.
+const THEME_COLOR = "#090D16";
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: THEME_COLOR };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -35,21 +37,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1">{children}</main>
         <FlashToast />
-        <footer className="mt-20 border-t-2 border-ink bg-white">
-          <Container pad="none" className="grid gap-8 py-10 sm:grid-cols-[1.4fr_1fr] sm:items-start">
+        <footer className="mt-24 border-t border-line bg-surface">
+          <Container pad="none" className="grid gap-8 py-12 sm:grid-cols-[1.4fr_1fr] sm:items-start">
             <div>
               <p className="font-display text-2xl font-bold tracking-tight">
-                tarmoq<span className="text-cobalt">.uz</span>
+                tarmoq<span className="text-cobalt-dark">.uz</span>
               </p>
               <p className="mt-2 max-w-sm text-ink-soft">Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.</p>
             </div>
-            <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-2 sm:justify-end">
-              <ButtonLink href="/search" variant="link">Ijodkorlar</ButtonLink>
-              <ButtonLink href="/register?role=provider" variant="link">Ijodkor boʻlib qoʻshilish</ButtonLink>
-              <ButtonLink href="/register?role=client" variant="link">Buyurtma bermoqchiman</ButtonLink>
+            <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-0 sm:justify-end">
+              <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Ijodkorlar</ButtonLink>
+              <ButtonLink href="/register?role=provider" variant="link" className="inline-flex min-h-11 items-center">Ijodkor boʻlib qoʻshilish</ButtonLink>
+              <ButtonLink href="/register?role=client" variant="link" className="inline-flex min-h-11 items-center">Buyurtma bermoqchiman</ButtonLink>
             </nav>
           </Container>
-          <div className="border-t-2 border-ink bg-paper-deep">
+          <div className="border-t border-line bg-paper">
             <Container pad="none" className="py-4 text-sm text-ink-soft">
               © {new Date().getFullYear()} Tarmoq.uz.{paymentsAreTest() && " Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi."}
             </Container>

@@ -102,12 +102,12 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
                 disabled={!reachable}
                 aria-current={n === step ? "step" : undefined}
                 onClick={() => { setError(null); setIssues([]); setStep(n); }}
-                className={`min-h-12 w-full rounded-ctl border-2 px-1 py-2 font-bold transition-colors ${
+                className={`min-h-12 w-full rounded-ctl border px-1 py-2 font-bold transition-colors duration-150 ${
                   n === step
-                    ? "border-ink bg-cobalt text-white shadow-pop-sm"
+                    ? "border-transparent bg-cobalt text-white shadow-lift-sm"
                     : reachable
-                      ? "border-ink bg-white hover:bg-paper-deep"
-                      : "border-ink/20 bg-paper-deep/60 text-ink-mute"
+                      ? "border-line-strong bg-surface hover:bg-paper-deep"
+                      : "border-line bg-paper-deep/60 text-ink-mute"
                 }`}
               >
                 <span className="hidden sm:inline">{n}. </span>{label}
@@ -149,7 +149,7 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
                 <legend className="mb-1.5 text-sm font-bold">Qaysi tillarda ishlaysiz?</legend>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((l) => (
-                    <label key={l} className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 text-sm font-semibold has-[:checked]:bg-saffron">
+                    <label key={l} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-semibold transition-colors duration-150 has-[:checked]:border-transparent has-[:checked]:bg-saffron has-[:checked]:text-night">
                       <input type="checkbox" checked={languages.includes(l)} onChange={(e) => setLanguages(e.target.checked ? [...languages, l] : languages.filter((x) => x !== l))} />
                       {l}
                     </label>

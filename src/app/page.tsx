@@ -19,7 +19,7 @@ const STEPS = [
   ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi.", "escrow"],
   ["Qabul qiling", "Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring."],
 ] as const;
-const STEP_COLORS = ["bg-cobalt text-white", "bg-saffron text-ink", "bg-turquoise text-ink", "bg-pomegranate text-white"];
+const STEP_COLORS = ["bg-cobalt text-white", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-white"];
 
 const PROMISES = [
   { title: "Shartlar yozma", text: "Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi.", tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },
@@ -47,22 +47,27 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="overflow-hidden border-b-2 border-ink">
-        <Container pad="none" className="grid gap-12 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
+      <section className="overflow-hidden border-b border-line">
+        <Container pad="none" className="grid gap-14 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
           <div>
             <h1 className="animate-rise text-display">Ijodkorni shu yerdan toping.</h1>
             <p className="mt-5 max-w-xl animate-rise text-lg text-ink-soft [animation-delay:120ms]">
               Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi. <TestModeBadge />
             </p>
-            <form action="/search" method="get" className="mt-8 grid animate-rise gap-3 [animation-delay:240ms] sm:grid-cols-[1fr_auto]">
-              <div className="sm:col-span-2">
-                <Field big hideLabel label="Sizga nima kerak?" name="q" placeholder="Toʻy videosi, reel, kafe reklamasi…" />
+            <form action="/search" method="get" className="mt-8 animate-rise [animation-delay:240ms]">
+              {/* One command card: what on top, then where and go. The card draws the border and shows focus for the controls inside it. */}
+              <div className="rounded-hero border border-line-strong bg-surface p-2 shadow-lift transition-[border-color,box-shadow] duration-200 ease-snap focus-within:border-cobalt focus-within:shadow-[0_0_0_3px_rgb(var(--c-cobalt)/0.35)]">
+                <Field big bare hideLabel label="Sizga nima kerak?" name="q" placeholder="Toʻy videosi, reel, kafe reklamasi…" />
+                <div className="mt-1 flex items-center gap-2 border-t border-line pt-1">
+                  <div className="min-w-0 flex-1">
+                    <Field big bare as="select" hideLabel label="Shahar" name="city" defaultValue="">
+                      <option value="">Barcha shaharlar</option>
+                      {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </Field>
+                  </div>
+                  <Button type="submit" size="lg" className="h-14 shrink-0 px-8">Qidirish</Button>
+                </div>
               </div>
-              <Field big as="select" hideLabel label="Shahar" name="city" defaultValue="">
-                <option value="">Barcha shaharlar</option>
-                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </Field>
-              <Button type="submit" size="lg" className="h-14">Qidirish</Button>
             </form>
             <div className="mt-6 flex animate-rise flex-wrap gap-2 [animation-delay:340ms]">
               {categories.map((c) => (
@@ -74,9 +79,10 @@ export default async function HomePage() {
           {/* The one bold moment: a live feed of creators, two columns drifting in opposite directions. */}
           {pool.length > 0 && (
             <div aria-hidden="true" className="relative mx-auto w-full max-w-md animate-rise [animation-delay:200ms] lg:max-w-none">
-              <div className="absolute -left-3 -top-3 h-20 w-20 rotate-12 rounded-card border-2 border-ink bg-turquoise" />
-              <div className="relative rounded-hero border-2 border-ink bg-saffron shadow-pop-lg">
-                <div className="marquee grid h-[26rem] grid-cols-2 gap-3 overflow-hidden rounded-[1.5rem] p-3 [mask-image:linear-gradient(to_bottom,transparent,#000_9%,#000_91%,transparent)] lg:h-[34rem]">
+              {/* A soft warm and cool glow behind the feed, instead of a hard decorative tile. */}
+              <div className="absolute -inset-8 rounded-hero bg-gradient-to-br from-cobalt/25 via-transparent to-saffron/20 blur-3xl" />
+              <div className="relative rounded-hero border border-line-strong bg-surface/70 shadow-lift-lg backdrop-blur-sm">
+                <div className="marquee grid h-[26rem] grid-cols-2 gap-3 overflow-hidden rounded-hero p-3 [mask-image:linear-gradient(to_bottom,transparent,#000_9%,#000_91%,transparent)] lg:h-[34rem]">
                   <div className="marquee-col animate-drift-up [&>*]:mb-3">
                     {[...colA, ...colA].map((p, i) => <ProviderCard key={`a${i}-${p.id}`} p={p} variant="poster" />)}
                   </div>
@@ -93,7 +99,7 @@ export default async function HomePage() {
       <Container pad="section">
         <div className="mb-6 flex items-end justify-between gap-4">
           <h2>Top ijodkorlar</h2>
-          <ButtonLink href="/search" variant="link">Hammasini koʻrish</ButtonLink>
+          <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Hammasini koʻrish</ButtonLink>
         </div>
         {featured.items.length === 0 ? (
           <EmptyState
@@ -109,14 +115,14 @@ export default async function HomePage() {
         )}
       </Container>
 
-      <section className="border-y-2 border-ink bg-white">
+      <section className="border-y border-line bg-surface">
         <Container pad="section">
           <h2>Buyurtma qanday ishlaydi</h2>
-          <ol className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          <ol className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {STEPS.map(([title, text, promise], i) => (
               <li key={title} className="relative">
-                {i < STEPS.length - 1 && <span aria-hidden="true" className="absolute left-16 top-7 -right-6 hidden border-t-2 border-dashed border-ink/40 lg:block" />}
-                <span className={`relative grid h-14 w-14 place-items-center rounded-full border-2 border-ink font-display text-xl font-bold shadow-pop-sm ${STEP_COLORS[i]}`}>{i + 1}</span>
+                {i < STEPS.length - 1 && <span aria-hidden="true" className="absolute left-16 top-7 -right-6 hidden border-t border-dashed border-line-strong lg:block" />}
+                <span className={`relative grid h-14 w-14 place-items-center rounded-full font-display text-xl font-bold shadow-lift-sm ${STEP_COLORS[i]}`}>{i + 1}</span>
                 <h3 className="mt-4 text-xl">{title}</h3>
                 <p className="mt-1.5 text-ink-soft">{text} {promise === "escrow" && <TestModeBadge />}</p>
               </li>
@@ -144,7 +150,7 @@ export default async function HomePage() {
         <Card tone="ink" padding="lg" radius="hero" className="sm:flex sm:items-center sm:justify-between sm:gap-8">
           <div>
             <h2>Ijodkormisiz? Buyurtmalar sizni kutmoqda.</h2>
-            <p className="mt-2 max-w-xl text-paper/80">Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.</p>
+            <p className="mt-2 max-w-xl text-ink-soft">Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.</p>
           </div>
           <ButtonLink href="/register?role=provider" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
         </Card>

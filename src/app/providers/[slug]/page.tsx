@@ -68,7 +68,7 @@ export default async function ProviderPage({ params }: Props) {
       )}
 
       <Card padding="none" radius="hero" className="overflow-hidden">
-        <div className="relative h-32 overflow-hidden border-b-2 border-ink sm:h-44">
+        <div className="relative h-32 overflow-hidden border-b border-line sm:h-44">
           <div className="ikat absolute -inset-6" style={{ background: coverArt(profile.slug) }} />
         </div>
         <div className="px-5 pb-7 sm:px-8">
@@ -127,7 +127,7 @@ export default async function ProviderPage({ params }: Props) {
                         <span className={tagClasses("paper")}>{s.revisions} ta tuzatish</span>
                       </p>
                     </div>
-                    <div className="flex items-center justify-between gap-4 border-t-2 border-dashed border-ink bg-saffron-tint p-5 sm:w-56 sm:shrink-0 sm:flex-col sm:items-stretch sm:justify-center sm:border-l-2 sm:border-t-0">
+                    <div className="flex items-center justify-between gap-4 border-t border-dashed border-saffron/30 bg-saffron-tint p-5 sm:w-56 sm:shrink-0 sm:flex-col sm:items-stretch sm:justify-center sm:border-l-2 sm:border-t-0">
                       <span className="text-xl font-extrabold tabular-nums tracking-tight">{formatUZS(s.price)}</span>
                       {canOrder && approved && <ButtonLink href={orderHref(s.id)}>Buyurtma berish</ButtonLink>}
                     </div>
@@ -147,9 +147,9 @@ export default async function ProviderPage({ params }: Props) {
                   <li key={item.id} className={cardClasses({ padding: "none", className: "overflow-hidden" })}>
                     {item.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.imageUrl} alt={item.title} loading="lazy" referrerPolicy="no-referrer" className="h-44 w-full border-b-2 border-ink object-cover" />
+                      <img src={item.imageUrl} alt={item.title} loading="lazy" referrerPolicy="no-referrer" className="h-44 w-full border-b border-line object-cover" />
                     ) : (
-                      <div className="relative h-44 overflow-hidden border-b-2 border-ink" aria-hidden="true">
+                      <div className="relative h-44 overflow-hidden border-b border-line" aria-hidden="true">
                         <div className="ikat absolute -inset-4" style={{ background: coverArt(item.id) }} />
                       </div>
                     )}

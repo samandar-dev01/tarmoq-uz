@@ -3,27 +3,34 @@
 @tailwind utilities;
 
 @layer base {
-  /* The theme. Change a colour here and the whole site follows. Values are RGB triplets (see tailwind.config.ts). */
+  /* The theme. Change a colour here and the whole site follows. Values are RGB triplets (see tailwind.config.ts).
+     Dark cinema: an obsidian ground, slate cards, warm amber and electric blue accents. */
   :root {
-    --c-ink: 27 18 53;
-    --c-ink-soft: 75 68 104;
-    --c-ink-mute: 106 99 133;
-    --c-paper: 237 248 242;
-    --c-paper-deep: 220 240 229;
-    --c-cobalt: 42 59 234;
-    --c-cobalt-dark: 31 45 192;
-    --c-cobalt-tint: 225 228 255;
-    --c-saffron: 255 196 46;
-    --c-saffron-deep: 240 168 0;
-    --c-saffron-tint: 255 240 191;
-    --c-pomegranate: 232 54 93;
-    --c-pomegranate-deep: 194 31 69;
-    --c-pomegranate-tint: 255 223 230;
-    --c-turquoise: 16 181 163;
-    --c-turquoise-deep: 9 107 96;
-    --c-turquoise-tint: 207 244 236;
-    --c-lilac: 182 165 255;
-    --c-lilac-tint: 235 230 255;
+    color-scheme: dark;
+    --c-ink: 241 245 249; /* foreground #F1F5F9 */
+    --c-ink-soft: 203 213 225; /* #CBD5E1 */
+    --c-ink-mute: 148 163 184; /* #94A3B8 */
+    --c-paper: 9 13 22; /* page ground #090D16 */
+    --c-paper-deep: 30 41 59; /* hover and recessed #1E293B */
+    --c-surface: 17 24 39; /* elevated card #111827 */
+    --c-night: 9 13 22; /* dark text on bright fills */
+    --c-line: 255 255 255; /* hairline base, alpha is set in tailwind.config.ts */
+    --c-shadow: 0 0 0;
+    --c-focus: 96 165 250; /* keyboard focus ring #60A5FA */
+    --c-cobalt: 37 99 235; /* electric blue #2563EB */
+    --c-cobalt-dark: 147 197 253; /* blue readable on a dark tint */
+    --c-cobalt-tint: 23 37 84;
+    --c-saffron: 245 158 11; /* warm amber #F59E0B */
+    --c-saffron-deep: 252 211 77; /* amber readable on a dark tint */
+    --c-saffron-tint: 66 40 6;
+    --c-pomegranate: 225 29 72;
+    --c-pomegranate-deep: 253 164 175; /* red readable on a dark tint */
+    --c-pomegranate-tint: 72 12 30;
+    --c-turquoise: 20 184 166;
+    --c-turquoise-deep: 94 234 212; /* teal readable on a dark tint */
+    --c-turquoise-tint: 7 48 46;
+    --c-lilac: 167 139 250;
+    --c-lilac-tint: 40 28 82;
   }
 
   html {
@@ -32,6 +39,10 @@
   }
   body {
     @apply bg-paper font-sans text-base leading-relaxed text-ink antialiased;
+    /* A faint warm glow top-left and a cool one top-right: depth without noise. */
+    background-image: radial-gradient(52rem 26rem at 8% -6%, rgb(var(--c-saffron) / 0.07), transparent 70%),
+      radial-gradient(56rem 30rem at 92% -10%, rgb(var(--c-cobalt) / 0.12), transparent 70%);
+    background-repeat: no-repeat;
   }
 
   /* Headings get their look here, so pages never restyle them. */
@@ -53,16 +64,13 @@
   }
 
   ::selection {
-    @apply bg-saffron text-ink;
+    @apply bg-saffron text-night;
   }
 
-  /* Visible keyboard focus everywhere. On dark blocks the ring turns saffron. */
+  /* Visible keyboard focus everywhere: a light blue ring that reads on the dark ground and on every card. */
   :focus-visible {
-    outline: 3px solid rgb(var(--c-cobalt));
+    outline: 2px solid rgb(var(--c-focus));
     outline-offset: 3px;
-  }
-  .on-ink :focus-visible {
-    outline-color: rgb(var(--c-saffron));
   }
 
   summary {
@@ -80,7 +88,7 @@
   }
   select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231B1235' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 1rem center;
     background-size: 1rem;
@@ -90,7 +98,7 @@
     @apply text-sm;
   }
   input[type="file"]::file-selector-button {
-    @apply mr-3 cursor-pointer rounded-ctl border-2 border-ink bg-white px-4 py-2 text-sm font-bold text-ink;
+    @apply mr-3 cursor-pointer rounded-ctl border border-line-strong bg-paper-deep px-4 py-2 text-sm font-bold text-ink transition-colors duration-150 hover:bg-ink/10;
   }
 }
 
@@ -105,7 +113,7 @@
     animation-play-state: paused;
   }
   .skeleton {
-    background: linear-gradient(100deg, rgb(var(--c-paper-deep)) 30%, #fff 50%, rgb(var(--c-paper-deep)) 70%);
+    background: linear-gradient(100deg, rgb(var(--c-surface)) 30%, rgb(var(--c-paper-deep)) 50%, rgb(var(--c-surface)) 70%);
     background-size: 200% 100%;
   }
 }

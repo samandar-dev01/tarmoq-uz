@@ -92,15 +92,15 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
       <Alert variant="info"><strong>Sinov rejimi.</strong> Haqiqiy pul yechilmaydi. Quyidagi test kartalaridan birini tanlang.</Alert>
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div aria-hidden="true" className="overflow-hidden rounded-card border-2 border-ink bg-ink text-white shadow-pop">
-        <div className="relative h-10 overflow-hidden border-b-2 border-ink">
+      <div aria-hidden="true" className="overflow-hidden rounded-card border border-line-strong bg-gradient-to-br from-cobalt-tint via-surface to-paper text-ink shadow-lift">
+        <div className="relative h-10 overflow-hidden border-b border-line">
           <div className="ikat absolute -inset-3" style={{ background: coverArt(orderId) }} />
         </div>
         <div className="space-y-5 p-5">
           <p className="text-lg font-bold tabular-nums tracking-widest sm:text-xl">{shownNumber}</p>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs text-white/60">Amal qilish muddati</p>
+              <p className="text-xs text-ink-mute">Amal qilish muddati</p>
               <p className="font-semibold">{expiry || "MM/YY"}</p>
             </div>
             <p className="font-display text-lg font-bold">{brand}</p>

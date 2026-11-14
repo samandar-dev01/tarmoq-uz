@@ -5,27 +5,28 @@ export type ButtonVariant = "primary" | "secondary" | "accent" | "danger" | "gho
 export type ButtonSize = "sm" | "md" | "lg";
 
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-bold transition-[transform,box-shadow,background-color] duration-150 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
-const BOX = "rounded-ctl border-2 border-ink";
-// Things you can press have a hard shadow: it lifts on hover and collapses when pressed.
-const PRESS =
-  "shadow-pop-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-pop active:translate-x-0.5 active:translate-y-0.5 active:shadow-none";
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-bold transition-[transform,box-shadow,background-color,border-color,color,filter] duration-150 ease-snap disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
+const BOX = "rounded-ctl border";
+// Things you can press lift a little on hover and settle when pressed.
+const PRESS = "shadow-lift-sm hover:-translate-y-px hover:shadow-lift hover:brightness-110 active:translate-y-px active:shadow-lift-sm active:brightness-95";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: `${BOX} ${PRESS} bg-cobalt text-white hover:bg-cobalt-dark`,
-  secondary: `${BOX} ${PRESS} bg-white text-ink hover:bg-paper-deep`,
-  accent: `${BOX} ${PRESS} bg-saffron text-ink hover:bg-saffron-deep`,
-  danger: `${BOX} ${PRESS} bg-pomegranate text-white hover:bg-pomegranate-deep`,
-  ghost: "rounded-ctl text-ink hover:bg-ink/10",
-  chip: "rounded-full border-2 border-ink bg-white text-ink hover:bg-saffron active:translate-y-px",
-  link: "rounded-sm font-semibold text-cobalt underline decoration-2 underline-offset-4 transition-colors hover:bg-cobalt-tint hover:text-cobalt-dark",
+  primary: `${BOX} ${PRESS} border-white/10 bg-cobalt text-white`,
+  secondary: `${BOX} ${PRESS} border-line-strong bg-surface text-ink hover:bg-paper-deep`,
+  accent: `${BOX} ${PRESS} border-transparent bg-saffron text-night`,
+  danger: `${BOX} ${PRESS} border-white/10 bg-pomegranate text-white`,
+  ghost: "rounded-ctl text-ink-soft hover:bg-ink/10 hover:text-ink",
+  // A pill. When it stands for a choice that is on (aria-current or aria-pressed), it fills with amber.
+  chip: "rounded-full border border-line-strong bg-surface text-ink-soft hover:border-ink-mute/50 hover:bg-paper-deep hover:text-ink active:translate-y-px aria-[current=true]:border-transparent aria-[current=true]:bg-saffron aria-[current=true]:text-night aria-pressed:border-transparent aria-pressed:bg-saffron aria-pressed:text-night",
+  link: "rounded-sm font-semibold text-cobalt-dark underline decoration-1 underline-offset-4 transition-colors hover:bg-cobalt-tint hover:text-ink",
 };
+// 44px is the touch minimum; the compact size steps down to 40px once a mouse is likely.
 const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-9 px-3.5 text-sm",
+  sm: "min-h-11 px-4 text-sm md:min-h-10",
   md: "min-h-11 px-5 text-[0.9375rem]",
   lg: "min-h-14 px-7 text-base",
 };
-const CHIP_SIZE = "min-h-10 px-3.5 text-sm";
+const CHIP_SIZE = "min-h-11 px-4 text-sm";
 
 /** The one source of button looks. `Button` (a <button>) and `ButtonLink` (a link) both use it. */
 export function buttonClasses({ variant = "primary", size = "md", className = "" }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {

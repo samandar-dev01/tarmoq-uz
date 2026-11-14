@@ -1,6 +1,7 @@
 import { initials } from "@/lib/format";
 
-const PALETTE = ["#2A3BEA", "#10B5A3", "#FFC42E", "#E8365D", "#B6A5FF"] as const;
+// Creator art takes its colours from the theme, so a re-skin reaches it too.
+const PALETTE = ["rgb(var(--c-cobalt))", "rgb(var(--c-turquoise))", "rgb(var(--c-saffron))", "rgb(var(--c-pomegranate))", "rgb(var(--c-lilac))"] as const;
 
 function hash(s: string) {
   let h = 2166136261;
@@ -30,10 +31,12 @@ export function coverArt(seed: string): string {
   const cell = 26 + ((h >>> 3) % 14); // diamond size
   const half = cell / 2;
   return [
-    `linear-gradient(135deg, rgba(255,255,255,.24) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
-    `linear-gradient(225deg, rgba(255,255,255,.24) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
-    `linear-gradient(315deg, rgba(27,18,53,.18) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
-    `linear-gradient(45deg, rgba(27,18,53,.18) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
+    // A flat dimmer on top keeps the weave rich but never neon against the dark ground.
+    "linear-gradient(rgb(var(--c-night) / .44), rgb(var(--c-night) / .44))",
+    `linear-gradient(135deg, rgb(var(--c-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
+    `linear-gradient(225deg, rgb(var(--c-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
+    `linear-gradient(315deg, rgb(var(--c-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
+    `linear-gradient(45deg, rgb(var(--c-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
     `repeating-linear-gradient(90deg, ${a} 0 ${w * 2}px, ${b} ${w * 2}px ${w * 3}px, ${c} ${w * 3}px ${w * 5}px, ${b} ${w * 5}px ${w * 6}px)`,
   ].join(", ");
 }
@@ -49,9 +52,9 @@ const SIZES = {
 export function Avatar({ name, seed, size = "md", className = "" }: { name: string; seed?: string; size?: keyof typeof SIZES; className?: string }) {
   const s = SIZES[size];
   return (
-    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border-2 border-ink bg-white ${s.box} ${className}`}>
+    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-line-strong bg-surface ${s.box} ${className}`}>
       <span className="ikat absolute -inset-2" style={{ background: coverArt(seed ?? name) }} />
-      <span className={`relative grid h-[62%] w-[62%] place-items-center rounded-full border-2 border-ink bg-white font-display font-bold text-ink ${s.text}`}>
+      <span className={`relative grid h-[62%] w-[62%] place-items-center rounded-full border border-line-strong bg-surface font-display font-bold text-ink ${s.text}`}>
         {initials(name)}
       </span>
     </span>

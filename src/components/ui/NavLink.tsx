@@ -13,14 +13,14 @@ type Props = ComponentProps<typeof Link> & {
 
 const VARIANTS = {
   nav: {
-    base: "inline-flex min-h-10 items-center rounded-ctl px-3 text-[0.9375rem] font-semibold transition-colors",
-    idle: "text-ink hover:bg-ink/10",
-    active: "bg-saffron text-ink",
+    base: "inline-flex min-h-11 items-center rounded-ctl px-3 text-[0.9375rem] font-semibold transition-colors duration-150 md:min-h-10",
+    idle: "text-ink-soft hover:bg-ink/10 hover:text-ink",
+    active: "bg-saffron/15 text-saffron-deep",
   },
   tab: {
-    base: "inline-flex min-h-10 items-center rounded-ctl border-2 border-ink px-4 text-sm font-bold transition-colors",
-    idle: "bg-white text-ink hover:bg-paper-deep",
-    active: "bg-ink text-white",
+    base: "inline-flex min-h-11 items-center rounded-ctl border px-4 text-sm font-bold transition-colors duration-150 md:min-h-10",
+    idle: "border-line-strong bg-surface text-ink-soft hover:bg-paper-deep hover:text-ink",
+    active: "border-transparent bg-cobalt text-white",
   },
   // Looks come from className alone (a link dressed as a Button that must still close the mobile menu).
   plain: { base: "", idle: "", active: "" },

@@ -14,7 +14,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 export const STATUS_STYLE: Record<OrderStatus, string> = {
   REQUESTED: "bg-paper-deep text-ink",
   AGREEMENT_PENDING: "bg-saffron-tint text-ink",
-  AWAITING_PAYMENT: "bg-saffron text-ink",
+  AWAITING_PAYMENT: "bg-saffron text-night",
   IN_PROGRESS: "bg-cobalt-tint text-cobalt-dark",
   DELIVERED: "bg-lilac-tint text-ink",
   COMPLETED: "bg-turquoise-tint text-turquoise-deep",
@@ -31,7 +31,7 @@ export const PROFILE_STATUS_LABEL: Record<ProfileStatus, string> = {
 
 export const PROFILE_STATUS_STYLE: Record<ProfileStatus, string> = {
   DRAFT: "bg-paper-deep text-ink",
-  PENDING_REVIEW: "bg-saffron text-ink",
+  PENDING_REVIEW: "bg-saffron text-night",
   APPROVED: "bg-turquoise-tint text-turquoise-deep",
   SUSPENDED: "bg-pomegranate-tint text-pomegranate-deep",
 };
