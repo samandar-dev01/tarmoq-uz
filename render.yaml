@@ -37,8 +37,16 @@ services:
         value: eu-central-1
       - key: S3_BUCKET
         value: deliveries
+      # "sandbox" = test cards, no real money. "manual" = clients send money to the card below and an admin confirms it by hand.
       - key: PAYMENT_PROVIDER
         value: sandbox
+      # Only used when PAYMENT_PROVIDER is "manual": where clients send the money. Set these in the Render dashboard, never in git.
+      - key: MANUAL_PAY_CARD
+        sync: false
+      - key: MANUAL_PAY_HOLDER
+        sync: false
+      - key: MANUAL_PAY_BANK
+        sync: false
       - key: SESSION_MAX_AGE_DAYS
         value: "7"
       # Uploads are buffered in memory and a free instance has 512 MB, so keep videos short (Supabase's free limit is 50 MB anyway).

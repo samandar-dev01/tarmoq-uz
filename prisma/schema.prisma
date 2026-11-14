@@ -33,10 +33,16 @@ enum OrderStatus {
 
 enum PaymentStatus {
   REQUIRES_PAYMENT
+  AWAITING_CONFIRMATION // manual card transfer: the client says they paid, an admin has not confirmed yet
   HELD
   RELEASED
   FAILED
   REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
 }
 
 enum LedgerType {
@@ -60,6 +66,7 @@ model User {
   providerProfile ProviderProfile?
   clientOrders    Order[]          @relation("ClientOrders")
   providerOrders  Order[]          @relation("ProviderOrders")
+  payouts         Payout[]         @relation("ProviderPayouts")
   messages        Message[]
   reviewsWritten  Review[]         @relation("ReviewAuthor")
   auditLogs       AuditLog[]
@@ -92,6 +99,11 @@ model ProviderProfile {
   ratingCount    Int           @default(0)
   status         ProfileStatus @default(DRAFT)
   wizardStep     Int           @default(1)
+  // Where the platform sends this creator's money. Private: never selected for a public page.
+  // The card number is stored encrypted (see src/lib/payoutSecret.ts); only the last 4 digits are kept in the clear.
+  payoutHolder    String?
+  payoutCardEnc   String?
+  payoutCardLast4 String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -184,10 +196,33 @@ model Payment {
   cardBrand   String?
   cardLast4   String?
   failureCode String?
+  // Manual card transfer: the receipt the client uploaded when pressing "I paid" (stored like delivery files; admins only).
+  receiptKey  String?
+  receiptName String?
+  receiptType String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   ledger LedgerEntry[]
+  payout Payout?
+}
+
+/// Money owed to a creator after the client approved the work. Created PENDING when the escrow is released;
+/// an admin sends the money by hand and marks it PAID. Sandbox payments never create one (no real money).
+model Payout {
+  id         String       @id @default(cuid())
+  paymentId  String       @unique
+  payment    Payment      @relation(fields: [paymentId], references: [id])
+  providerId String
+  provider   User         @relation("ProviderPayouts", fields: [providerId], references: [id])
+  amount     Int          // the creator's share (total minus the platform fee), whole so'm
+  status     PayoutStatus @default(PENDING)
+  paidAt     DateTime?
+  paidById   String?
+  createdAt  DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([providerId, status])
 }
 
 model LedgerEntry {

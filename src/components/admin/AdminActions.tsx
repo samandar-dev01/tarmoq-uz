@@ -37,6 +37,41 @@ export function ReviewToggle({ id, hidden }: { id: string; hidden: boolean }) {
   );
 }
 
+export function ConfirmPayment({ paymentId, amount }: { paymentId: string; amount: string }) {
+  const { run, loading, error } = useAction();
+  const decide = (action: "confirm" | "reject") => {
+    const msg =
+      action === "confirm"
+        ? `Bank ilovangizda ${amount} tushganini koʻrdingizmi? Tasdiqlansa, ijodkor ishni boshlaydi.`
+        : "Pul tushmaganmi? Toʻlov rad etiladi va mijoz qayta urinib koʻradi.";
+    if (window.confirm(msg)) void run(`/api/admin/payments/${paymentId}`, { method: "PATCH", json: { action } });
+  };
+  return (
+    <div className="space-y-3">
+      {error && <Alert variant="error">{error}</Alert>}
+      <div className="flex flex-wrap gap-3">
+        <Button loading={loading} onClick={() => decide("confirm")}>Pul tushdi, tasdiqlash</Button>
+        <Button variant="secondary" disabled={loading} onClick={() => decide("reject")}>Pul tushmadi</Button>
+      </div>
+    </div>
+  );
+}
+
+export function MarkPayoutPaid({ payoutId, amount }: { payoutId: string; amount: string }) {
+  const { run, loading, error } = useAction();
+  return (
+    <div className="space-y-3">
+      {error && <Alert variant="error">{error}</Alert>}
+      <Button
+        loading={loading}
+        onClick={() => { if (window.confirm(`${amount} ijodkorning kartasiga yuborildimi?`)) void run(`/api/admin/payouts/${payoutId}`); }}
+      >
+        Oʻtkazdim
+      </Button>
+    </div>
+  );
+}
+
 export function ResolveDispute({ orderId }: { orderId: string }) {
   const { run, loading, error } = useAction();
   const resolve = (resolution: "release" | "refund") => {

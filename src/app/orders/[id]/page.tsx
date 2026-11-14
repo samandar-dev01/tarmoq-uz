@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { formatDate, formatMoment, formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
+import { paymentsAreTest } from "@/lib/payments/mode";
 import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
@@ -26,7 +27,7 @@ export default async function OrderPage({ params, searchParams }: { params: { id
       client: { select: { id: true, name: true } },
       provider: { select: { id: true, name: true } },
       agreements: { orderBy: { version: "desc" }, take: 1 },
-      payments: { orderBy: { createdAt: "desc" }, include: { ledger: true } },
+      payments: { orderBy: { createdAt: "desc" }, include: { ledger: true, payout: true } },
       deliveries: { orderBy: { createdAt: "desc" } },
       review: true,
       conversation: { select: { id: true } },
@@ -43,6 +44,8 @@ export default async function OrderPage({ params, searchParams }: { params: { id
   const paid = order.payments.find((p) => ["HELD", "RELEASED", "REFUNDED"].includes(p.status));
   const payout = paid?.ledger.find((l) => l.type === "PROVIDER_PAYOUT");
   const fee = paid?.ledger.find((l) => l.type === "PLATFORM_FEE");
+  const payoutRow = paid?.payout; // money owed to the creator (real payments only)
+  const awaitingConfirmation = order.payments.some((p) => p.status === "AWAITING_CONFIRMATION");
   const revisionsLeft = order.revisionsAllowed - order.revisionsUsed;
   const cancellable = ["REQUESTED", "AGREEMENT_PENDING", "AWAITING_PAYMENT"].includes(order.status);
   const disputable = ["IN_PROGRESS", "DELIVERED"].includes(order.status);
@@ -115,10 +118,16 @@ export default async function OrderPage({ params, searchParams }: { params: { id
       {isClient && order.status === "AWAITING_PAYMENT" && (
         <Card as="section">
           <h2>Toʻlov</h2>
-          <p className="mt-2 text-ink-soft">
-            Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi. <TestModeBadge />
-          </p>
-          <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">Xavfsiz toʻlash (sinov rejimi)</ButtonLink>
+          {awaitingConfirmation ? (
+            <div className="mt-3"><Alert variant="info"><strong>Toʻlovingiz tekshirilmoqda.</strong> Administrator pulni koʻrgach tasdiqlaydi, soʻng ijodkor ishni boshlaydi.</Alert></div>
+          ) : (
+            <>
+              <p className="mt-2 text-ink-soft">
+                Hozir {order.agreedPrice ? formatUZS(order.agreedPrice) : ""} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi. <TestModeBadge />
+              </p>
+              <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">{paymentsAreTest() ? "Xavfsiz toʻlash (sinov rejimi)" : "Toʻlash"}</ButtonLink>
+            </>
+          )}
         </Card>
       )}
 
@@ -180,9 +189,18 @@ export default async function OrderPage({ params, searchParams }: { params: { id
             <div><dt className="text-sm font-semibold text-ink-soft">Summa</dt><dd className="font-bold">{formatUZS(paid.amount)}</dd></div>
             <div>
               <dt className="text-sm font-semibold text-ink-soft">Holati</dt>
-              <dd className="font-bold">{paid.status === "HELD" ? "Qabul qilinguncha ushlab turilibdi" : paid.status === "RELEASED" ? "Ijodkorga oʻtkazildi" : "Mijozga qaytarildi"}</dd>
+              <dd className="font-bold">
+                {paid.status === "HELD"
+                  ? "Qabul qilinguncha ushlab turilibdi"
+                  : paid.status === "RELEASED"
+                    ? payoutRow?.status === "PENDING" ? "Qabul qilindi, ijodkorga oʻtkazish kutilmoqda" : "Ijodkorga oʻtkazildi"
+                    : "Mijozga qaytarildi"}
+              </dd>
             </div>
-            <div><dt className="text-sm font-semibold text-ink-soft">Toʻlov usuli</dt><dd>Sinov kartasi {paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• {paid.cardLast4 ?? ""}</dd></div>
+            <div>
+              <dt className="text-sm font-semibold text-ink-soft">Toʻlov usuli</dt>
+              <dd>{paid.provider === "manual" ? "Karta orqali oʻtkazma (administrator tasdiqlagan)" : `Sinov kartasi ${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}`}</dd>
+            </div>
             <div><dt className="text-sm font-semibold text-ink-soft">Toʻlov ID</dt><dd className="break-all font-mono text-xs">{paid.id}</dd></div>
             {(isProvider || isAdmin) && payout && fee && (
               <>
@@ -190,8 +208,15 @@ export default async function OrderPage({ params, searchParams }: { params: { id
                 <div><dt className="text-sm font-semibold text-ink-soft">Ijodkor daromadi</dt><dd>{formatUZS(payout.amount)}</dd></div>
               </>
             )}
+            {/* While a payout is pending the status above already says so; this row adds when it was sent. */}
+            {(isProvider || isAdmin) && payoutRow?.status === "PAID" && (
+              <div>
+                <dt className="text-sm font-semibold text-ink-soft">Ijodkorga toʻlov</dt>
+                <dd className="font-bold">{payoutRow.paidAt ? `Oʻtkazildi: ${formatMoment(payoutRow.paidAt)}` : "Oʻtkazildi"}</dd>
+              </div>
+            )}
           </dl>
-          <p className="mt-4 text-sm text-ink-soft">Sinov toʻlovi: haqiqiy pul yechilmadi.</p>
+          {paid.provider === "sandbox" && <p className="mt-4 text-sm text-ink-soft">Sinov toʻlovi: haqiqiy pul yechilmadi.</p>}
         </Card>
       )}
 

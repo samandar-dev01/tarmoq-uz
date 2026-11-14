@@ -81,7 +81,9 @@ marketplace/
 │  │  ├─ auth.ts                  # hash, sign/verify, getSession, requireRole
 │  │  ├─ validators.ts            # Zod schemas
 │  │  ├─ orderMachine.ts          # allowed status transitions
-│  │  ├─ payments/sandbox.ts      # sandbox gateway + escrow ledger
+│  │  ├─ payments/sandbox.ts      # sandbox gateway (test cards)
+│  │  ├─ payments/escrow.ts       # markPaymentHeld / releaseEscrow / refundEscrow, shared by every way of paying
+│  │  ├─ payments/manual.ts       # manual card transfer: submit, admin confirm/reject, payout paid
 │  │  ├─ storage/{index,local,s3}.ts
 │  │  └─ audit.ts
 │  └─ types/

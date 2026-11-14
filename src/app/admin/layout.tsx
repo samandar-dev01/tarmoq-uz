@@ -1,7 +1,7 @@
 import { Container } from "@/components/ui/Container";
 import { NavLink } from "@/components/ui/NavLink";
 
-const TABS = [["/admin", "Umumiy koʻrinish"], ["/admin/providers", "Ijodkorlar"], ["/admin/orders", "Buyurtmalar"], ["/admin/reviews", "Sharhlar"]];
+const TABS = [["/admin", "Umumiy koʻrinish"], ["/admin/providers", "Ijodkorlar"], ["/admin/orders", "Buyurtmalar"], ["/admin/payments", "Toʻlovlar"], ["/admin/payouts", "Ijodkorlarga toʻlov"], ["/admin/reviews", "Sharhlar"]];
 
 // Navigation only. Every admin PAGE and API route re-checks the ADMIN role itself.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

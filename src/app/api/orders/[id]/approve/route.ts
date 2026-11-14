@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok } from "@/lib/http";
 import { assertTransition } from "@/lib/orderMachine";
 import { getParticipantOrder } from "@/lib/orders";
-import { releaseEscrow } from "@/lib/payments/sandbox";
+import { releaseEscrow } from "@/lib/payments/escrow";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 

@@ -53,7 +53,7 @@ export function nextAction(status: OrderStatus, role: "client" | "provider", has
     AWAITING_PAYMENT: "Mijoz toʻlov qilishini kuting",
     IN_PROGRESS: "Tayyor videoni yuklang",
     DELIVERED: "Mijoz ishni qabul qilishini kuting",
-    COMPLETED: "Yakunlandi, toʻlov oʻtkazildi",
+    COMPLETED: "Yakunlandi",
     CANCELLED: "Bekor qilingan",
     DISPUTED: "Administrator nizoni koʻrib chiqmoqda",
   };

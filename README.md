@@ -101,6 +101,17 @@ Payments run through an internal sandbox gateway. The browser sends card details
 
 Use any future expiry (for example `12/34`) and any 3-digit CVC. The checkout page has "Fill:" buttons for these cards.
 
+### Manual card transfer (real money, by hand)
+
+Set `PAYMENT_PROVIDER=manual` plus `MANUAL_PAY_CARD`, `MANUAL_PAY_HOLDER` (and optionally `MANUAL_PAY_BANK`) to take real payments without a gateway. The test cards are switched off in this mode.
+
+1. Checkout shows the owner's card, the exact amount and a short order code to put in the transfer comment. The client sends the money, attaches the bank receipt (a JPG, PNG, WebP or PDF up to 5 MB, checked by its real contents; the button stays disabled without one) and presses **Men toʻladim** (I paid). The payment becomes *awaiting confirmation* and the admin gets a Telegram alert if Telegram is set up. Receipts are stored like delivery files and only admins can open them (images in the page, PDFs as a download).
+2. An admin checks the bank app, then confirms or rejects it under **Admin, Toʻlovlar**. Confirming holds the payment and starts the order (the same `markPaymentHeld` code the sandbox uses). Rejecting lets the client try again. An order cannot be cancelled while a transfer is awaiting confirmation.
+3. When the client approves the video, the creator's share (after the platform fee) appears under **Admin, Ijodkorlarga toʻlov** as *pending*. The admin sends the money to the creator's saved card by hand and presses **Oʻtkazdim**. Creators save their payout card on their dashboard; it is stored encrypted (`PAYOUT_ENCRYPTION_KEY`, or a key derived from `AUTH_SECRET`).
+4. A dispute that ends in a refund only marks the payment refunded in the database: the admin must also send the money back to the client by hand.
+
+Confirm a transfer only after you see the money in your own bank app, never from a screenshot alone.
+
 How money moves (all recorded in the `LedgerEntry` table):
 1. **Pay** → `ESCROW_HOLD`, payment status `HELD`.
 2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (10%, minimum 15 000 UZS; the one constant in `src/lib/fees.ts`).
@@ -174,13 +185,13 @@ See `.env.example`. The important ones:
 ### Going live with real payments
 
 The sandbox is real code with a real state machine, but it does not talk to a bank. Before charging real customers:
-- Implement a gateway adapter (for example Payme, Click or Stripe) that creates the payment, confirms it from the **gateway's signed webhook** (not from the browser), and calls the same hold/release/refund functions in `src/lib/payments/sandbox.ts`.
+- Implement a gateway adapter (for example Payme, Click or Stripe) that creates the payment, confirms it from the **gateway's signed webhook** (not from the browser), and calls the same hold/release/refund functions in `src/lib/payments/escrow.ts` (`markPaymentHeld`, `releaseEscrow`, `refundEscrow`).
 - Check the legal and tax requirements for holding client funds and paying providers in Uzbekistan; many gateways do this through their own marketplace or split-payment products.
 - Run the payment tests (`tests/e2e/payments.spec.ts`) against the new adapter.
 
 ## 11. Known limitations (be aware before launch)
 
-- **Payments are sandbox only** (see above).
+- **No payment gateway yet.** Payments are either the sandbox (no real money) or the manual card transfer mode, where an admin confirms each payment and sends each payout by hand (see above).
 - **No email or SMS.** There is no email verification, password reset, or notification when a message or order arrives. Users must check the site.
 - **Messaging uses 5-second polling**, not websockets. Fine for this scale; use a realtime service if you need instant delivery.
 - **Video uploads pass through the server** and are held in memory (limit `MAX_UPLOAD_MB`, default 100). For larger files, switch to direct-to-bucket (presigned) uploads.

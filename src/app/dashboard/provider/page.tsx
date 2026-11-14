@@ -4,25 +4,36 @@ import { formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
 import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatTile } from "@/components/ui/StatTile";
 import { OrderList } from "@/components/orders/OrderList";
+import { PayoutDetailsForm } from "@/components/dashboard/PayoutDetailsForm";
 
 export const metadata = { title: "Ijodkor kabineti" };
 
 export default async function ProviderDashboard() {
   const user = await requirePageRole("PROVIDER");
-  const [profile, orders, earned, held] = await Promise.all([
-    prisma.providerProfile.findUnique({ where: { userId: user.id }, select: { slug: true, status: true, ratingAvg: true, ratingCount: true } }),
+  const [profile, orders, earned, held, owed] = await Promise.all([
+    prisma.providerProfile.findUnique({
+      where: { userId: user.id },
+      select: { slug: true, status: true, ratingAvg: true, ratingCount: true, payoutHolder: true, payoutCardLast4: true },
+    }),
     prisma.order.findMany({
       where: { providerId: user.id },
       orderBy: { updatedAt: "desc" },
       include: { service: { select: { title: true } }, client: { select: { name: true } } },
     }),
-    prisma.ledgerEntry.aggregate({ where: { type: "PROVIDER_PAYOUT", payment: { order: { providerId: user.id } } }, _sum: { amount: true } }),
+    // "Received" counts only money that has really reached the creator: sandbox payments (no payout record) and paid-out payouts.
+    prisma.ledgerEntry.aggregate({
+      where: { type: "PROVIDER_PAYOUT", payment: { order: { providerId: user.id }, OR: [{ payout: { is: null } }, { payout: { status: "PAID" } }] } },
+      _sum: { amount: true },
+    }),
     prisma.payment.aggregate({ where: { status: "HELD", order: { providerId: user.id } }, _sum: { amount: true } }),
+    prisma.payout.aggregate({ where: { providerId: user.id, status: "PENDING" }, _sum: { amount: true } }),
   ]);
+  const owedNow = owed._sum.amount ?? 0;
 
   const requests = orders.filter((o) => o.status === "REQUESTED").length;
   const inProgress = orders.filter((o) => o.status === "IN_PROGRESS").length;
@@ -57,6 +68,19 @@ export default async function ProviderDashboard() {
         <StatTile label="Ushlab turilgan mablagʻ" value={formatUZS(held._sum.amount ?? 0)} compact />
         <StatTile label="Olingan daromad (komissiyasiz)" value={formatUZS(earned._sum.amount ?? 0)} tone="turquoise" compact />
       </dl>
+
+      {profile && (
+        <>
+          <h2 className="mb-4 mt-12">Pul olish</h2>
+          <Card>
+            <p className="mb-5 text-ink-soft">
+              Mijoz ishni qabul qilgach, daromadingiz (komissiyasiz) shu kartaga oʻtkaziladi.
+              {owedNow > 0 && <> Hozir oʻtkazilishi kutilayotgan: <strong>{formatUZS(owedNow)}</strong>.</>}
+            </p>
+            <PayoutDetailsForm holder={profile.payoutHolder} last4={profile.payoutCardLast4} />
+          </Card>
+        </>
+      )}
 
       <h2 className="mb-4 mt-12">Buyurtmalar</h2>
       {orders.length === 0 ? (

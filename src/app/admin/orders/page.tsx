@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { formatUZS } from "@/lib/format";
+import { manualPaymentsOn } from "@/lib/payments/mode";
+import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,6 +13,7 @@ export const metadata = { title: "Admin: buyurtmalar" };
 
 export default async function AdminOrders() {
   await requirePageRole("ADMIN");
+  const manual = manualPaymentsOn();
   const orders = await prisma.order.findMany({
     orderBy: { updatedAt: "desc" },
     take: 200,
@@ -45,6 +48,7 @@ export default async function AdminOrders() {
               {o.status === "DISPUTED" && (
                 <Card tone="pomegranate" padding="sm" className="mt-4 space-y-3">
                   <p><strong>Nizo sababi:</strong> {reason.get(o.id) || "Koʻrsatilmagan"}</p>
+                  {manual && <Alert variant="warning">Qoʻlda toʻlov: <strong>Mijozga qaytarish</strong> tugmasini bosishdan oldin pulni mijozning kartasiga oʻzingiz yuboring.</Alert>}
                   <ResolveDispute orderId={o.id} />
                 </Card>
               )}
