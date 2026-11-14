@@ -112,6 +112,12 @@ Set `PAYMENT_PROVIDER=manual` plus `MANUAL_PAY_CARD`, `MANUAL_PAY_HOLDER` (and o
 
 Confirm a transfer only after you see the money in your own bank app, never from a screenshot alone.
 
+To test this mode end to end (needs the local database from section 4), start the suite with the mode switched on; the test skips itself otherwise. Add `E2E_SHOTS=/some/folder` to also save screenshots of every page at desktop and phone width:
+
+```bash
+PAYMENT_PROVIDER=manual MANUAL_PAY_CARD="8600 1234 5678 9012" MANUAL_PAY_HOLDER="TEST OWNER" npx playwright test manual-payments
+```
+
 How money moves (all recorded in the `LedgerEntry` table):
 1. **Pay** → `ESCROW_HOLD`, payment status `HELD`.
 2. **Client approves** → `HELD → RELEASED`: `PROVIDER_PAYOUT` plus `PLATFORM_FEE` (10%, minimum 15 000 UZS; the one constant in `src/lib/fees.ts`).

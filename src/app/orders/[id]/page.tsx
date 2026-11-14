@@ -76,7 +76,12 @@ export default async function OrderPage({ params, searchParams }: { params: { id
         <div className="mt-6"><OrderTimeline status={order.status} /></div>
         {!isAdmin && (
           <Card tone="saffron" padding="sm" className="mt-6">
-            <p className="font-bold">Keyingi qadam: {nextAction(order.status, role, !!order.review)}</p>
+            <p className="font-bold">
+              Keyingi qadam:{" "}
+              {awaitingConfirmation
+                ? isClient ? "Administrator toʻlovni tasdiqlashini kuting" : "Mijozning toʻlovi tekshirilmoqda"
+                : nextAction(order.status, role, !!order.review)}
+            </p>
           </Card>
         )}
       </Card>

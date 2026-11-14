@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { FlashToast } from "@/components/ui/FlashToast";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
+import { paymentsAreTest } from "@/lib/payments/mode";
 
 // Unbounded (wide, round) is for headlines and the logo; Onest is for everything you read. Both cover Latin and Cyrillic.
 const display = Unbounded({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "700", "800"], variable: "--font-display", display: "swap" });
@@ -50,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Container>
           <div className="border-t-2 border-ink bg-paper-deep">
             <Container pad="none" className="py-4 text-sm text-ink-soft">
-              © {new Date().getFullYear()} Tarmoq.uz. Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi.
+              © {new Date().getFullYear()} Tarmoq.uz.{paymentsAreTest() && " Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi."}
             </Container>
           </div>
         </footer>

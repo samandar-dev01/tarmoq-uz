@@ -1,6 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { apiAs, registerApi, jasurServiceId, goodBrief } from "./helpers";
 
+// A page may say "payments are a test" only while they are. With real money moving (manual mode) it must not.
+test("the footer admits test mode only while payments are the sandbox", async ({ page }) => {
+  const sandbox = (process.env.PAYMENT_PROVIDER ?? "sandbox") === "sandbox";
+  await page.goto("/");
+  await expect(page.getByText("Toʻlovlar hozircha sinov rejimida ishlaydi")).toHaveCount(sandbox ? 1 : 0);
+});
+
 // Payment success must come from the server's own check of the card, never from anything the browser claims.
 test("sandbox payments cannot be faked", async () => {
   const client = await registerApi("CLIENT");
