@@ -73,7 +73,7 @@ export default async function ProviderPage({ params }: Props) {
         </div>
         <div className="px-5 pb-7 sm:px-8">
           <div className="flex items-start justify-between gap-4">
-            <Avatar name={profile.user.name} seed={profile.slug} size="xl" className="-mt-12" />
+            <Avatar name={profile.user.name} size="xl" className="-mt-12 ring-4 ring-surface" />
             <div className="flex gap-2 pt-4">
               {isOwner ? (
                 <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">Profilni tahrirlash</ButtonLink>
