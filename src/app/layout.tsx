@@ -8,6 +8,8 @@ import { Container } from "@/components/ui/Container";
 import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { paymentsAreTest } from "@/lib/payments/mode";
 import { SITE_NAME, siteUrl } from "@/lib/site";
+import { getTheme } from "@/lib/theme";
+import { THEME_BROWSER_COLOR } from "@/lib/themePure";
 
 // Unbounded (wide, round) is for headlines and the logo; Onest is for everything you read. Both cover Latin and Cyrillic.
 const display = Unbounded({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "700", "800"], variable: "--font-display", display: "swap" });
@@ -25,14 +27,19 @@ export const metadata: Metadata = {
   // Optional owner-set codes for Google Search Console and Yandex Webmaster; nothing is printed when they are empty.
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined, yandex: process.env.YANDEX_VERIFICATION || undefined },
 };
-// The browser bar colour cannot read CSS variables, so this mirrors --c-paper in globals.css.
-const THEME_COLOR = "#090D16";
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: THEME_COLOR };
+// The browser bar colour follows the visitor's colour scheme. It cannot read CSS variables, so it gets the scheme's paper colour
+// (src/lib/themePure.ts) from the same `theme` cookie the layout below uses. Reading a cookie here makes the route dynamic,
+// which the layout already is (it reads the session).
+export async function generateViewport(): Promise<Viewport> {
+  return { width: "device-width", initialScale: 1, themeColor: THEME_BROWSER_COLOR[await getTheme()] };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getCurrentUser();
+  // The scheme is decided here, on the server, from the cookie: the first byte of HTML is already in it (no script, no flash).
+  const theme = await getTheme();
   return (
-    <html lang="uz" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
+    <html lang="uz" data-theme={theme} data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
         {/* Shared by every creator cover (class "ikat"): rows of threads slip sideways a little, like dyed warp. */}
         <svg aria-hidden="true" width="0" height="0" className="absolute">

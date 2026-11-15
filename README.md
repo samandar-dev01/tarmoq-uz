@@ -29,7 +29,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 | Admin | `src/app/admin`, `src/app/api/admin/*` | approve or suspend providers, resolve disputes, hide reviews, stats |
 | Audit log | `src/lib/audit.ts` | agreement acceptance, payments, approvals, admin actions |
 | Loading, error, empty, success states | `src/components/ui`, `loading.tsx`, `error.tsx` | used on every data screen |
-| Design system | `tailwind.config.ts`, `src/app/globals.css`, `src/components/ui` | Colours (CSS variables), fonts, radii and shadows live in one place: change a variable in `globals.css` to re-skin the site. Shared pieces: `Button`/`ButtonLink`, `Card`, `Container`, `Field`, `Avatar`, `Stars`, `StatTile`, `NavLink`, `Alert`, `EmptyState`. |
+| Design system | `tailwind.config.ts`, `src/app/globals.css`, `src/components/ui` | Colours (CSS variables), fonts, radii and shadows live in one place: change a variable in `globals.css` to re-skin the site. Two colour schemes share those variables: dark (the default for a first visit) and light (`html[data-theme="light"]`). The header's sun/moon button (`ThemeToggle`) flips it and remembers the choice in the `theme` cookie; the root layout reads the cookie, so the first byte of every page is already in the right scheme. A new colour needs a value in both blocks (`tests/unit/themeContrast.test.ts` checks every real pairing for contrast). Shared pieces: `Button`/`ButtonLink`, `Card`, `Container`, `Field`, `Avatar`, `Stars`, `StatTile`, `NavLink`, `Alert`, `EmptyState`, `Icon`, `ThemeToggle`. |
 
 ## 2. Requirements
 

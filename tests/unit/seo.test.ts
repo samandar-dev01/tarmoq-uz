@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { absoluteUrl, siteUrl } from "@/lib/site";
 import { searchSchema } from "@/lib/providers";
 import { CITIES } from "@/lib/constants";
+import { THEME_BROWSER_COLOR } from "@/lib/themePure";
 import {
   AI_CRAWLERS,
   breadcrumbJsonLd,
@@ -477,8 +478,9 @@ describe("manifest", () => {
     const hex = `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
     expect(m.background_color).toBe(hex);
     expect(m.theme_color).toBe(hex);
-    const layout = readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
-    expect(layout).toContain(`const THEME_COLOR = "${hex}"`);
+    // The browser bar colour (layout.tsx, generateViewport) comes from the same table; the light scheme's is checked in themeContrast.test.ts.
+    expect(THEME_BROWSER_COLOR.dark).toBe(hex);
+    expect(readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8")).toContain("THEME_BROWSER_COLOR[await getTheme()]");
   });
 });
 
