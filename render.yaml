@@ -55,6 +55,15 @@ services:
         sync: false
       - key: MANUAL_PAY_BANK
         sync: false
+      # The site's public address. Canonical links, sitemap, robots.txt, Open Graph and llms.txt are all built from it, so
+      # moving to a real domain later means changing this one line (README "Search and AI visibility").
+      - key: APP_URL
+        value: https://tarmoq-uz.onrender.com
+      # Optional: the verification codes Google Search Console and Yandex Webmaster give the owner. Empty = nothing is added to the pages.
+      - key: GOOGLE_SITE_VERIFICATION
+        sync: false
+      - key: YANDEX_VERIFICATION
+        sync: false
       - key: SESSION_MAX_AGE_DAYS
         value: "7"
       # Uploads are buffered in memory and a free instance has 512 MB, so keep videos short (Supabase's free limit is 50 MB anyway).

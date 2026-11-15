@@ -200,6 +200,8 @@ See `.env.example`. The important ones:
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Optional. When both are set, a Telegram message (creator name and city, plus a link to `/admin/providers`) is sent to the admin each time a creator submits a profile for review. Create the bot with @BotFather, message it once, and use your chat id. Both empty = off. A Telegram failure never affects the creator's submit. The link uses `APP_URL`, or Render's `RENDER_EXTERNAL_URL` if that is unset. |
+| `APP_URL` | The site's public address, no trailing slash (live: `https://tarmoq-uz.onrender.com`). Canonical links, the sitemap, `robots.txt`, Open Graph and `llms.txt` are built from it; falls back to Render's `RENDER_EXTERNAL_URL`, then `http://localhost:3000`. See section 14. |
+| `GOOGLE_SITE_VERIFICATION`, `YANDEX_VERIFICATION` | Optional. The verification codes from Google Search Console and Yandex Webmaster; when set, the matching `<meta>` tag is added to every page. |
 
 ## 10. Production deployment
 
@@ -263,3 +265,22 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
 6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.
 
 Free-plan limits to know: videos up to 25 MB (set by `MAX_UPLOAD_MB`), 512 MB RAM, shared CPU, no SLA. Payments are still the sandbox.
+
+## 14. Search and AI visibility
+
+What exists, so Google, Yandex and AI assistants (ChatGPT, Claude, Perplexity and others) can find and read the site:
+
+- **One address setting.** `APP_URL` (see `src/lib/site.ts`) is the only place that knows the site's address. Canonical links, Open Graph, the sitemap, `robots.txt`, structured data and `llms.txt` all come from it, so a new domain is a one-line change in `render.yaml` (and a redeploy). It is read on each request, not baked in at build time.
+- **Indexable pages:** the home page, `/search`, one `/search?category=<slug>` page per category, and every approved creator at `/providers/<slug>`. A search with a word, a city, a price, a sort order or a page number is not indexed (`noindex, follow`, canonical `/search`). Everything else (`/api`, `/admin`, `/dashboard`, `/orders`, `/checkout`, `/messages`, `/settings`, `/login`, `/register`, `/forbidden`) is both disallowed in `robots.txt` and sent with `X-Robots-Tag: noindex, nofollow` (`next.config.mjs`; keep it in step with `PRIVATE_PATHS` in `src/lib/seo.ts`).
+- **`/robots.txt`** welcomes the AI crawlers by name (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, PerplexityBot, Google-Extended, Applebot-Extended) and lists the sitemap. **`/sitemap.xml`** is built from the database on each request: approved creators of active accounts only, up to 5000. **`/llms.txt`** is a plain-text guide for AI assistants (what the site is, the categories, the creators), cached for an hour.
+- **Page metadata:** each public page has its own title, description, canonical address and Open Graph card (the picture is `src/app/opengraph-image.tsx`); there is also a web app manifest.
+- **Structured data (JSON-LD):** organisation and website with a search box on the home page; a visible FAQ with the same text as `FAQPage` data; a profile page with a person and one offer per active package on each creator page (the star rating only when real reviews are shown); a breadcrumb and a creator list on `/search`. The builders are plain functions in `src/lib/seo.ts`.
+- **Rule: no payment promise** in any title, description, Open Graph, JSON-LD, FAQ or `llms.txt` text. Payments are manual or in test mode, and a meta tag cannot carry the "Sinov rejimi" badge. `tests/unit/seo.test.ts` fails if such a word appears, and `tests/e2e/seo.spec.ts` checks the pages themselves.
+
+**Three actions only the owner can do** (nothing here can be done from the code):
+
+1. Add the site to **Google Search Console** and to **Yandex Webmaster** (a "URL prefix" property for the address in `APP_URL`).
+2. Copy each verification code (just the code, from the `content="..."` part of the meta tag they show) into Render > the service > Environment, as `GOOGLE_SITE_VERIFICATION` and `YANDEX_VERIFICATION`, and let it redeploy. Then press "Verify" in both tools.
+3. Submit `https://<your address>/sitemap.xml` in both tools.
+
+A real domain matters most. `tarmoq-uz.onrender.com` is a subdomain of a shared host, so search engines give it little trust, the address is hard to remember, and every ranking built on it is lost if the site moves. When a domain is bought, point it at Render, change `APP_URL` to it, redeploy, and add the new address to both webmaster tools (the sitemap, canonical links and structured data then follow automatically).

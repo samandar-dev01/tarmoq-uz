@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { paymentsAreTest } from "@/lib/payments/mode";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 
 // Unbounded (wide, round) is for headlines and the logo; Onest is for everything you read. Both cover Latin and Cyrillic.
 const display = Unbounded({ subsets: ["latin", "latin-ext", "cyrillic"], weight: ["500", "700", "800"], variable: "--font-display", display: "swap" });
@@ -16,6 +17,13 @@ export const metadata: Metadata = {
   title: { default: "Tarmoq.uz: ijodkorlar tarmogʻi", template: "%s · Tarmoq.uz" },
   // No payment promise here: a meta description cannot carry the "Sinov rejimi" badge (hard rule 2).
   description: "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.",
+  // Every address search engines and link previews see is built from APP_URL (src/lib/site.ts), so a new domain is one setting.
+  metadataBase: new URL(siteUrl()),
+  // The share picture comes from app/opengraph-image.tsx. A page that sets its own openGraph repeats it (ogDefaults in src/lib/seo.ts).
+  openGraph: { siteName: SITE_NAME, locale: "uz_UZ", type: "website" },
+  twitter: { card: "summary_large_image" },
+  // Optional owner-set codes for Google Search Console and Yandex Webmaster; nothing is printed when they are empty.
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined, yandex: process.env.YANDEX_VERIFICATION || undefined },
 };
 // The browser bar colour cannot read CSS variables, so this mirrors --c-paper in globals.css.
 const THEME_COLOR = "#090D16";
