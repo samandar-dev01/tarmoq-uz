@@ -6,7 +6,7 @@ Place this file at the repo root: `marketplace/ARCHITECTURE.md`.
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Framework | Next.js 14 (App Router) + TypeScript | One codebase for UI + API, SSR for SEO on provider profiles |
+| Framework | Next.js 16 (App Router), React 19 + TypeScript | One codebase for UI + API, SSR for SEO on provider profiles |
 | DB | PostgreSQL 15+ | Relational integrity for orders/payments |
 | ORM / migrations | Prisma | Typed queries, real migration files |
 | Auth | Custom credentials auth: bcryptjs + signed JWT in httpOnly cookie (jose) | No external service needed; role in token, re-checked against DB on sensitive routes |
@@ -27,7 +27,7 @@ marketplace/
 ├─ .env.example
 ├─ next.config.mjs
 ├─ tailwind.config.ts
-├─ proxy.ts                       # route guards by role
+├─ proxy.ts                       # route guards by role. INACTIVE: never loaded (see §3)
 ├─ prisma/
 │  ├─ schema.prisma
 │  ├─ migrations/
@@ -96,7 +96,8 @@ marketplace/
 
 - **CLIENT**: search, order, accept agreement, pay, approve, review own completed orders, message order counterparts.
 - **PROVIDER**: own profile/services, accept/decline orders, propose terms, deliver, message.
-- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced in `proxy.ts` (UI) **and** `requireRole('ADMIN')` in every `/api/admin/*` handler (never trust middleware alone).
+- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced by `requirePageRole('ADMIN')` in every admin page and `requireRole('ADMIN')` in every `/api/admin/*` handler.
+- The root `proxy.ts` was meant as an extra guard in front of these checks, but it is **inactive**: the app lives in `src/` and Next.js only loads that file from `src/`, so it has never run. All access control is in the pages and route handlers above.
 - Object-level checks: every order/conversation/message route verifies the caller is a participant.
 
 ## 4. Order state machine
@@ -140,7 +141,7 @@ Every data view implements: loading (skeleton/spinner), error (message + retry),
 ## 8. Delivery phases
 
 1. **Phase 1 (this)**: architecture, structure, schema, env, flows.
-2. **Phase 2**: project scaffold, config, migrations, seed, auth, middleware, `lib/*`.
+2. **Phase 2**: project scaffold, config, migrations, seed, auth, route guard file (`proxy.ts`, which turned out never to be loaded), `lib/*`.
 3. **Phase 3**: homepage, search/filters, provider profiles, wizard.
 4. **Phase 4**: orders, agreements, state machine, dashboards.
 5. **Phase 5**: messaging, reviews, uploads/delivery.

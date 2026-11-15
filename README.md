@@ -4,7 +4,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 
 **The interface is in Uzbek (Latin script).** Visible text is written inline in the components, and the API error messages and the agreement template are Uzbek too. This README stays in English and quotes Uzbek button labels with an English gloss in brackets.
 
-**Stack:** Next.js 14 (App Router) · TypeScript · PostgreSQL · Prisma · Tailwind · Zod · Vitest · Playwright
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · PostgreSQL · Prisma · Tailwind · Zod · Vitest · Playwright
 
 > **Important:** payments are a **sandbox**. No real money moves. See "Going live with real payments" before launching publicly.
 
@@ -14,7 +14,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 
 | Area | Where | Notes |
 |---|---|---|
-| Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*`, `proxy.ts` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
+| Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
 | Homepage | `src/app/page.tsx` | Hero search with a live creator feed, categories, top creators |
 | Search and filters | `src/app/search`, `src/lib/providers.ts` | keyword, city, category, price range, sort, pagination, URL-shareable |
 | Provider profiles | `src/app/providers/[slug]` | packages, portfolio, reviews, order button |
@@ -33,7 +33,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 
 ## 2. Requirements
 
-- Node.js 20 or newer
+- Node.js 20.9 or newer
 - PostgreSQL 15 or newer (Docker Compose file included)
 
 ## 3. Database setup
@@ -72,6 +72,8 @@ npm run typecheck    # TypeScript check
 npm test             # unit tests (Vitest)
 npm run test:e2e     # end-to-end tests (Playwright); first: npx playwright install chromium
 ```
+
+`GET /api/health` answers `{"status":"ok"}` without touching the database. `GET /api/health/stream` is a one-minute Server-Sent Events test stream (one `data: tick N` line about every 2 seconds) for checking that streaming survives the host's proxy: `curl -N https://<site>/api/health/stream`. At most 5 such streams run at once, and one address may start 10 per minute; beyond that the answer is HTTP 429.
 
 ## 6. Demo accounts
 
@@ -161,7 +163,29 @@ npm test             # unit: order state machine, sandbox card rules and fees, a
 npm run test:e2e     # needs the app's database to be migrated and seeded
 ```
 
-The Playwright suite (`tests/e2e`) covers: the full client journey above through the UI (`client-journey.spec.ts`); anonymous, client, provider and admin permission boundaries and order/conversation privacy (`permissions.spec.ts`); payment tamper-resistance, declined cards, double payment, upload validation, one review per order (`payments.spec.ts`); and admin approval (`admin.spec.ts`).
+The Playwright suite (`tests/e2e`) covers: the full client journey above through the UI (`client-journey.spec.ts`); anonymous, client, provider and admin permission boundaries and order/conversation privacy (`permissions.spec.ts`); payment tamper-resistance, declined cards, double payment, upload validation, one review per order (`payments.spec.ts`); admin approval (`admin.spec.ts`); and the health check and its test stream (`health.spec.ts`).
+
+### 8.5 Production-style test run
+
+`npm run test:e2e` runs against `next dev`. To test the real production build (`next build` + `next start`) on a fresh throwaway database:
+
+```bash
+PG_MODULE_DIR=/path/to/pg-folder npm run test:e2e:prod
+```
+
+It needs a folder outside the repo that holds the `embedded-postgres` package, starts and stops everything itself, and never touches the live site or your `.env`. Details, ports and cleanup: [`scripts/e2e-prod/README.md`](scripts/e2e-prod/README.md).
+
+### 8.6 Project agents (`.claude/agents`)
+
+Five Claude Code agents are kept with the project, so they are available in VS Code:
+
+| Agent | What it does |
+|---|---|
+| `builder` | Implements one task on one branch, following the project rules. Never pushes or merges. |
+| `verifier` | Read-only second opinion: re-reads the diff, runs typecheck, unit tests, the production-style rig and browser checks, and reports PASS or FAIL with evidence. |
+| `e2e-runner` | Runs `npm run test:e2e:prod` (or one spec) and summarises the failures. |
+| `ru-reviewer` | Reviews the Russian dictionary `src/i18n/ru.ts` (once it exists) for wrong, unnatural or inconsistent wording. |
+| `a11y-checker` | Checks target sizes, focus, labels, contrast in both themes, keyboard flows and reduced motion. |
 
 ## 9. Environment variables
 
@@ -215,7 +239,7 @@ Supabase also publishes every table in the `public` schema over its public Data 
 See `ARCHITECTURE.md` for the design and `src/` for the code. Key conventions:
 - Every API route is wrapped in `handle()` (consistent JSON errors) and starts with `requireRole(...)` or `requireUser()`.
 - Order status changes go through `assertTransition()` and are applied with conditional `updateMany` so double clicks and races cannot apply twice.
-- Pages call `requirePageRole(...)`; middleware is only a first line of defence.
+- Pages call `requirePageRole(...)`. That check and the one in each API route are the access control. The root `proxy.ts` (route guards by role) is **inactive**: the app lives in `src/`, Next.js only loads that file from `src/`, so it has never run. It protects nothing; do not count on it.
 
 ## 13. Free deployment (Render + Supabase)
 
