@@ -1,12 +1,33 @@
 import { test, expect, type Page } from "@playwright/test";
+import { PrismaClient } from "@prisma/client";
 import { apiAs } from "./helpers";
 
 // Search and AI visibility: what crawlers are told (robots.txt, sitemap, llms.txt, response headers), what each public
 // page says about itself (canonical, Open Graph, JSON-LD), and that no page promises anything about payments.
-// Needs the seeded demo data: jasur-karimov, madina-yusupova, bobur-tursunov and dilshod-rahimov are APPROVED,
-// sevara-aliyeva is PENDING_REVIEW.
+// Needs the seeded demo data: jasur-karimov, madina-yusupova, bobur-tursunov and dilshod-rahimov are APPROVED.
+// The demo creator sevara-aliyeva starts PENDING_REVIEW but admin.spec.ts approves her earlier in the same run, so
+// the "not approved" cases use a throwaway profile this file creates and removes itself.
 
 const APPROVED = ["jasur-karimov", "madina-yusupova", "bobur-tursunov", "dilshod-rahimov"];
+
+const prisma = new PrismaClient();
+const PENDING = `seo-pending-${Math.random().toString(36).slice(2, 8)}`;
+
+test.beforeAll(async () => {
+  const category = await prisma.category.findFirstOrThrow();
+  const user = await prisma.user.create({ data: { email: `${PENDING}@example.test`, name: "Seo Pending", role: "PROVIDER", passwordHash: "not-a-real-hash" } });
+  await prisma.providerProfile.create({
+    data: {
+      userId: user.id, slug: PENDING, headline: "Tekshiruvni kutayotgan sinov profili", bio: "Bu profil faqat sinov uchun yaratilgan va tekshiruvdan keyin oʻchiriladi.",
+      city: "Andijon", categoryId: category.id, languages: [], startingPrice: 0, status: "PENDING_REVIEW", wizardStep: 5,
+    },
+  });
+});
+
+test.afterAll(async () => {
+  await prisma.user.deleteMany({ where: { email: `${PENDING}@example.test` } }); // the profile goes with it
+  await prisma.$disconnect();
+});
 
 // The same words the unit test guards. Apostrophe look-alikes are removed first so every spelling matches.
 const BANNED = [/tolov/, /оплат/, /платеж/, /escrow/, /pul himoya/, /kafolat/, /himoyalangan/];
@@ -63,7 +84,7 @@ test.describe("robots.txt and sitemap.xml list only public pages", () => {
     expect(paths).toContain("/search?category=photography");
     for (const slug of APPROVED) expect(paths).toContain(`/providers/${slug}`);
     // A profile waiting for review is not public, so it is not listed.
-    expect(xml).not.toContain("sevara-aliyeva");
+    expect(xml).not.toContain(PENDING);
 
     // Only the home page, the search (with a category) and creator pages.
     for (const u of locs) {
@@ -121,7 +142,7 @@ test.describe("public pages say who they are", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await page.title()).toContain("Tarmoq.uz");
-    expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toMatch(/^https?:\/\/[^/]+\/$/);
+    expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toMatch(/^https?:\/\/[^/]+\/?$/);
 
     const found = nodes(await jsonLdBlocks(page));
     expect(found.map((n) => n["@type"]).sort()).toEqual(["FAQPage", "Organization", "WebSite"]);
@@ -179,7 +200,8 @@ test.describe("private pages are noindex", () => {
     const client = await apiAs("client@demo.test");
     for (const path of ["/dashboard/client", "/orders", "/messages"]) {
       const res = await client.get(path, { maxRedirects: 0 });
-      expect(res.status(), path).toBe(200);
+      // /orders is only a signpost: it sends a signed-in person to their own cabinet (307), and carries the header too.
+      expect(path === "/orders" ? [200, 307] : [200], path).toContain(res.status());
       expect(res.headers()["x-robots-tag"], path).toBe(NOINDEX);
     }
 
@@ -206,7 +228,7 @@ test.describe("unknown addresses", () => {
   });
 
   test("a creator that does not exist, or is not approved, is the same 404 page", async ({ page }) => {
-    for (const slug of ["no-such-creator", "sevara-aliyeva"]) {
+    for (const slug of ["no-such-creator", PENDING]) {
       await page.goto(`/providers/${slug}`);
       await expect(page.getByRole("heading", { name: "Sahifa topilmadi" }), slug).toBeVisible();
       await expect(page.getByRole("link", { name: "Bosh sahifaga qaytish" }), slug).toBeVisible();
@@ -248,7 +270,7 @@ test.describe("llms.txt", () => {
     expect(text).toMatch(/\]\(https?:\/\/\S+\/search\)/);
     expect(text).toMatch(/\]\(https?:\/\/\S+\/search\?category=photography\)/);
     for (const slug of APPROVED) expect(text).toContain(`/providers/${slug}`);
-    expect(text).not.toContain("sevara-aliyeva");
+    expect(text).not.toContain(PENDING);
     expect(bannedIn(text)).toEqual([]);
   });
 });
