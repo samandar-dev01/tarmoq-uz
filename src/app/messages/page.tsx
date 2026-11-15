@@ -35,7 +35,7 @@ export default async function MessagesPage() {
                     <p className="truncate text-ink-soft">{c.last ? c.last.body.replace(/\s+/g, " ") : "Hali xabarlar yoʻq"}</p>
                   </div>
                   {c.unread > 0 && (
-                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-pomegranate px-2 text-sm font-bold text-white" aria-label={`${c.unread} ta oʻqilmagan`}>
+                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-pomegranate px-2 text-sm font-bold text-on-accent" aria-label={`${c.unread} ta oʻqilmagan`}>
                       {c.unread}
                     </span>
                   )}

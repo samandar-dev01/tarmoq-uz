@@ -96,11 +96,11 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
             <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl border px-4 py-2.5 ${
-                  mine ? "rounded-br-md border-white/10 bg-cobalt text-white" : "rounded-bl-md border-line-strong bg-paper-deep text-ink"
+                  mine ? "rounded-br-md border-on-accent/10 bg-cobalt text-on-accent" : "rounded-bl-md border-line-strong bg-paper-deep text-ink"
                 }`}
               >
                 {m.body}
-                <div className={`mt-1 text-xs ${mine ? "text-white/70" : "text-ink-mute"}`}>{formatMoment(new Date(m.createdAt))}</div>
+                <div className={`mt-1 text-xs ${mine ? "text-on-accent" : "text-ink-mute"}`}>{formatMoment(new Date(m.createdAt))}</div>
               </div>
             </div>
           );

@@ -32,7 +32,7 @@ const STEPS = [
   ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi.", "escrow"],
   ["Qabul qiling", "Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring."],
 ] as const;
-const STEP_COLORS = ["bg-cobalt text-white", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-white"];
+const STEP_COLORS = ["bg-cobalt text-on-accent", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-on-accent"];
 
 const PROMISES = [
   { title: "Shartlar yozma", text: "Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi.", tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },

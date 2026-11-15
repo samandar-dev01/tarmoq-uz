@@ -1,6 +1,7 @@
 import { initials } from "@/lib/format";
 
-// Creator art takes its colours from the theme, so a re-skin reaches it too.
+// Creator art takes its colours from the theme, so a re-skin reaches it too. The accent fills and the cover-ink and
+// cover-night strokes are the same in both colour schemes, so a creator's art looks the same in either.
 const PALETTE = ["rgb(var(--c-cobalt))", "rgb(var(--c-turquoise))", "rgb(var(--c-saffron))", "rgb(var(--c-pomegranate))", "rgb(var(--c-lilac))"] as const;
 
 function hash(s: string) {
@@ -32,11 +33,11 @@ export function coverArt(seed: string): string {
   const half = cell / 2;
   return [
     // A flat dimmer on top keeps the weave rich but never neon against the dark ground.
-    "linear-gradient(rgb(var(--c-night) / .44), rgb(var(--c-night) / .44))",
-    `linear-gradient(135deg, rgb(var(--c-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
-    `linear-gradient(225deg, rgb(var(--c-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
-    `linear-gradient(315deg, rgb(var(--c-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
-    `linear-gradient(45deg, rgb(var(--c-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
+    "linear-gradient(rgb(var(--c-cover-night) / .44), rgb(var(--c-cover-night) / .44))",
+    `linear-gradient(135deg, rgb(var(--c-cover-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
+    `linear-gradient(225deg, rgb(var(--c-cover-ink) / .16) 25%, transparent 25%) ${-half}px 0/${cell}px ${cell}px`,
+    `linear-gradient(315deg, rgb(var(--c-cover-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
+    `linear-gradient(45deg, rgb(var(--c-cover-night) / .22) 25%, transparent 25%) 0 0/${cell}px ${cell}px`,
     `repeating-linear-gradient(90deg, ${a} 0 ${w * 2}px, ${b} ${w * 2}px ${w * 3}px, ${c} ${w * 3}px ${w * 5}px, ${b} ${w * 5}px ${w * 6}px)`,
   ].join(", ");
 }

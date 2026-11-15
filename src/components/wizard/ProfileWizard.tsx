@@ -104,7 +104,7 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
                 onClick={() => { setError(null); setIssues([]); setStep(n); }}
                 className={`min-h-12 w-full rounded-ctl border px-1 py-2 font-bold transition-colors duration-150 ${
                   n === step
-                    ? "border-transparent bg-cobalt text-white shadow-lift-sm"
+                    ? "border-transparent bg-cobalt text-on-accent shadow-lift-sm"
                     : reachable
                       ? "border-line-strong bg-surface hover:bg-paper-deep"
                       : "border-line bg-paper-deep/60 text-ink-mute"

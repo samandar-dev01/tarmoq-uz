@@ -5,8 +5,9 @@ export const alt = "Tarmoq.uz";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// The image renderer cannot read CSS variables, so these mirror the theme in globals.css:
-// --c-paper, --c-surface, --c-ink, --c-ink-soft, --c-cobalt, --c-cobalt-dark, --c-saffron.
+// The image renderer cannot read CSS variables, so these mirror the dark theme in globals.css:
+// --c-paper, --c-surface, --c-ink, --c-ink-soft, --c-cobalt, --c-cobalt-dark, --c-saffron. One picture serves every link
+// preview, so it stays dark whatever scheme a visitor picked.
 const C = { paper: "#090D16", surface: "#111827", ink: "#F1F5F9", soft: "#CBD5E1", cobalt: "#2563EB", cobaltDark: "#93C5FD", saffron: "#F59E0B" };
 
 // The built-in font has no "ʻ", so the text here uses only letters it can draw.

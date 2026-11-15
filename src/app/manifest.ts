@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
-// A manifest cannot read CSS variables, so this mirrors --c-paper in globals.css (as THEME_COLOR in layout.tsx does).
+// A manifest cannot read CSS variables, and one file serves every visitor, so it cannot follow a visitor's colour scheme
+// either: an installed app starts on the dark paper colour (the dark --c-paper in globals.css, THEME_BROWSER_COLOR.dark).
 const PAPER = "#090D16";
 
 export default function manifest(): MetadataRoute.Manifest {

@@ -152,7 +152,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
         <Card as="section">
           <h2>Topshirilgan ish</h2>
           {latestDelivery && (
-            <video controls preload="metadata" className="mt-4 w-full rounded-ctl border border-line-strong bg-black" src={`/api/orders/${order.id}/delivery/${latestDelivery.id}`} />
+            <video controls preload="metadata" className="mt-4 w-full rounded-ctl border border-line-strong bg-media" src={`/api/orders/${order.id}/delivery/${latestDelivery.id}`} />
           )}
           <ul className="mt-4 space-y-3">
             {order.deliveries.map((d) => (

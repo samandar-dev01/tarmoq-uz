@@ -71,11 +71,11 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
               aria-checked={selected}
               onClick={() => setRole(r.value)}
               className={`rounded-card border p-4 text-left transition-[transform,box-shadow,background-color,border-color] duration-200 ease-snap ${
-                selected ? "border-transparent bg-cobalt text-white shadow-lift-sm" : "border-line-strong bg-surface hover:bg-paper-deep"
+                selected ? "border-transparent bg-cobalt text-on-accent shadow-lift-sm" : "border-line-strong bg-surface hover:bg-paper-deep"
               }`}
             >
               <span className="block font-bold">{r.title}</span>
-              <span className={`mt-1 block text-sm ${selected ? "text-white/85" : "text-ink-soft"}`}>{r.hint}</span>
+              <span className={`mt-1 block text-sm ${selected ? "text-on-accent" : "text-ink-soft"}`}>{r.hint}</span>
             </button>
           );
         })}
