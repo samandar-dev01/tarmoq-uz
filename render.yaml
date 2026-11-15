@@ -42,6 +42,9 @@ services:
         value: eu-central-1
       - key: S3_BUCKET
         value: deliveries
+      # Clients' bank receipts (JPG, PNG, WebP, PDF up to 5 MB) go to their own private bucket; videos stay in S3_BUCKET.
+      - key: S3_RECEIPTS_BUCKET
+        value: receipts
       # "sandbox" = test cards, no real money. "manual" = clients send money to the card below and an admin confirms it by hand.
       - key: PAYMENT_PROVIDER
         value: manual
