@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { FlashToast } from "@/components/ui/FlashToast";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
+import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { paymentsAreTest } from "@/lib/payments/mode";
 
 // Unbounded (wide, round) is for headlines and the logo; Onest is for everything you read. Both cover Latin and Cyrillic.
@@ -20,7 +21,8 @@ export const metadata: Metadata = {
 const THEME_COLOR = "#090D16";
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: THEME_COLOR };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const viewer = await getCurrentUser();
   return (
     <html lang="uz" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
@@ -46,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <p className="mt-2 max-w-sm text-ink-soft">Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.</p>
             </div>
             <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-0 sm:justify-end">
-              <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Ijodkorlar</ButtonLink>
+              {canBrowseCreators(viewer) && <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Ijodkorlar</ButtonLink>}
               <ButtonLink href="/register?role=provider" variant="link" className="inline-flex min-h-11 items-center">Ijodkor boʻlib qoʻshilish</ButtonLink>
               <ButtonLink href="/register?role=client" variant="link" className="inline-flex min-h-11 items-center">Buyurtma bermoqchiman</ButtonLink>
             </nav>

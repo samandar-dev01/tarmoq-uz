@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { formatDay, formatUZS, shortName } from "@/lib/format";
 import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
 import { Alert } from "@/components/ui/Alert";
@@ -18,6 +18,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
+  // A creator is sent away from this page; even the title it would have carried (a name, a headline) stays out of the response.
+  if (!canBrowseCreators(await getCurrentUser())) return { title: "Ijodkor profili" };
   const p = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     select: { headline: true, status: true, user: { select: { name: true } } },
@@ -29,6 +31,12 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 export default async function ProviderPage(props: Props) {
   const params = await props.params;
   const viewer = await getCurrentUser();
+  // A creator sees their own public profile and no one else's. Decided before the lookup, so the answer is the same
+  // for a profile that exists, one that is not approved and one that does not exist (no way to find out which are there).
+  if (viewer && !canBrowseCreators(viewer)) {
+    const own = await prisma.providerProfile.findUnique({ where: { userId: viewer.id }, select: { slug: true } });
+    if (own?.slug !== params.slug) redirect("/forbidden");
+  }
   const profile = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     include: {

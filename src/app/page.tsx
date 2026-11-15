@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { canBrowseCreators, getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { CITIES } from "@/lib/constants";
 import { parseSearch, searchProviders } from "@/lib/providers";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -33,6 +35,9 @@ function cycle<T>(items: T[], min: number): T[] {
 }
 
 export default async function HomePage() {
+  // The home page is the client's way in (a creator feed and a search). A creator who lands here, from the logo or an old link, goes to their cabinet.
+  const viewer = await getCurrentUser();
+  if (!canBrowseCreators(viewer)) redirect(ROLE_HOME.PROVIDER);
   const [featured, categories] = await Promise.all([
     searchProviders(parseSearch({ sort: "rating" }), 6),
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true } }),

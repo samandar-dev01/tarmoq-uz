@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser, ROLE_HOME } from "@/lib/auth";
+import { canBrowseCreators, getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { buttonClasses } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -9,7 +9,7 @@ export async function Header() {
   const user = await getCurrentUser();
   const links = (
     <>
-      <NavLink href="/search">Ijodkorlar</NavLink>
+      {canBrowseCreators(user) && <NavLink href="/search">Ijodkorlar</NavLink>}
       {user ? (
         <>
           <NavLink href={ROLE_HOME[user.role]}>{user.role === "ADMIN" ? "Admin" : "Kabinet"}</NavLink>

@@ -25,6 +25,65 @@ test.describe("anonymous visitors", () => {
   });
 });
 
+// A signed-in creator has their own cabinet and their own public profile, and does not see the creator list or other creators.
+test.describe("creators do not see other creators", () => {
+  test("a creator is kept out of the list, the search and other creators' profiles", async ({ page }) => {
+    await login(page, "jasur@demo.test");
+
+    // The home page is the client's way in: a creator goes straight to their cabinet.
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/dashboard\/provider$/);
+
+    // No menu or footer entry for the creator list.
+    await expect(page.getByRole("link", { name: "Ijodkorlar", exact: true })).toHaveCount(0);
+    await expect(page.locator('a[href="/search"]')).toHaveCount(0);
+
+    // The search and another creator's profile are closed, with and without filters.
+    // A profile that does not exist answers the same as one that does, so a creator cannot find out who is on the site.
+    for (const path of ["/search", "/search?city=Andijon", "/providers/madina-yusupova", "/providers/no-such-creator"]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/forbidden$/);
+    }
+    // Not even the name or headline travels in the response that sends the creator away.
+    const away = await page.request.get("/providers/madina-yusupova", { maxRedirects: 0 });
+    expect(await away.text()).not.toContain("Madina");
+
+    // The creator's own public profile still opens.
+    await page.goto("/providers/jasur-karimov");
+    await expect(page).toHaveURL(/\/providers\/jasur-karimov$/);
+    await expect(page.getByRole("heading", { name: "Jasur Karimov" })).toBeVisible();
+
+    // The messages page does not send a creator to the list either.
+    await page.goto("/messages");
+    await expect(page.locator('a[href="/search"]')).toHaveCount(0);
+
+    // The data behind the list is closed too, for this session only.
+    const res = await page.request.get("/api/providers");
+    expect(res.status()).toBe(403);
+  });
+
+  test("a client, an admin and a visitor still see the creators", async ({ page, request }) => {
+    // A visitor: the list, the API and a profile are public.
+    expect((await request.get("/api/providers")).status()).toBe(200);
+    await page.goto("/search");
+    await expect(page.getByText("Jasur Karimov")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ijodkorlar", exact: true }).first()).toBeVisible();
+
+    for (const email of ["client@demo.test", "admin@demo.test"]) {
+      const ctx = await apiAs(email);
+      expect((await ctx.get("/api/providers")).status()).toBe(200);
+      await ctx.dispose();
+    }
+
+    await login(page, "client@demo.test");
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/providers/madina-yusupova");
+    await expect(page.getByRole("heading", { name: "Madina Yusupova" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ijodkorlar", exact: true }).first()).toBeVisible();
+  });
+});
+
 test.describe("role boundaries", () => {
   test("a client cannot use admin or provider endpoints", async () => {
     const client = await apiAs("client@demo.test");

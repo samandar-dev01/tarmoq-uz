@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { parseSearch, searchProviders } from "@/lib/providers";
 import { FilterPanel } from "@/components/FilterPanel";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -11,6 +13,7 @@ export const metadata = { title: "Ijodkorlarni toping" };
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function SearchPage(props: Props) {
+  if (!canBrowseCreators(await getCurrentUser())) redirect("/forbidden");
   const searchParams = await props.searchParams;
   const filters = parseSearch(searchParams);
   const [result, categories] = await Promise.all([

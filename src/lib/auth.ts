@@ -71,3 +71,10 @@ export const ROLE_HOME: Record<AppRole, string> = {
   PROVIDER: "/dashboard/provider",
   ADMIN: "/admin",
 };
+
+/**
+ * Creators do not see other creators. The creator list (the home page feed, the search, other creators' profiles)
+ * is for visitors, clients and admins; a signed-in creator has only their own cabinet and their own public profile.
+ * Every place that lists or links to creators asks this one question, so the rule lives here and nowhere else.
+ */
+export const canBrowseCreators = (user: { role: AppRole } | null) => user?.role !== "PROVIDER";
