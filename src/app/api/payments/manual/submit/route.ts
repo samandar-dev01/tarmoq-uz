@@ -35,7 +35,7 @@ export const POST = handle(async (req) => {
 
   // The extension and content type come from what the bytes really are, never from the client's file name or type.
   const key = `receipts/${orderId.replace(/[^\w-]/g, "")}/${randomUUID()}.${checked.type.ext}`;
-  await putFile(key, bytes, checked.type.contentType);
+  await putFile(key, bytes, checked.type.contentType, "receipts");
 
   let created = false;
   try {
@@ -48,7 +48,7 @@ export const POST = handle(async (req) => {
     }
   } finally {
     // A repeat press or any failure leaves the file attached to nothing, so remove it.
-    if (!created) await removeFile(key).catch(() => undefined);
+    if (!created) await removeFile(key, "receipts").catch(() => undefined);
   }
   return ok({ status: "AWAITING_CONFIRMATION" });
 });

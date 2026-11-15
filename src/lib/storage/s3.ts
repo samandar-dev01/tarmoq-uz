@@ -1,6 +1,8 @@
 // S3-compatible storage (AWS S3, Cloudflare R2, MinIO, ...). Loaded only when STORAGE_DRIVER=s3.
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { bucketFor, type StorageArea } from "./bucketPure";
+import { contentDisposition } from "./disposition";
 
 let client: S3Client | null = null;
 
@@ -22,28 +24,28 @@ function s3() {
   return client;
 }
 
-const bucket = () => {
-  if (!process.env.S3_BUCKET) throw new Error("S3_BUCKET is not configured");
-  return process.env.S3_BUCKET;
+const bucket = (area: StorageArea) => {
+  const name = bucketFor(area);
+  if (!name) throw new Error(area === "receipts" ? "S3_RECEIPTS_BUCKET (or S3_BUCKET) is not configured" : "S3_BUCKET is not configured");
+  return name;
 };
 
-export async function put(key: string, data: Buffer, contentType: string) {
-  await s3().send(new PutObjectCommand({ Bucket: bucket(), Key: key, Body: data, ContentType: contentType }));
+export async function put(key: string, data: Buffer, contentType: string, area: StorageArea = "deliveries") {
+  await s3().send(new PutObjectCommand({ Bucket: bucket(area), Key: key, Body: data, ContentType: contentType }));
 }
 
-export async function remove(key: string) {
-  await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+export async function remove(key: string, area: StorageArea = "deliveries") {
+  await s3().send(new DeleteObjectCommand({ Bucket: bucket(area), Key: key }));
 }
 
-export async function signedUrl(key: string, filename: string, contentType: string, download: boolean) {
-  const safe = filename.replace(/["\r\n]/g, "");
+export async function signedUrl(key: string, filename: string, contentType: string, download: boolean, area: StorageArea = "deliveries") {
   return getSignedUrl(
     s3(),
     new GetObjectCommand({
-      Bucket: bucket(),
+      Bucket: bucket(area),
       Key: key,
       ResponseContentType: contentType,
-      ResponseContentDisposition: `${download ? "attachment" : "inline"}; filename="${safe}"`,
+      ResponseContentDisposition: contentDisposition(filename, download),
     }),
     { expiresIn: 300 },
   );

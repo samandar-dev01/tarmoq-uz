@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { HttpError, handle } from "@/lib/http";
-import { isS3, localStore, signedFileUrl } from "@/lib/storage";
+import { contentDisposition, isS3, localStore, signedFileUrl } from "@/lib/storage";
 
 type Ctx = { params: Promise<{ id: string; deliveryId: string }> };
 
@@ -47,12 +47,11 @@ export const GET = handle(async (req, ctx: Ctx) => {
   }
 
   const stream = Readable.toWeb(localStore.read(delivery.fileKey, { start, end })) as unknown as ReadableStream;
-  const safeName = delivery.fileName.replace(/["\r\n]/g, "");
   const headers: Record<string, string> = {
     "Content-Type": delivery.mimeType,
     "Content-Length": String(end - start + 1),
     "Accept-Ranges": "bytes",
-    "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${safeName}"`,
+    "Content-Disposition": contentDisposition(delivery.fileName, download),
     "Cache-Control": "private, no-store",
   };
   if (status === 206) headers["Content-Range"] = `bytes ${start}-${end}/${total}`;

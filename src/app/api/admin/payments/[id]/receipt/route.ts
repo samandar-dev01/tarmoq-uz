@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { HttpError, handle } from "@/lib/http";
-import { isS3, localStore, signedFileUrl } from "@/lib/storage";
+import { contentDisposition, isS3, localStore, signedFileUrl } from "@/lib/storage";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -16,11 +16,11 @@ export const GET = handle(async (_req, ctx: Ctx) => {
     select: { receiptKey: true, receiptName: true, receiptType: true },
   });
   if (!payment?.receiptKey || !payment.receiptType) throw new HttpError(404, "Chek topilmadi.");
-  const name = (payment.receiptName ?? "chek").replace(/["\r\n]/g, "");
+  const name = payment.receiptName ?? "chek";
   // Images are shown in the page; a PDF is downloaded, so no PDF viewer ever runs inside the site's own origin.
   const download = payment.receiptType === "application/pdf";
 
-  if (isS3()) return NextResponse.redirect(await signedFileUrl(payment.receiptKey, name, payment.receiptType, download));
+  if (isS3()) return NextResponse.redirect(await signedFileUrl(payment.receiptKey, name, payment.receiptType, download, "receipts"));
 
   const total = await localStore.size(payment.receiptKey).catch(() => {
     throw new HttpError(404, "Chek topilmadi.");
@@ -30,7 +30,7 @@ export const GET = handle(async (_req, ctx: Ctx) => {
     headers: {
       "Content-Type": payment.receiptType,
       "Content-Length": String(total),
-      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${name}"`,
+      "Content-Disposition": contentDisposition(name, download),
       "Cache-Control": "private, no-store",
       // The file is shown, never run: no sniffing, and no script or embedded content may execute from it.
       // Since Next 16 the Content-Security-Policy set in next.config.mjs wins over the one below, so the same
