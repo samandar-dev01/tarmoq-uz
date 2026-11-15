@@ -6,13 +6,14 @@ import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { recomputeRating } from "@/lib/reviews";
 import { logAudit } from "@/lib/audit";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({
   rating: z.number({ required_error: "Bahoni tanlang", invalid_type_error: "Bahoni tanlang" }).int().min(1, "Bahoni tanlang").max(5),
   comment: z.string().trim().min(10, "Kamida 10 ta belgi yozing").max(1000),
 });
 
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT");
   const input = schema.parse(await readJson(req));
 

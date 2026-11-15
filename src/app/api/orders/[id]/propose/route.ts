@@ -8,7 +8,7 @@ import { buildTermsText, hashTerms } from "@/lib/agreements";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 const schema = z.object({
   price: z.number({ required_error: "Narxni kiriting", invalid_type_error: "Narxni kiriting" }).int().min(20000, "Eng kam narx — 20 000 soʻm").max(50_000_000),
@@ -18,7 +18,8 @@ const schema = z.object({
 });
 
 /** Provider sends (or re-sends) the terms. The provider's acceptance is recorded immediately. */
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("PROVIDER");
   const input = schema.parse(await readJson(req));
 

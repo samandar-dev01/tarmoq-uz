@@ -8,9 +8,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 export const metadata = { title: "Ijodkorlarni toping" };
 
-type Props = { searchParams: Record<string, string | string[] | undefined> };
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-export default async function SearchPage({ searchParams }: Props) {
+export default async function SearchPage(props: Props) {
+  const searchParams = await props.searchParams;
   const filters = parseSearch(searchParams);
   const [result, categories] = await Promise.all([
     searchProviders(filters),

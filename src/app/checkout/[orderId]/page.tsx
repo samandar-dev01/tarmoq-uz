@@ -15,7 +15,8 @@ import { manualInstructions, orderReference } from "@/lib/payments/manualPure";
 
 export const generateMetadata = () => ({ title: paymentsAreTest() ? "Toʻlov (sinov rejimi)" : "Toʻlov" });
 
-export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
+export default async function CheckoutPage(props: { params: Promise<{ orderId: string }> }) {
+  const params = await props.params;
   const user = await requirePageRole("CLIENT");
   const order = await prisma.order.findFirst({
     where: { id: params.orderId, clientId: user.id },

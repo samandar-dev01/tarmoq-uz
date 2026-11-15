@@ -7,10 +7,11 @@ import { releaseEscrow } from "@/lib/payments/escrow";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** Client approves the delivery: order completes and the held payment is released. */
-export const POST = handle(async (_req, { params }: Ctx) => {
+export const POST = handle(async (_req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT");
   const { order, actor } = await getParticipantOrder(params.id, user.id);
   if (actor !== "client") throw new HttpError(403, "Ishni faqat mijoz qabul qila oladi.");

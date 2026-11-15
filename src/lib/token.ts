@@ -1,4 +1,4 @@
-// Edge-safe: used by middleware.ts. Do not import Prisma or next/headers here.
+// Edge-safe: used by proxy.ts (named middleware.ts before Next 16). Do not import Prisma or next/headers here.
 import { SignJWT, jwtVerify } from "jose";
 
 export type AppRole = "CLIENT" | "PROVIDER" | "ADMIN";

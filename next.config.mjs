@@ -3,8 +3,9 @@
 // SECURITY FIX (vibeguard #8): in production the Content-Security-Policy now also says where scripts, styles, images,
 // video and network calls may come from. Next.js writes small inline scripts into every page, so `script-src` has to
 // allow 'unsafe-inline': it still stops a script from being loaded from, or sent data to, another site, but it does
-// not stop an injected inline script. A nonce-based policy would, but Next 14.2's nonce handling has a known XSS
-// advisory (GHSA-ffhc-5mcf-pf4q), so that waits for the framework upgrade.
+// not stop an injected inline script. A nonce-based policy would. It used to wait for the framework upgrade, because
+// Next 14.2's nonce handling had a known XSS advisory (GHSA-ffhc-5mcf-pf4q). The upgrade to Next 16 is now done; the
+// nonce-based policy is a separate, later step and is NOT implemented yet.
 //  - img-src / media-src allow https: because creators link portfolio images from their own hosts, and delivered
 //    videos and receipts redirect to short-lived signed links on the storage host.
 //  - connect-src 'self': every call the browser code makes goes to this site's own /api.
@@ -23,13 +24,22 @@ const prodCsp = [
   ...baseCsp,
 ];
 
+const siteCsp = (isProd ? prodCsp : baseCsp).join("; ");
+
+// The receipt viewer (src/app/api/admin/payments/[id]/receipt/route.ts) shows a file a client uploaded, so it adds a
+// second, stricter policy of its own. Up to Next 14 the route's own header went out as a second
+// Content-Security-Policy header. Since Next 16 a header that is already set here is no longer added to by a route
+// handler, so the route's policy is listed here instead. Two policies joined by a comma mean exactly the same to a
+// browser as two separate headers: both apply. Keep this text the same as in the route file.
+const receiptCsp = "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox";
+
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-  { key: "Content-Security-Policy", value: (isProd ? prodCsp : baseCsp).join("; ") },
+  { key: "Content-Security-Policy", value: siteCsp },
 ];
 
 /** @type {import('next').NextConfig} */
@@ -40,7 +50,10 @@ const nextConfig = {
   // (/_next/image) has no job here. Several Next 14 advisories are about that endpoint, so it is switched off.
   images: { unoptimized: true },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/admin/payments/:id/receipt", headers: [{ key: "Content-Security-Policy", value: `${siteCsp}, ${receiptCsp}` }] },
+    ];
   },
 };
 export default nextConfig;

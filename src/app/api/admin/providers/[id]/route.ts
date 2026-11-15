@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { logAudit } from "@/lib/audit";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ action: z.enum(["approve", "reject", "suspend", "reinstate"]) });
 
 const RULES: Record<string, { from: ProfileStatus[]; to: ProfileStatus }> = {
@@ -15,7 +15,8 @@ const RULES: Record<string, { from: ProfileStatus[]; to: ProfileStatus }> = {
   reinstate: { from: ["SUSPENDED"], to: "APPROVED" },
 };
 
-export const PATCH = handle(async (req, { params }: Ctx) => {
+export const PATCH = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const admin = await requireRole("ADMIN");
   const { action } = schema.parse(await readJson(req));
   const rule = RULES[action]!;

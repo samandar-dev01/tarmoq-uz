@@ -11,10 +11,11 @@ import { putFile, removeFile } from "@/lib/storage";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** Provider uploads the finished video; the order moves to DELIVERED. */
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("PROVIDER");
   const { order, actor } = await getParticipantOrder(params.id, user.id);
   if (actor !== "provider") throw new HttpError(403, "Ishni faqat ijodkor topshira oladi.");

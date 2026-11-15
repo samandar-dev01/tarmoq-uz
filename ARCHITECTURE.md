@@ -27,7 +27,7 @@ marketplace/
 ├─ .env.example
 ├─ next.config.mjs
 ├─ tailwind.config.ts
-├─ middleware.ts                  # route guards by role
+├─ proxy.ts                       # route guards by role
 ├─ prisma/
 │  ├─ schema.prisma
 │  ├─ migrations/
@@ -96,7 +96,7 @@ marketplace/
 
 - **CLIENT**: search, order, accept agreement, pay, approve, review own completed orders, message order counterparts.
 - **PROVIDER**: own profile/services, accept/decline orders, propose terms, deliver, message.
-- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced in `middleware.ts` (UI) **and** `requireRole('ADMIN')` in every `/api/admin/*` handler (never trust middleware alone).
+- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced in `proxy.ts` (UI) **and** `requireRole('ADMIN')` in every `/api/admin/*` handler (never trust middleware alone).
 - Object-level checks: every order/conversation/message route verifies the caller is a participant.
 
 ## 4. Order state machine

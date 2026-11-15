@@ -14,9 +14,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Stars } from "@/components/ui/Stars";
 import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const p = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     select: { headline: true, status: true, user: { select: { name: true } } },
@@ -25,7 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: p.user.name, description: p.headline };
 }
 
-export default async function ProviderPage({ params }: Props) {
+export default async function ProviderPage(props: Props) {
+  const params = await props.params;
   const viewer = await getCurrentUser();
   const profile = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },

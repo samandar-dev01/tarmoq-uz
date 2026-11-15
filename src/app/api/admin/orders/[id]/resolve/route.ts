@@ -7,11 +7,12 @@ import { refundEscrow, releaseEscrow } from "@/lib/payments/escrow";
 import { postOrderMessage } from "@/lib/messaging";
 import { logAudit } from "@/lib/audit";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ resolution: z.enum(["release", "refund"]) });
 
 /** Admin decides a dispute: pay the provider (order completes) or refund the client (order cancelled). */
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const admin = await requireRole("ADMIN");
   const { resolution } = schema.parse(await readJson(req));
   const order = await prisma.order.findUnique({ where: { id: params.id } });

@@ -5,10 +5,11 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, handle } from "@/lib/http";
 import { isS3, localStore, signedFileUrl } from "@/lib/storage";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** Shows the receipt a client uploaded with "I paid". Admins only (the middleware and this check both enforce it). */
-export const GET = handle(async (_req, { params }: Ctx) => {
+export const GET = handle(async (_req, ctx: Ctx) => {
+  const params = await ctx.params;
   await requireRole("ADMIN");
   const payment = await prisma.payment.findFirst({
     where: { id: params.id, provider: "manual", receiptKey: { not: null } },
@@ -32,6 +33,8 @@ export const GET = handle(async (_req, { params }: Ctx) => {
       "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${name}"`,
       "Cache-Control": "private, no-store",
       // The file is shown, never run: no sniffing, and no script or embedded content may execute from it.
+      // Since Next 16 the Content-Security-Policy set in next.config.mjs wins over the one below, so the same
+      // policy is also listed there for this path (`receiptCsp`). Keep the two the same.
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
     },

@@ -6,9 +6,10 @@ import { safeNext } from "@/lib/safeNext";
 
 export const metadata = { title: "Roʻyxatdan oʻtish" };
 
-type Props = { searchParams: { role?: string | string[]; next?: string | string[] } };
+type Props = { searchParams: Promise<{ role?: string | string[]; next?: string | string[] }> };
 
-export default function RegisterPage({ searchParams }: Props) {
+export default async function RegisterPage(props: Props) {
+  const searchParams = await props.searchParams;
   const role = parseEntryRole(searchParams.role);
   const next = safeNext(Array.isArray(searchParams.next) ? searchParams.next[0] : searchParams.next);
   return (

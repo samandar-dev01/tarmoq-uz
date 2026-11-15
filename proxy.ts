@@ -12,7 +12,7 @@ const RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/messages", roles: ["CLIENT", "PROVIDER", "ADMIN"] },
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const rule = RULES.find((r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"));
   if (!rule) return NextResponse.next();

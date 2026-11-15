@@ -13,7 +13,7 @@ export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(pl
 
 export async function startSession(user: { id: string; role: AppRole; name: string }) {
   const token = await signToken({ sub: user.id, role: user.role, name: user.name }, maxAgeDays());
-  cookies().set(SESSION_COOKIE, token, {
+  (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -22,12 +22,12 @@ export async function startSession(user: { id: string; role: AppRole; name: stri
   });
 }
 
-export function endSession() {
-  cookies().delete(SESSION_COOKIE);
+export async function endSession() {
+  (await cookies()).delete(SESSION_COOKIE);
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return token ? verifyToken(token) : null;
 }
 
