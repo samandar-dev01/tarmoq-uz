@@ -17,7 +17,9 @@ import { AcceptAgreement, CancelOrder, ClientDecision, DeliveryUpload, OpenDispu
 
 export const metadata = { title: "Buyurtma" };
 
-export default async function OrderPage({ params, searchParams }: { params: { id: string }; searchParams: { paid?: string } }) {
+export default async function OrderPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ paid?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const user = await requirePageRole("CLIENT", "PROVIDER", "ADMIN");
   const order = await prisma.order.findFirst({
     // Admins may open any order; everyone else only an order they are on.

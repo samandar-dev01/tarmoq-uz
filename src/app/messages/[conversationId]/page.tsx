@@ -9,7 +9,8 @@ import { ChatWindow } from "@/components/chat/ChatWindow";
 
 export const metadata = { title: "Suhbat" };
 
-export default async function ConversationPage({ params }: { params: { conversationId: string } }) {
+export default async function ConversationPage(props: { params: Promise<{ conversationId: string }> }) {
+  const params = await props.params;
   const user = await requirePageRole("CLIENT", "PROVIDER");
   let other;
   let conversation;

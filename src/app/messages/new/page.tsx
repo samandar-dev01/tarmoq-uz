@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 
 /** /messages/new?to=<userId>: finds or creates a general (non-order) conversation, then opens it. */
-export default async function NewConversation({ searchParams }: { searchParams: { to?: string } }) {
+export default async function NewConversation(props: { searchParams: Promise<{ to?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requirePageRole("CLIENT", "PROVIDER");
   const to = searchParams.to;
   if (!to || to === user.id) redirect("/messages");

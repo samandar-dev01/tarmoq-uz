@@ -5,10 +5,11 @@ import { requireUser } from "@/lib/auth";
 import { HttpError, handle } from "@/lib/http";
 import { isS3, localStore, signedFileUrl } from "@/lib/storage";
 
-type Ctx = { params: { id: string; deliveryId: string } };
+type Ctx = { params: Promise<{ id: string; deliveryId: string }> };
 
 /** Streams a delivered video to the order's client, provider or an admin. Supports Range requests for seeking. */
-export const GET = handle(async (req, { params }: Ctx) => {
+export const GET = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireUser();
   // The file is only found through an order the user is on (admins see every order's files).
   const delivery = await prisma.delivery.findFirst({

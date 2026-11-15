@@ -7,11 +7,12 @@ import { getParticipantOrder } from "@/lib/orders";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ reason: z.string().trim().max(500).optional() });
 
 /** Cancel (or decline) before any money is held. After payment, use the dispute flow. */
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT", "PROVIDER");
   const { reason } = schema.parse(await readJson(req));
   const { order, actor } = await getParticipantOrder(params.id, user.id);

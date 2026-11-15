@@ -7,10 +7,11 @@ import { getParticipantOrder } from "@/lib/orders";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ note: z.string().trim().min(10, "Ijodkorga nimani oʻzgartirish kerakligini yozing (kamida 10 ta belgi)").max(1000) });
 
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT");
   const { note } = schema.parse(await readJson(req));
   const { order, actor } = await getParticipantOrder(params.id, user.id);

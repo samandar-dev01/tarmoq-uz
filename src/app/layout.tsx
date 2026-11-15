@@ -22,7 +22,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uz" className={`${display.variable} ${sans.variable}`}>
+    <html lang="uz" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
         {/* Shared by every creator cover (class "ikat"): rows of threads slip sideways a little, like dyed warp. */}
         <svg aria-hidden="true" width="0" height="0" className="absolute">

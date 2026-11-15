@@ -6,11 +6,12 @@ import { assertTransition } from "@/lib/orderMachine";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ termsHash: z.string().length(64), accept: z.literal(true, { errorMap: () => ({ message: "Davom etish uchun shartlarni qabul qilishingiz kerak." }) }) });
 
 /** Client accepts the exact terms version they were shown (identified by its hash). */
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT");
   const input = schema.parse(await readJson(req));
   const ip = clientIp(req);

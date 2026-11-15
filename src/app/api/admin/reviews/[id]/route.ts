@@ -5,10 +5,11 @@ import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { recomputeRating } from "@/lib/reviews";
 import { logAudit } from "@/lib/audit";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ hidden: z.boolean() });
 
-export const PATCH = handle(async (req, { params }: Ctx) => {
+export const PATCH = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const admin = await requireRole("ADMIN");
   const { hidden } = schema.parse(await readJson(req));
   const review = await prisma.review.findUnique({ where: { id: params.id } });

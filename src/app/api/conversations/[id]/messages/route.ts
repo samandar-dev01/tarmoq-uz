@@ -5,13 +5,14 @@ import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { getParticipantConversation, markRead } from "@/lib/messaging";
 import { rateLimit } from "@/lib/rateLimit";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 const sendSchema = z.object({ body: z.string().trim().min(1, "Xabar yozing").max(2000, "Xabar 2000 ta belgidan oshmasligi kerak") });
 
 const select = { id: true, senderId: true, body: true, createdAt: true, readAt: true } as const;
 
 /** Polling endpoint. Without ?after it returns the latest 50 messages; with it, only newer ones. */
-export const GET = handle(async (req, { params }: Ctx) => {
+export const GET = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireUser();
   await getParticipantConversation(params.id, user.id);
   const after = new URL(req.url).searchParams.get("after");
@@ -37,7 +38,8 @@ export const GET = handle(async (req, { params }: Ctx) => {
   return ok({ messages });
 });
 
-export const POST = handle(async (req, { params }: Ctx) => {
+export const POST = handle(async (req, ctx: Ctx) => {
+  const params = await ctx.params;
   const user = await requireRole("CLIENT", "PROVIDER");
   const { body } = sendSchema.parse(await readJson(req));
   await getParticipantConversation(params.id, user.id);

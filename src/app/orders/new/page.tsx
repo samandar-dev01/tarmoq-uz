@@ -10,7 +10,8 @@ import { NewOrderForm } from "@/components/orders/NewOrderForm";
 
 export const metadata = { title: "Yangi buyurtma" };
 
-export default async function NewOrderPage({ searchParams }: { searchParams: { service?: string } }) {
+export default async function NewOrderPage(props: { searchParams: Promise<{ service?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePageRole("CLIENT");
   if (!searchParams.service) redirect("/search");
 
