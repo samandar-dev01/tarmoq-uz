@@ -497,7 +497,7 @@ describe("no payment promise anywhere search engines and AI crawlers read", () =
     const faq = buildFaq(CATEGORIES.map((c) => c.name), CITIES);
     const { default: manifest } = await import("@/app/manifest");
     const layout = readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
-    const layoutMetadata = layout.slice(layout.indexOf("export const metadata"), layout.indexOf("// The browser bar colour"));
+    const layoutMetadata = layout.slice(layout.indexOf("export async function generateMetadata"), layout.indexOf("// The browser bar colour"));
     expect(layoutMetadata.length).toBeGreaterThan(100);
 
     const texts: Record<string, string[]> = {

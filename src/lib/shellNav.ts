@@ -1,16 +1,20 @@
+import { tk } from "../i18n/dictionary";
 import { canBrowseCreators, ROLE_HOME } from "./authRole";
 import type { AppRole } from "./token";
 
-/** One link of the app shell (the header, the account menu, the footer). */
+/**
+ * One link of the app shell (the header, the account menu, the footer). `label` is the Uzbek text, which is also its
+ * translation key, and `href` has no language prefix: whoever draws the link writes `t(label)` and `localHref(locale, href)`.
+ */
 export type NavEntry = { href: string; label: string };
 type Viewer = { role: AppRole } | null;
 
 /** The role in words, as the sign-in tabs already say it. */
-export const ROLE_LABEL: Record<AppRole, string> = { CLIENT: "Mijoz", PROVIDER: "Ijodkor", ADMIN: "Admin" };
+export const ROLE_LABEL: Record<AppRole, string> = { CLIENT: tk("Mijoz"), PROVIDER: tk("Ijodkor"), ADMIN: tk("Admin") };
 
-const CREATORS: NavEntry = { href: "/search", label: "Ijodkorlar" };
-const MESSAGES: NavEntry = { href: "/messages", label: "Xabarlar" };
-const cabinet = (role: AppRole): NavEntry => ({ href: ROLE_HOME[role], label: role === "ADMIN" ? "Admin" : "Kabinet" });
+const CREATORS: NavEntry = { href: "/search", label: tk("Ijodkorlar") };
+const MESSAGES: NavEntry = { href: "/messages", label: tk("Xabarlar") };
+const cabinet = (role: AppRole): NavEntry => ({ href: ROLE_HOME[role], label: role === "ADMIN" ? tk("Admin") : tk("Kabinet") });
 
 /**
  * The plain links in the header on a wide screen. A visitor has the creator list (the sign-in buttons are not in this list);
@@ -32,7 +36,7 @@ export function accountMenuLinks(viewer: { role: AppRole }): NavEntry[] {
  */
 export function footerLinks(viewer: Viewer): NavEntry[] {
   if (!viewer) {
-    return [CREATORS, { href: "/register?role=provider", label: "Ijodkor boʻlib qoʻshilish" }, { href: "/register?role=client", label: "Buyurtma bermoqchiman" }];
+    return [CREATORS, { href: "/register?role=provider", label: tk("Ijodkor boʻlib qoʻshilish") }, { href: "/register?role=client", label: tk("Buyurtma bermoqchiman") }];
   }
   if (viewer.role === "ADMIN") return [cabinet("ADMIN")];
   return [...(canBrowseCreators(viewer) ? [CREATORS] : []), cabinet(viewer.role), MESSAGES];

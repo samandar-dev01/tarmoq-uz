@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
 import { useHydrated } from "@/components/ui/useHydrated";
+import { useT } from "@/i18n/client";
+import { tk } from "@/i18n/dictionary";
 import { authHref, DOORS, type Door } from "@/lib/authRole";
 
 const ROLE_HOME = { CLIENT: "/dashboard/client", PROVIDER: "/dashboard/provider", ADMIN: "/admin" } as const;
 
 // The link shown when an account came to a door that is not its own.
-const DOOR_LINK: Record<Door, string> = { client: "Mijoz sifatida kirish", provider: "Ijodkor sifatida kirish", admin: "Admin kirishi" };
+const DOOR_LINK: Record<Door, string> = { client: tk("Mijoz sifatida kirish"), provider: tk("Ijodkor sifatida kirish"), admin: tk("Admin kirishi") };
 
 // `at` is the door the error was raised at. This form stays mounted when the door changes (only the query does),
 // so that the email typed survives; an error from the previous door must not follow the visitor to the next one.
@@ -20,6 +22,7 @@ type FormError = { at: Door; message: string; door?: Door };
 export function LoginForm({ role, next }: { role: Door; next: string | null }) {
   const router = useRouter();
   const ready = useHydrated();
+  const t = useT();
   const [failure, setFailure] = useState<FormError | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,7 @@ export function LoginForm({ role, next }: { role: Door; next: string | null }) {
       if (res.status === 429) {
         // The server answers a blocked attempt with the same body as a wrong password; the status tells us.
         const minutes = Math.max(1, Math.ceil(Number(res.headers.get("Retry-After") ?? 60) / 60));
-        setError(`Urinishlar juda koʻp. ${minutes} daqiqadan keyin qayta urinib koʻring.`);
+        setError(t("Urinishlar juda koʻp. {minutes} daqiqadan keyin qayta urinib koʻring.", { minutes }));
         return;
       }
       if (!res.ok) {
@@ -55,13 +58,13 @@ export function LoginForm({ role, next }: { role: Door; next: string | null }) {
           if (password instanceof HTMLInputElement) password.value = "";
         }
         setFieldErrors(data.fieldErrors ?? {});
-        setError(data.error ?? "Kirib boʻlmadi.", door);
+        setError(data.error ?? t("Kirib boʻlmadi."), door);
         return;
       }
       router.replace(next ?? ROLE_HOME[data.user.role as keyof typeof ROLE_HOME]);
       router.refresh();
     } catch {
-      setError("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.");
+      setError(t("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring."));
     } finally {
       setLoading(false);
     }
@@ -75,19 +78,19 @@ export function LoginForm({ role, next }: { role: Door; next: string | null }) {
           {error.door && (
             <>
               {" "}
-              <ButtonLink href={authHref("/login", error.door, next)} variant="link" replace>{DOOR_LINK[error.door]}</ButtonLink>
+              <ButtonLink href={authHref("/login", error.door, next)} variant="link" replace>{t(DOOR_LINK[error.door])}</ButtonLink>
             </>
           )}
         </Alert>
       )}
-      <Field label="Email" name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
-      <Field label="Parol" name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
+      <Field label={t("Email")} name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
+      <Field label={t("Parol")} name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
-        {loading ? "Kirilmoqda…" : "Kirish"}
+        {loading ? t("Kirilmoqda…") : t("Kirish")}
       </Button>
       {role !== "admin" && (
         <p className="text-center text-ink-soft">
-          Yangimisiz? <ButtonLink href={authHref("/register", role, next)} variant="link">Roʻyxatdan oʻting</ButtonLink>
+          {t("Yangimisiz?")} <ButtonLink href={authHref("/register", role, next)} variant="link">{t("Roʻyxatdan oʻting")}</ButtonLink>
         </p>
       )}
     </form>

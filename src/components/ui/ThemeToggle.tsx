@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { buttonClasses } from "./Button";
 import { Icon } from "./Icon";
+import { useT } from "@/i18n/client";
+import { tk } from "@/i18n/dictionary";
 import { otherTheme, parseTheme, themeCookie, type Theme } from "@/lib/themePure";
 
 // The name says what a press will do. Sun in the dark scheme (go light), moon in the light one (go dark).
-const LABEL: Record<Theme, string> = { dark: "Yorugʻ rejimga oʻtish", light: "Qorongʻi rejimga oʻtish" };
+const LABEL: Record<Theme, string> = { dark: tk("Yorugʻ rejimga oʻtish"), light: tk("Qorongʻi rejimga oʻtish") };
 
 /**
  * The one colour-scheme button. `initial` is what the server already painted (from the `theme` cookie), so the first render
@@ -20,7 +22,8 @@ export function ThemeToggle({ initial }: { initial: Theme }) {
     setSeen(initial);
     setTheme(initial);
   }
-  const label = LABEL[theme];
+  const t = useT();
+  const label = t(LABEL[theme]);
   return (
     <button
       type="button"
