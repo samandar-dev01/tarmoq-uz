@@ -4,6 +4,9 @@
 
 @layer base {
   /* The theme. Change a colour here and the whole site follows. Values are RGB triplets (see tailwind.config.ts).
+     Two schemes share these names: this block is the dark one (the default for a first visit), and the
+     `html[data-theme="light"]` block below overrides everything that has to flip. The server writes data-theme on <html>
+     from the `theme` cookie, so the first byte of every page is already in the right scheme.
      Dark cinema: an obsidian ground, slate cards, warm amber and electric blue accents. */
   :root {
     color-scheme: dark;
@@ -13,24 +16,74 @@
     --c-paper: 9 13 22; /* page ground #090D16 */
     --c-paper-deep: 30 41 59; /* hover and recessed #1E293B */
     --c-surface: 17 24 39; /* elevated card #111827 */
-    --c-night: 9 13 22; /* dark text on bright fills */
-    --c-line: 255 255 255; /* hairline base, alpha is set in tailwind.config.ts */
+    --c-line: 255 255 255; /* hairline colour; its strength is the alpha below */
+    --c-line-a: 0.09; /* hairline */
+    --c-line-strong-a: 0.16; /* a control's edge */
     --c-shadow: 0 0 0;
+    --shadow-lift-sm: 0 1px 2px 0 rgb(var(--c-shadow) / 0.4);
+    --shadow-lift: 0 10px 28px -10px rgb(var(--c-shadow) / 0.6), 0 2px 6px -2px rgb(var(--c-shadow) / 0.4);
+    --shadow-lift-lg: 0 28px 64px -24px rgb(var(--c-shadow) / 0.75), 0 8px 20px -8px rgb(var(--c-shadow) / 0.45);
+    --glow-warm: 0.07; /* the page's top-left glow */
+    --glow-cool: 0.12; /* and its top-right one */
     --c-focus: 96 165 250; /* keyboard focus ring #60A5FA */
-    --c-cobalt: 37 99 235; /* electric blue #2563EB */
+    --c-star: 245 158 11; /* a filled rating star (= saffron here) */
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    /* For the accents, `-dark` and `-deep` are the readable shade for text and icons on a tint, and `-tint` is the quiet fill:
+       in the dark scheme the shade is light and the tint is deep; in the light scheme it is the other way round. */
     --c-cobalt-dark: 147 197 253; /* blue readable on a dark tint */
     --c-cobalt-tint: 23 37 84;
-    --c-saffron: 245 158 11; /* warm amber #F59E0B */
     --c-saffron-deep: 252 211 77; /* amber readable on a dark tint */
     --c-saffron-tint: 66 40 6;
-    --c-pomegranate: 225 29 72;
     --c-pomegranate-deep: 253 164 175; /* red readable on a dark tint */
     --c-pomegranate-tint: 72 12 30;
-    --c-turquoise: 20 184 166;
     --c-turquoise-deep: 94 234 212; /* teal readable on a dark tint */
     --c-turquoise-tint: 7 48 46;
-    --c-lilac: 167 139 250;
     --c-lilac-tint: 40 28 82;
+
+    /* Same in both schemes (the light block never repeats them). The accent fills are bright enough for either ground, which
+       also keeps the generated creator art identical. */
+    --c-cobalt: 37 99 235; /* electric blue #2563EB */
+    --c-saffron: 245 158 11; /* warm amber #F59E0B */
+    --c-pomegranate: 225 29 72;
+    --c-turquoise: 20 184 166;
+    --c-lilac: 167 139 250;
+    --c-night: 9 13 22; /* dark text on the bright saffron and turquoise fills */
+    --c-on-accent: 255 255 255; /* text on the cobalt and pomegranate fills */
+    --c-media: 0 0 0; /* the box behind a video */
+    --c-cover-ink: 241 245 249; /* light strokes on creator art and on the logo mark */
+    --c-cover-night: 9 13 22; /* dark strokes and shading on creator art and on the logo mark */
+  }
+
+  /* The light scheme: warm paper, white cards, deep ink. Only what has to flip is written here. */
+  html[data-theme="light"] {
+    color-scheme: light;
+    --c-ink: 28 25 23; /* #1C1917 */
+    --c-ink-soft: 68 64 60; /* #44403C */
+    --c-ink-mute: 100 94 87; /* #645E57 */
+    --c-paper: 247 243 236; /* page ground #F7F3EC */
+    --c-paper-deep: 236 230 218; /* hover and recessed #ECE6DA */
+    --c-surface: 255 255 255; /* elevated card */
+    --c-line: 28 25 23;
+    --c-line-a: 0.11;
+    --c-line-strong-a: 0.2;
+    --c-shadow: 46 34 20; /* a warm, soft shadow */
+    --shadow-lift-sm: 0 1px 2px 0 rgb(var(--c-shadow) / 0.1);
+    --shadow-lift: 0 10px 28px -12px rgb(var(--c-shadow) / 0.2), 0 2px 6px -2px rgb(var(--c-shadow) / 0.1);
+    --shadow-lift-lg: 0 28px 64px -24px rgb(var(--c-shadow) / 0.3), 0 8px 20px -8px rgb(var(--c-shadow) / 0.14);
+    --glow-warm: 0.14;
+    --glow-cool: 0.05;
+    --c-focus: 29 78 216; /* #1D4ED8 */
+    --c-star: 204 107 4; /* burnt amber, 3:1 on paper and on white */
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23645E57' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --c-cobalt-dark: 30 64 175; /* #1E40AF */
+    --c-cobalt-tint: 225 235 254;
+    --c-saffron-deep: 133 58 10; /* #853A0A */
+    --c-saffron-tint: 253 238 208;
+    --c-pomegranate-deep: 159 18 57; /* #9F1239 */
+    --c-pomegranate-tint: 255 226 231;
+    --c-turquoise-deep: 17 94 89; /* #115E59 */
+    --c-turquoise-tint: 212 243 238;
+    --c-lilac-tint: 234 227 253;
   }
 
   html {
@@ -40,8 +93,8 @@
   body {
     @apply bg-paper font-sans text-base leading-relaxed text-ink antialiased;
     /* A faint warm glow top-left and a cool one top-right: depth without noise. */
-    background-image: radial-gradient(52rem 26rem at 8% -6%, rgb(var(--c-saffron) / 0.07), transparent 70%),
-      radial-gradient(56rem 30rem at 92% -10%, rgb(var(--c-cobalt) / 0.12), transparent 70%);
+    background-image: radial-gradient(52rem 26rem at 8% -6%, rgb(var(--c-saffron) / var(--glow-warm)), transparent 70%),
+      radial-gradient(56rem 30rem at 92% -10%, rgb(var(--c-cobalt) / var(--glow-cool)), transparent 70%);
     background-repeat: no-repeat;
   }
 
@@ -67,7 +120,7 @@
     @apply bg-saffron text-night;
   }
 
-  /* Visible keyboard focus everywhere: a light blue ring that reads on the dark ground and on every card. */
+  /* Visible keyboard focus everywhere: a blue ring that reads on the ground and on every card, in both schemes. */
   :focus-visible {
     outline: 2px solid rgb(var(--c-focus));
     outline-offset: 3px;
@@ -88,7 +141,7 @@
   }
   select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: var(--select-chevron);
     background-repeat: no-repeat;
     background-position: right 1rem center;
     background-size: 1rem;

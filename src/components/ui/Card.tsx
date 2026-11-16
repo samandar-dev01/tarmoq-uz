@@ -3,7 +3,8 @@ import type { ElementType, HTMLAttributes } from "react";
 export type CardTone = "white" | "tint" | "ink" | "cobalt" | "saffron" | "turquoise" | "pomegranate";
 export type CardPadding = "none" | "sm" | "md" | "lg";
 
-// "ink" keeps its name for the callers, but on the dark theme it is the accent block: a blue glow fading into the ground.
+// "ink" keeps its name for the callers, but it is the accent block in both schemes: a blue glow fading into the card colour.
+// "white" keeps its name too: it is the plain card, which is white in the light scheme and slate in the dark one.
 const TONES: Record<CardTone, string> = {
   white: "bg-surface text-ink",
   tint: "bg-paper-deep text-ink",

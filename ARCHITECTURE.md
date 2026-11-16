@@ -6,7 +6,7 @@ Place this file at the repo root: `marketplace/ARCHITECTURE.md`.
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Framework | Next.js 14 (App Router) + TypeScript | One codebase for UI + API, SSR for SEO on provider profiles |
+| Framework | Next.js 16 (App Router), React 19 + TypeScript | One codebase for UI + API, SSR for SEO on provider profiles |
 | DB | PostgreSQL 15+ | Relational integrity for orders/payments |
 | ORM / migrations | Prisma | Typed queries, real migration files |
 | Auth | Custom credentials auth: bcryptjs + signed JWT in httpOnly cookie (jose) | No external service needed; role in token, re-checked against DB on sensitive routes |
@@ -27,7 +27,6 @@ marketplace/
 ├─ .env.example
 ├─ next.config.mjs
 ├─ tailwind.config.ts
-├─ proxy.ts                       # route guards by role
 ├─ prisma/
 │  ├─ schema.prisma
 │  ├─ migrations/
@@ -96,7 +95,8 @@ marketplace/
 
 - **CLIENT**: search, order, accept agreement, pay, approve, review own completed orders, message order counterparts.
 - **PROVIDER**: own profile/services, accept/decline orders, propose terms, deliver, message.
-- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced in `proxy.ts` (UI) **and** `requireRole('ADMIN')` in every `/api/admin/*` handler (never trust middleware alone).
+- **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced by `requirePageRole('ADMIN')` in every admin page and `requireRole('ADMIN')` in every `/api/admin/*` handler.
+- There is no route guard in front of these checks: all access control is in the pages and route handlers above. (An old root `proxy.ts` with role rules was never loaded by Next.js and has been deleted. The only proxy, `src/proxy.ts`, handles the Russian `/ru` addresses and checks no roles.)
 - Object-level checks: every order/conversation/message route verifies the caller is a participant.
 
 ## 4. Order state machine
@@ -140,7 +140,7 @@ Every data view implements: loading (skeleton/spinner), error (message + retry),
 ## 8. Delivery phases
 
 1. **Phase 1 (this)**: architecture, structure, schema, env, flows.
-2. **Phase 2**: project scaffold, config, migrations, seed, auth, middleware, `lib/*`.
+2. **Phase 2**: project scaffold, config, migrations, seed, auth, route guard file (a root `proxy.ts`, which turned out never to be loaded and was later deleted), `lib/*`.
 3. **Phase 3**: homepage, search/filters, provider profiles, wizard.
 4. **Phase 4**: orders, agreements, state machine, dashboards.
 5. **Phase 5**: messaging, reviews, uploads/delivery.
@@ -162,5 +162,5 @@ Nothing in this document has been run yet; test results will be reported only on
 - `lib/errors.ts` holds `HttpError` so pure modules can be unit-tested without Next.js.
 - Database rules that Prisma cannot express are in `prisma/constraints.sql` (rating range, positive amounts, one successful payment per order).
 - The interface is in Uzbek (Latin script). Strings are written inline in components, API routes and `lib/` messages (there is no translation layer). City, language and category names are stored in Uzbek (`src/lib/constants.ts`, `prisma/seed.ts`).
-- Design tokens live in `tailwind.config.ts` and the `:root` variables in `src/app/globals.css`. Shared UI pieces are in `src/components/ui` (`buttonClasses` and `cardClasses` give non-button elements the same looks).
+- Design tokens live in `tailwind.config.ts` and the `:root` variables in `src/app/globals.css` (the dark scheme, the default). The light scheme overrides what has to flip under `html[data-theme="light"]`; the `theme` cookie (`src/lib/themePure.ts`) is read by the root layout and the header's `ThemeToggle` writes it. Fixed tokens (`on-accent`, `media`, `cover-ink`, `cover-night`, the accent fills) are the same in both schemes. Shared UI pieces are in `src/components/ui` (`buttonClasses` and `cardClasses` give non-button elements the same looks).
 - Dates are formatted by `src/lib/format.ts` in Tashkent time (UTC+5) with Uzbek month names.

@@ -11,8 +11,18 @@ export async function settled(page: Page) {
   await page.waitForFunction(() => document.documentElement.dataset.hydrated === "true");
 }
 
+export type Door = "client" | "provider" | "admin";
+
+/** The sign-in door an account belongs at: the seeded creators and the admin by name, every other account is a client. */
+export function doorFor(email: string): Door {
+  const name = email.split("@")[0];
+  if (name === "admin") return "admin";
+  return ["jasur", "madina", "bobur", "dilshod", "sevara"].includes(name!) ? "provider" : "client";
+}
+
+/** Signs in through the account's own door (a creator at the client door is refused, and the other way round). */
 export async function login(page: Page, email: string, password = PASSWORD) {
-  await page.goto("/login");
+  await page.goto(`/login?role=${doorFor(email)}`);
   await settled(page);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parol").fill(password);

@@ -1,9 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { formatDay, formatUZS, shortName } from "@/lib/format";
 import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
+import { breadcrumbJsonLd, creatorJsonLd, ogDefaults } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar, coverArt } from "@/components/ui/Avatar";
 import { buttonClasses } from "@/components/ui/Button";
@@ -18,17 +20,32 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
+  // A creator is sent away from this page; even the title it would have carried (a name, a headline) stays out of the response.
+  if (!canBrowseCreators(await getCurrentUser())) return { title: "Ijodkor profili", robots: { index: false, follow: false } };
   const p = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     select: { headline: true, status: true, user: { select: { name: true } } },
   });
-  if (!p || p.status !== "APPROVED") return { title: "Ijodkor profili" };
-  return { title: p.user.name, description: p.headline };
+  // A page that is not public (unknown, or shown only to its owner or an admin as a preview) must never be indexed.
+  if (!p || p.status !== "APPROVED") return { title: "Ijodkor profili", robots: { index: false, follow: false } };
+  const path = `/providers/${params.slug}`;
+  return {
+    title: p.user.name,
+    description: p.headline,
+    alternates: { canonical: path },
+    openGraph: { ...ogDefaults(), title: p.user.name, description: p.headline, url: path },
+  };
 }
 
 export default async function ProviderPage(props: Props) {
   const params = await props.params;
   const viewer = await getCurrentUser();
+  // A creator sees their own public profile and no one else's. Decided before the lookup, so the answer is the same
+  // for a profile that exists, one that is not approved and one that does not exist (no way to find out which are there).
+  if (viewer && !canBrowseCreators(viewer)) {
+    const own = await prisma.providerProfile.findUnique({ where: { userId: viewer.id }, select: { slug: true } });
+    if (own?.slug !== params.slug) redirect("/forbidden");
+  }
   const profile = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     include: {
@@ -61,6 +78,33 @@ export default async function ProviderPage(props: Props) {
 
   return (
     <Container size="xl">
+      {/* Only a public (approved) profile carries structured data. The rating is included only when real reviews are shown below. */}
+      {approved && (
+        <>
+          <JsonLd
+            data={creatorJsonLd({
+              slug: profile.slug,
+              name: profile.user.name,
+              headline: profile.headline,
+              bio: profile.bio,
+              city: profile.city,
+              category: profile.category.name,
+              languages: profile.languages,
+              services: profile.services.map((s) => ({ title: s.title, description: s.description, price: s.price })),
+              ratingAvg: profile.ratingAvg,
+              ratingCount: profile.ratingCount,
+              visibleReviews: reviews.length,
+            })}
+          />
+          <JsonLd
+            data={breadcrumbJsonLd([
+              { name: "Bosh sahifa", path: "/" },
+              { name: "Ijodkorlarni toping", path: "/search" },
+              { name: profile.user.name, path: `/providers/${profile.slug}` },
+            ])}
+          />
+        </>
+      )}
       {!approved && (
         <div className="mb-6">
           <Alert variant="info">

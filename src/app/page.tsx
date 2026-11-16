@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { canBrowseCreators, getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { CITIES } from "@/lib/constants";
 import { parseSearch, searchProviders } from "@/lib/providers";
+import { buildFaq, faqJsonLd, HOME_DESCRIPTION, HOME_TITLE, ogDefaults, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { ProviderCard } from "@/components/ProviderCard";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -12,6 +17,14 @@ import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
 export const dynamic = "force-dynamic";
 
+// The home page has its own title (without the "· Tarmoq.uz" tail, the name is already in it), description and address.
+export const metadata: Metadata = {
+  title: { absolute: HOME_TITLE },
+  description: HOME_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: { ...ogDefaults(), title: HOME_TITLE, description: HOME_DESCRIPTION, url: "/" },
+};
+
 // A real sequence, so these are numbered.
 const STEPS = [
   ["Toping", "Shahar, yoʻnalish va byudjet boʻyicha ijodkorlarni qidiring."],
@@ -19,7 +32,7 @@ const STEPS = [
   ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi.", "escrow"],
   ["Qabul qiling", "Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring."],
 ] as const;
-const STEP_COLORS = ["bg-cobalt text-white", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-white"];
+const STEP_COLORS = ["bg-cobalt text-on-accent", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-on-accent"];
 
 const PROMISES = [
   { title: "Shartlar yozma", text: "Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi.", tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },
@@ -33,6 +46,9 @@ function cycle<T>(items: T[], min: number): T[] {
 }
 
 export default async function HomePage() {
+  // The home page is the client's way in (a creator feed and a search). A creator who lands here, from the logo or an old link, goes to their cabinet.
+  const viewer = await getCurrentUser();
+  if (!canBrowseCreators(viewer)) redirect(ROLE_HOME.PROVIDER);
   const [featured, categories] = await Promise.all([
     searchProviders(parseSearch({ sort: "rating" }), 6),
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true } }),
@@ -44,9 +60,13 @@ export default async function HomePage() {
   // At least two posters per column, so the loop never shows the same creator twice in a row (unless there is only one).
   const colA = pool.length ? cycle(evens.length ? evens : pool, 2) : [];
   const colB = pool.length ? cycle(odds.length ? odds : pool, 2) : [];
+  const faq = buildFaq(categories.map((c) => c.name), CITIES);
 
   return (
     <>
+      <JsonLd data={organizationJsonLd()} />
+      <JsonLd data={websiteJsonLd()} />
+      <JsonLd data={faqJsonLd(faq)} />
       <section className="overflow-hidden border-b border-line">
         <Container pad="none" className="grid gap-14 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
           <div>
@@ -141,6 +161,19 @@ export default async function HomePage() {
               </svg>
               <h3 className="mt-4 text-xl">{x.title}</h3>
               <p className="mt-1.5 text-ink-soft">{x.text} {"escrow" in x && <TestModeBadge />}</p>
+            </Card>
+          ))}
+        </ul>
+      </Container>
+
+      {/* The same questions and answers go out as FAQPage data (faqJsonLd above): what search engines read is what is shown here. */}
+      <Container pad="section">
+        <h2>Koʻp beriladigan savollar</h2>
+        <ul className="mt-8 grid gap-5 md:grid-cols-2">
+          {faq.map((f) => (
+            <Card as="li" key={f.question} padding="lg">
+              <h3 className="text-xl">{f.question}</h3>
+              <p className="mt-1.5 text-ink-soft">{f.answer}</p>
             </Card>
           ))}
         </ul>

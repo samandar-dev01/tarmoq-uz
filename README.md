@@ -4,7 +4,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 
 **The interface is in Uzbek (Latin script).** Visible text is written inline in the components, and the API error messages and the agreement template are Uzbek too. This README stays in English and quotes Uzbek button labels with an English gloss in brackets.
 
-**Stack:** Next.js 14 (App Router) · TypeScript · PostgreSQL · Prisma · Tailwind · Zod · Vitest · Playwright
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · PostgreSQL · Prisma · Tailwind · Zod · Vitest · Playwright
 
 > **Important:** payments are a **sandbox**. No real money moves. See "Going live with real payments" before launching publicly.
 
@@ -14,7 +14,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 
 | Area | Where | Notes |
 |---|---|---|
-| Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*`, `proxy.ts` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
+| Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
 | Homepage | `src/app/page.tsx` | Hero search with a live creator feed, categories, top creators |
 | Search and filters | `src/app/search`, `src/lib/providers.ts` | keyword, city, category, price range, sort, pagination, URL-shareable |
 | Provider profiles | `src/app/providers/[slug]` | packages, portfolio, reviews, order button |
@@ -29,11 +29,11 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 | Admin | `src/app/admin`, `src/app/api/admin/*` | approve or suspend providers, resolve disputes, hide reviews, stats |
 | Audit log | `src/lib/audit.ts` | agreement acceptance, payments, approvals, admin actions |
 | Loading, error, empty, success states | `src/components/ui`, `loading.tsx`, `error.tsx` | used on every data screen |
-| Design system | `tailwind.config.ts`, `src/app/globals.css`, `src/components/ui` | Colours (CSS variables), fonts, radii and shadows live in one place: change a variable in `globals.css` to re-skin the site. Shared pieces: `Button`/`ButtonLink`, `Card`, `Container`, `Field`, `Avatar`, `Stars`, `StatTile`, `NavLink`, `Alert`, `EmptyState`. |
+| Design system | `tailwind.config.ts`, `src/app/globals.css`, `src/components/ui` | Colours (CSS variables), fonts, radii and shadows live in one place: change a variable in `globals.css` to re-skin the site. Two colour schemes share those variables: dark (the default for a first visit) and light (`html[data-theme="light"]`). The header's sun/moon button (`ThemeToggle`) flips it and remembers the choice in the `theme` cookie; the root layout reads the cookie, so the first byte of every page is already in the right scheme. A new colour needs a value in both blocks (`tests/unit/themeContrast.test.ts` checks every real pairing for contrast). Shared pieces: `Button`/`ButtonLink`, `Card`, `Container`, `Field`, `Avatar`, `Stars`, `StatTile`, `NavLink`, `Alert`, `EmptyState`, `Icon`, `ThemeToggle`, `Menu` (a dropdown with keyboard support). A signed-in person gets one account menu in the header (`AccountMenu`, built on `Menu`), and the footer's links follow who is looking; both lists come from `src/lib/shellNav.ts`. |
 
 ## 2. Requirements
 
-- Node.js 20 or newer
+- Node.js 20.9 or newer
 - PostgreSQL 15 or newer (Docker Compose file included)
 
 ## 3. Database setup
@@ -72,6 +72,8 @@ npm run typecheck    # TypeScript check
 npm test             # unit tests (Vitest)
 npm run test:e2e     # end-to-end tests (Playwright); first: npx playwright install chromium
 ```
+
+`GET /api/health` answers `{"status":"ok"}` without touching the database. `GET /api/health/stream` is a one-minute Server-Sent Events test stream (one `data: tick N` line about every 2 seconds) for checking that streaming survives the host's proxy: `curl -N https://<site>/api/health/stream`. At most 5 such streams run at once, and one address may start 10 per minute; beyond that the answer is HTTP 429.
 
 ## 6. Demo accounts
 
@@ -161,7 +163,29 @@ npm test             # unit: order state machine, sandbox card rules and fees, a
 npm run test:e2e     # needs the app's database to be migrated and seeded
 ```
 
-The Playwright suite (`tests/e2e`) covers: the full client journey above through the UI (`client-journey.spec.ts`); anonymous, client, provider and admin permission boundaries and order/conversation privacy (`permissions.spec.ts`); payment tamper-resistance, declined cards, double payment, upload validation, one review per order (`payments.spec.ts`); and admin approval (`admin.spec.ts`).
+The Playwright suite (`tests/e2e`) covers: the full client journey above through the UI (`client-journey.spec.ts`); anonymous, client, provider and admin permission boundaries and order/conversation privacy (`permissions.spec.ts`); payment tamper-resistance, declined cards, double payment, upload validation, one review per order (`payments.spec.ts`); admin approval (`admin.spec.ts`); and the health check and its test stream (`health.spec.ts`).
+
+### 8.5 Production-style test run
+
+`npm run test:e2e` runs against `next dev`. To test the real production build (`next build` + `next start`) on a fresh throwaway database:
+
+```bash
+PG_MODULE_DIR=/path/to/pg-folder npm run test:e2e:prod
+```
+
+It needs a folder outside the repo that holds the `embedded-postgres` package, starts and stops everything itself, and never touches the live site or your `.env`. Details, ports and cleanup: [`scripts/e2e-prod/README.md`](scripts/e2e-prod/README.md).
+
+### 8.6 Project agents (`.claude/agents`)
+
+Five Claude Code agents are kept with the project, so they are available in VS Code:
+
+| Agent | What it does |
+|---|---|
+| `builder` | Implements one task on one branch, following the project rules. Never pushes or merges. |
+| `verifier` | Read-only second opinion: re-reads the diff, runs typecheck, unit tests, the production-style rig and browser checks, and reports PASS or FAIL with evidence. |
+| `e2e-runner` | Runs `npm run test:e2e:prod` (or one spec) and summarises the failures. |
+| `ru-reviewer` | Reviews the Russian dictionary `src/i18n/ru.ts` (once it exists) for wrong, unnatural or inconsistent wording. |
+| `a11y-checker` | Checks target sizes, focus, labels, contrast in both themes, keyboard flows and reduced motion. |
 
 ## 9. Environment variables
 
@@ -176,6 +200,8 @@ See `.env.example`. The important ones:
 | `MAX_UPLOAD_MB` | Largest accepted delivery video (default 100) |
 | `S3_*` | Bucket and credentials when `STORAGE_DRIVER=s3` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Optional. When both are set, a Telegram message (creator name and city, plus a link to `/admin/providers`) is sent to the admin each time a creator submits a profile for review. Create the bot with @BotFather, message it once, and use your chat id. Both empty = off. A Telegram failure never affects the creator's submit. The link uses `APP_URL`, or Render's `RENDER_EXTERNAL_URL` if that is unset. |
+| `APP_URL` | The site's public address, no trailing slash (live: `https://tarmoq-uz.onrender.com`). Canonical links, the sitemap, `robots.txt`, Open Graph and `llms.txt` are built from it; falls back to Render's `RENDER_EXTERNAL_URL`, then `http://localhost:3000`. See section 14. |
+| `GOOGLE_SITE_VERIFICATION`, `YANDEX_VERIFICATION` | Optional. The verification codes from Google Search Console and Yandex Webmaster; when set, the matching `<meta>` tag is added to every page. |
 
 ## 10. Production deployment
 
@@ -215,7 +241,8 @@ Supabase also publishes every table in the `public` schema over its public Data 
 See `ARCHITECTURE.md` for the design and `src/` for the code. Key conventions:
 - Every API route is wrapped in `handle()` (consistent JSON errors) and starts with `requireRole(...)` or `requireUser()`.
 - Order status changes go through `assertTransition()` and are applied with conditional `updateMany` so double clicks and races cannot apply twice.
-- Pages call `requirePageRole(...)`; middleware is only a first line of defence.
+- Pages call `requirePageRole(...)`. That check and the one in each API route are the access control. There is no route guard in front of them. `src/proxy.ts` is not one: it only serves the Russian addresses (`/ru`, `/ru/search`, `/ru/providers/<slug>`) and does nothing while Russian is off.
+- Text is Uzbek in the code and is translated through `src/i18n` (the guide is the comment at the top of `src/i18n/dictionary.ts`). Russian is behind one switch, `RUSSIAN_LIVE` in `src/i18n/config.ts`, which is **off**: no language button, `/ru/...` is a 404, every page and API answer is Uzbek. For tests and local work only, the environment variable `RUSSIAN_LIVE=1` turns it on for one server process; never set it on the live site.
 
 ## 13. Free deployment (Render + Supabase)
 
@@ -239,3 +266,22 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
 6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.
 
 Free-plan limits to know: videos up to 25 MB (set by `MAX_UPLOAD_MB`), 512 MB RAM, shared CPU, no SLA. Payments are still the sandbox.
+
+## 14. Search and AI visibility
+
+What exists, so Google, Yandex and AI assistants (ChatGPT, Claude, Perplexity and others) can find and read the site:
+
+- **One address setting.** `APP_URL` (see `src/lib/site.ts`) is the only place that knows the site's address. Canonical links, Open Graph, the sitemap, `robots.txt`, structured data and `llms.txt` all come from it, so a new domain is a one-line change in `render.yaml` (and a redeploy). It is read on each request, not baked in at build time.
+- **Indexable pages:** the home page, `/search`, one `/search?category=<slug>` page per category, and every approved creator at `/providers/<slug>`. A search with a word, a city, a price, a sort order or a page number is not indexed (`noindex, follow`, canonical `/search`). Everything else (`/api`, `/admin`, `/dashboard`, `/orders`, `/checkout`, `/messages`, `/settings`, `/login`, `/register`, `/forbidden`) is both disallowed in `robots.txt` and sent with `X-Robots-Tag: noindex, nofollow` (`next.config.mjs`; keep it in step with `PRIVATE_PATHS` in `src/lib/seo.ts`).
+- **`/robots.txt`** welcomes the AI crawlers by name (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, PerplexityBot, Google-Extended, Applebot-Extended) and lists the sitemap. **`/sitemap.xml`** is built from the database on each request: approved creators of active accounts only, up to 5000. **`/llms.txt`** is a plain-text guide for AI assistants (what the site is, the categories, the creators), cached for an hour.
+- **Page metadata:** each public page has its own title, description, canonical address and Open Graph card (the picture is `src/app/opengraph-image.tsx`); there is also a web app manifest.
+- **Structured data (JSON-LD):** organisation and website with a search box on the home page; a visible FAQ with the same text as `FAQPage` data; a profile page with a person and one offer per active package on each creator page (the star rating only when real reviews are shown); a breadcrumb and a creator list on `/search`. The builders are plain functions in `src/lib/seo.ts`.
+- **Rule: no payment promise** in any title, description, Open Graph, JSON-LD, FAQ or `llms.txt` text. Payments are manual or in test mode, and a meta tag cannot carry the "Sinov rejimi" badge. `tests/unit/seo.test.ts` fails if such a word appears, and `tests/e2e/seo.spec.ts` checks the pages themselves.
+
+**Three actions only the owner can do** (nothing here can be done from the code):
+
+1. Add the site to **Google Search Console** and to **Yandex Webmaster** (a "URL prefix" property for the address in `APP_URL`).
+2. Copy each verification code (just the code, from the `content="..."` part of the meta tag they show) into Render > the service > Environment, as `GOOGLE_SITE_VERIFICATION` and `YANDEX_VERIFICATION`, and let it redeploy. Then press "Verify" in both tools.
+3. Submit `https://<your address>/sitemap.xml` in both tools.
+
+A real domain matters most. `tarmoq-uz.onrender.com` is a subdomain of a shared host, so search engines give it little trust, the address is hard to remember, and every ranking built on it is lost if the site moves. When a domain is bought, point it at Render, change `APP_URL` to it, redeploy, and add the new address to both webmaster tools (the sitemap, canonical links and structured data then follow automatically).

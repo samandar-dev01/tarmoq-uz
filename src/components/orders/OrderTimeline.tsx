@@ -22,7 +22,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
             )}
             <span
               className={`relative z-10 grid h-8 w-8 place-items-center rounded-full border text-xs font-bold ${
-                complete ? "border-transparent bg-cobalt text-white" : current ? "border-transparent bg-saffron text-night" : "border-line-strong bg-surface text-ink-mute"
+                complete ? "border-transparent bg-cobalt text-on-accent" : current ? "border-transparent bg-saffron text-night" : "border-line-strong bg-surface text-ink-mute"
               }`}
             >
               {complete ? (

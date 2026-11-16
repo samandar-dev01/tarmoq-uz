@@ -6,18 +6,21 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
 import { useHydrated } from "@/components/ui/useHydrated";
+import { useT } from "@/i18n/client";
+import { tk } from "@/i18n/dictionary";
 import { authHref, type EntryRole } from "@/lib/authRole";
 
 type Role = "CLIENT" | "PROVIDER";
 
 const ROLES: { value: Role; title: string; hint: string }[] = [
-  { value: "CLIENT", title: "Buyurtma bermoqchiman", hint: "Ijodkor topib, video buyurtma qilaman" },
-  { value: "PROVIDER", title: "Ijodkorman", hint: "Xizmatlarimni taklif qilaman" },
+  { value: "CLIENT", title: tk("Buyurtma bermoqchiman"), hint: tk("Ijodkor topib, video buyurtma qilaman") },
+  { value: "PROVIDER", title: tk("Ijodkorman"), hint: tk("Xizmatlarimni taklif qilaman") },
 ];
 
 export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; next: string | null }) {
   const router = useRouter();
   const ready = useHydrated();
+  const t = useT();
   const [role, setRole] = useState<Role>(initialRole === "provider" ? "PROVIDER" : "CLIENT");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -44,14 +47,14 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
       const data = await res.json();
       if (!res.ok) {
         setFieldErrors(data.fieldErrors ?? (data.details?.field ? { [data.details.field]: [data.error] } : {}));
-        setError(data.error ?? "Hisob yaratib boʻlmadi.");
+        setError(data.error ?? t("Hisob yaratib boʻlmadi."));
         return;
       }
       // `next` (already checked on the server) is a client destination, such as the package they wanted to order.
       router.replace(role === "PROVIDER" ? "/dashboard/provider/profile/wizard" : next ?? "/search");
       router.refresh();
     } catch {
-      setError("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.");
+      setError(t("Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring."));
     } finally {
       setLoading(false);
     }
@@ -60,7 +63,7 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && <Alert variant="error">{error}</Alert>}
-      <div role="radiogroup" aria-label="Hisob turi" className="grid gap-3">
+      <div role="radiogroup" aria-label={t("Hisob turi")} className="grid gap-3">
         {ROLES.map((r) => {
           const selected = role === r.value;
           return (
@@ -71,24 +74,24 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
               aria-checked={selected}
               onClick={() => setRole(r.value)}
               className={`rounded-card border p-4 text-left transition-[transform,box-shadow,background-color,border-color] duration-200 ease-snap ${
-                selected ? "border-transparent bg-cobalt text-white shadow-lift-sm" : "border-line-strong bg-surface hover:bg-paper-deep"
+                selected ? "border-transparent bg-cobalt text-on-accent shadow-lift-sm" : "border-line-strong bg-surface hover:bg-paper-deep"
               }`}
             >
-              <span className="block font-bold">{r.title}</span>
-              <span className={`mt-1 block text-sm ${selected ? "text-white/85" : "text-ink-soft"}`}>{r.hint}</span>
+              <span className="block font-bold">{t(r.title)}</span>
+              <span className={`mt-1 block text-sm ${selected ? "text-on-accent" : "text-ink-soft"}`}>{t(r.hint)}</span>
             </button>
           );
         })}
       </div>
-      <Field label="Ism-familiya" name="name" autoComplete="name" required error={fieldErrors.name?.[0]} />
-      <Field label="Email" name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
-      <Field label="Telefon (ixtiyoriy)" name="phone" type="tel" autoComplete="tel" placeholder="+998 90 123 45 67" error={fieldErrors.phone?.[0]} />
-      <Field label="Parol" name="password" type="password" autoComplete="new-password" required minLength={8} hint="Kamida 8 ta belgi" error={fieldErrors.password?.[0]} />
+      <Field label={t("Ism-familiya")} name="name" autoComplete="name" required error={fieldErrors.name?.[0]} />
+      <Field label={t("Email")} name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
+      <Field label={t("Telefon (ixtiyoriy)")} name="phone" type="tel" autoComplete="tel" placeholder="+998 90 123 45 67" error={fieldErrors.phone?.[0]} />
+      <Field label={t("Parol")} name="password" type="password" autoComplete="new-password" required minLength={8} hint={t("Kamida 8 ta belgi")} error={fieldErrors.password?.[0]} />
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
-        {loading ? "Yaratilmoqda…" : "Roʻyxatdan oʻtish"}
+        {loading ? t("Yaratilmoqda…") : t("Roʻyxatdan oʻtish")}
       </Button>
       <p className="text-center text-ink-soft">
-        Hisobingiz bormi? <ButtonLink href={authHref("/login", role === "PROVIDER" ? "provider" : "client", next)} variant="link">Kiring</ButtonLink>
+        {t("Hisobingiz bormi?")} <ButtonLink href={authHref("/login", role === "PROVIDER" ? "provider" : "client", next)} variant="link">{t("Kiring")}</ButtonLink>
       </p>
     </form>
   );

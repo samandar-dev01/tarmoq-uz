@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DOORS } from "./authRole";
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Ism-familiyangizni kiriting").max(80),
@@ -18,6 +19,8 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Email manzilini toʻgʻri kiriting"),
   password: z.string().min(1, "Parolni kiriting").max(200),
+  // The sign-in door the form was on. Optional: API clients that send none are not checked against a door.
+  role: z.enum(DOORS).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

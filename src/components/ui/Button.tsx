@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 import { Spinner } from "./Spinner";
 
 export type ButtonVariant = "primary" | "secondary" | "accent" | "danger" | "ghost" | "chip" | "link";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const BASE =
   "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-bold transition-[transform,box-shadow,background-color,border-color,color,filter] duration-150 ease-snap disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
@@ -11,10 +11,10 @@ const BOX = "rounded-ctl border";
 const PRESS = "shadow-lift-sm hover:-translate-y-px hover:shadow-lift hover:brightness-110 active:translate-y-px active:shadow-lift-sm active:brightness-95";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: `${BOX} ${PRESS} border-white/10 bg-cobalt text-white`,
+  primary: `${BOX} ${PRESS} border-on-accent/10 bg-cobalt text-on-accent`,
   secondary: `${BOX} ${PRESS} border-line-strong bg-surface text-ink hover:bg-paper-deep`,
   accent: `${BOX} ${PRESS} border-transparent bg-saffron text-night`,
-  danger: `${BOX} ${PRESS} border-white/10 bg-pomegranate text-white`,
+  danger: `${BOX} ${PRESS} border-on-accent/10 bg-pomegranate text-on-accent`,
   ghost: "rounded-ctl text-ink-soft hover:bg-ink/10 hover:text-ink",
   // A pill. When it stands for a choice that is on (aria-current or aria-pressed), it fills with amber.
   chip: "rounded-full border border-line-strong bg-surface text-ink-soft hover:border-ink-mute/50 hover:bg-paper-deep hover:text-ink active:translate-y-px aria-[current=true]:border-transparent aria-[current=true]:bg-saffron aria-[current=true]:text-night aria-pressed:border-transparent aria-pressed:bg-saffron aria-pressed:text-night",
@@ -25,6 +25,8 @@ const SIZES: Record<ButtonSize, string> = {
   sm: "min-h-11 px-4 text-sm md:min-h-10",
   md: "min-h-11 px-5 text-[0.9375rem]",
   lg: "min-h-14 px-7 text-base",
+  // A square icon-only button: 44px at every width, with no padding, so the icon stays centred.
+  icon: "h-11 w-11 p-0",
 };
 const CHIP_SIZE = "min-h-11 px-4 text-sm";
 

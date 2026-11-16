@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
+import { isCurrentPath } from "@/lib/currentPath";
 import { useHydrated } from "./useHydrated";
 
 type Props = ComponentProps<typeof Link> & {
@@ -20,7 +21,7 @@ const VARIANTS = {
   tab: {
     base: "inline-flex min-h-11 items-center rounded-ctl border px-4 text-sm font-bold transition-colors duration-150 md:min-h-10",
     idle: "border-line-strong bg-surface text-ink-soft hover:bg-paper-deep hover:text-ink",
-    active: "border-transparent bg-cobalt text-white",
+    active: "border-transparent bg-cobalt text-on-accent",
   },
   // Looks come from className alone (a link dressed as a Button that must still close the mobile menu).
   plain: { base: "", idle: "", active: "" },
@@ -31,8 +32,7 @@ export function NavLink({ href, exact = false, variant = "nav", active: forced, 
   const pathname = usePathname();
   useHydrated(); // every page has a NavLink in its header, so this marks the page as interactive (see useHydrated)
   const target = typeof href === "string" ? href : (href.pathname ?? "");
-  const path = target.split("?")[0]!;
-  const active = forced ?? (exact ? pathname === path : pathname === path || pathname.startsWith(`${path}/`));
+  const active = forced ?? isCurrentPath(pathname, target, exact);
   const v = VARIANTS[variant];
   return (
     <Link

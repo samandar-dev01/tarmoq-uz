@@ -22,7 +22,7 @@ export function ProviderCard({ p, variant = "card" }: { p: ProviderCardData; var
         <span className="ikat absolute -inset-5" style={{ background: coverArt(p.slug) }} />
         {/* Cinema grade: the art fades into the ground at the bottom, so the name plate always reads. */}
         <span className="absolute inset-0 bg-gradient-to-t from-paper/80 via-transparent to-paper/10" />
-        <span className="absolute left-1/2 top-[42%] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-paper/50 backdrop-blur-md transition-transform duration-200 ease-snap group-hover:scale-110">
+        <span className="absolute left-1/2 top-[42%] grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-paper/50 backdrop-blur-md transition-transform duration-200 ease-snap group-hover:scale-110">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="rgb(var(--c-ink))" aria-hidden="true">
             <path d="M8 5.5v13l11-6.5z" />
           </svg>

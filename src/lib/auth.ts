@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { authHref, doorForRole, doorForRoles, LAST_ROLE_COOKIE } from "./authRole";
 import { prisma } from "./db";
 import { HttpError } from "./http";
 import { signToken, verifyToken, type AppRole, type SessionPayload } from "./token";
@@ -13,12 +14,20 @@ export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(pl
 
 export async function startSession(user: { id: string; role: AppRole; name: string }) {
   const token = await signToken({ sub: user.id, role: user.role, name: user.name }, maxAgeDays());
-  (await cookies()).set(SESSION_COOKIE, token, {
+  const jar = await cookies();
+  jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: maxAgeDays() * 86400,
+  });
+  // Not a secret and not trusted: it only preselects the sign-in tab next time (see requirePageRole).
+  jar.set(LAST_ROLE_COOKIE, doorForRole(user.role), {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 365 * 86400,
   });
 }
 
@@ -58,16 +67,17 @@ export async function requireRole(...roles: AppRole[]) {
   return user;
 }
 
-/** For server-rendered pages (redirects instead of throwing). */
+/**
+ * For server-rendered pages (redirects instead of throwing).
+ * A signed-out visitor is sent to the sign-in door of the page: a page for one role names its door by that role;
+ * a page several roles share (/orders/<id>, /messages) uses the door of the last sign-in, or the client door.
+ */
 export async function requirePageRole(...roles: AppRole[]) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(authHref("/login", doorForRoles(roles, (await cookies()).get(LAST_ROLE_COOKIE)?.value)));
   if (!roles.includes(user.role)) redirect("/forbidden");
   return user;
 }
 
-export const ROLE_HOME: Record<AppRole, string> = {
-  CLIENT: "/dashboard/client",
-  PROVIDER: "/dashboard/provider",
-  ADMIN: "/admin",
-};
+// ROLE_HOME and canBrowseCreators live in ./authRole (it has no server imports), so a client component and the unit tests can use them too.
+export { canBrowseCreators, ROLE_HOME } from "./authRole";

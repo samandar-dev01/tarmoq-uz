@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requirePageRole } from "@/lib/auth";
+import { canBrowseCreators, requirePageRole } from "@/lib/auth";
 import { listConversations } from "@/lib/messaging";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { cardClasses } from "@/components/ui/Card";
@@ -19,8 +19,8 @@ export default async function MessagesPage() {
         {conversations.length === 0 ? (
           <EmptyState
             title="Hozircha suhbatlar yoʻq"
-            description="Ijodkorga profilidan yozing yoki buyurtma bering. Tafsilotlarni shu yerda muhokama qilasiz."
-            action={<ButtonLink href="/search">Ijodkorlarni topish</ButtonLink>}
+            description={canBrowseCreators(user) ? "Ijodkorga profilidan yozing yoki buyurtma bering. Tafsilotlarni shu yerda muhokama qilasiz." : "Mijoz sizga yozganda yoki buyurtma berganda, suhbat shu yerda paydo boʻladi."}
+            action={canBrowseCreators(user) ? <ButtonLink href="/search">Ijodkorlarni topish</ButtonLink> : undefined}
           />
         ) : (
           <ul className={cardClasses({ padding: "none", className: "divide-y divide-line overflow-hidden" })}>
@@ -35,7 +35,7 @@ export default async function MessagesPage() {
                     <p className="truncate text-ink-soft">{c.last ? c.last.body.replace(/\s+/g, " ") : "Hali xabarlar yoʻq"}</p>
                   </div>
                   {c.unread > 0 && (
-                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-pomegranate px-2 text-sm font-bold text-white" aria-label={`${c.unread} ta oʻqilmagan`}>
+                    <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-pomegranate px-2 text-sm font-bold text-on-accent" aria-label={`${c.unread} ta oʻqilmagan`}>
                       {c.unread}
                     </span>
                   )}

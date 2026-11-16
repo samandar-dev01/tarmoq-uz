@@ -1,0 +1,27 @@
+// Russian for the shell: the header, the account menu, the footer, the two header buttons, the site's own name line.
+// Uzbek sentence (the key) -> Russian. Rules: top of src/i18n/dictionary.ts.
+export const shell: Record<string, string> = {
+  // Header
+  "Tarmoq.uz: bosh sahifa": "Tarmoq.uz: главная",
+  "Asosiy menyu": "Главное меню",
+  "Menyu": "Меню",
+  "Ijodkorlar": "Креаторы",
+  "Xabarlar": "Сообщения",
+  "Kabinet": "Кабинет",
+  // Account menu
+  "Hisob menyusi: {name}": "Меню аккаунта: {name}",
+  "Chiqish": "Выйти",
+  "Chiqilmoqda…": "Выходим…",
+  // The two header buttons. The language button names the language it switches TO in that language's own words.
+  "Yorugʻ rejimga oʻtish": "Включить светлую тему",
+  "Qorongʻi rejimga oʻtish": "Включить тёмную тему",
+  "Tilni almashtirish: {language}": "Сменить язык: {language}",
+  // Footer
+  "Pastki menyu": "Нижнее меню",
+  "Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.": "Креаторы Узбекистана в одной сети: находите видеографов, фотографов и монтажёров.",
+  "Ijodkor boʻlib qoʻshilish": "Стать креатором",
+  // The site's default title and description (root layout)
+  "Tarmoq.uz: ijodkorlar tarmogʻi": "Tarmoq.uz: сеть креаторов",
+  "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.":
+    "Находите видеографов, фотографов и монтажёров в Узбекистане, сравнивайте цены и согласовывайте условия письменно.",
+};
