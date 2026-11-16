@@ -2,6 +2,8 @@ import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { localeOfRequest } from "../i18n/config";
+import { translateRendered } from "../i18n/rendered";
 import { readBodyLimited } from "./body";
 import { HttpError } from "./errors";
 export { HttpError };
@@ -37,28 +39,35 @@ export function sameOriginOk(req: Request): boolean {
   return own.some((h) => !!h && h.toLowerCase() === originHost);
 }
 
-/** Wrap every route handler: converts HttpError / ZodError / unknown errors into JSON responses. */
+/**
+ * Wrap every route handler: converts HttpError / ZodError / unknown errors into JSON responses.
+ *
+ * This is also where the server's words are translated. A handler throws its Uzbek sentence as always
+ * (`new HttpError(404, "Buyurtma topilmadi.")`, a zod message); here it is put into the language of the request
+ * (the proxy's `x-locale` header, then the `lang` cookie; see src/i18n). In Uzbek the text passes through unchanged.
+ */
 export function handle<A extends unknown[]>(fn: (req: Request, ...args: A) => Promise<Response>) {
   return async (req: Request, ...args: A): Promise<Response> => {
     try {
       if (!sameOriginOk(req)) throw new HttpError(403, "Soʻrov boshqa saytdan yuborilgan va rad etildi.");
       return await fn(req, ...args);
     } catch (e) {
+      const say = (text: string) => translateRendered(localeOfRequest(req), text);
       if (e instanceof HttpError) {
-        return NextResponse.json({ error: e.message, details: e.details }, { status: e.status, headers: e.headers });
+        return NextResponse.json({ error: say(e.message), details: e.details }, { status: e.status, headers: e.headers });
       }
       if (e instanceof ZodError) {
         return NextResponse.json(
           {
-            error: "Belgilangan maydonlarni tekshiring.",
-            fieldErrors: e.flatten().fieldErrors,
-            issues: e.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+            error: say("Belgilangan maydonlarni tekshiring."),
+            fieldErrors: e.flatten((issue) => say(issue.message)).fieldErrors,
+            issues: e.issues.map((i) => ({ path: i.path.join("."), message: say(i.message) })),
           },
           { status: 400 },
         );
       }
       console.error("Unhandled API error:", e);
-      return NextResponse.json({ error: "Nimadir xato ketdi. Qayta urinib koʻring." }, { status: 500 });
+      return NextResponse.json({ error: say("Nimadir xato ketdi. Qayta urinib koʻring.") }, { status: 500 });
     }
   };
 }

@@ -7,10 +7,10 @@ const PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "Demo12345!";
 
 // Slugs are stable keys (used in URLs and tests); only the names are shown to people.
 const categories = [
-  { slug: "mobile-videography", name: "Mobilografiya" },
-  { slug: "photography", name: "Fotografiya" },
-  { slug: "video-editing", name: "Video montaj" },
-  { slug: "drone", name: "Dron bilan suratga olish" },
+  { slug: "mobile-videography", name: "Mobilografiya", nameRu: "Мобильная съёмка" },
+  { slug: "photography", name: "Fotografiya", nameRu: "Фотография" },
+  { slug: "video-editing", name: "Video montaj", nameRu: "Видеомонтаж" },
+  { slug: "drone", name: "Dron bilan suratga olish", nameRu: "Съёмка с дрона" },
 ];
 
 type Svc = { title: string; description: string; price: number; deliveryDays: number; revisions: number };
@@ -76,7 +76,7 @@ const providers: SeedProvider[] = [
 async function main() {
   // Categories are reference data, not demo data: every environment needs them.
   for (const c of categories) {
-    await prisma.category.upsert({ where: { slug: c.slug }, update: { name: c.name }, create: c });
+    await prisma.category.upsert({ where: { slug: c.slug }, update: { name: c.name, nameRu: c.nameRu }, create: c });
   }
 
   // Demo accounts and providers are fake people. They are created only outside production, or when

@@ -78,6 +78,8 @@ model Category {
   id        String            @id @default(cuid())
   slug      String            @unique
   name      String
+  /// The name a Russian reader sees. Null: the Uzbek name is shown.
+  nameRu    String?
   profiles  ProviderProfile[]
 }
 
