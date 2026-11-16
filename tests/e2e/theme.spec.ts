@@ -154,12 +154,20 @@ test.describe("the button", () => {
     await settled(page);
     const before = await toggle(page).boundingBox();
     const headerBefore = await page.locator("header").boundingBox();
+    const mainBefore = await page.locator("main").boundingBox();
     await toggle(page).click();
     await expect.poll(() => themeOf(page)).toBe("light");
     const after = await toggle(page).boundingBox();
     const headerAfter = await page.locator("header").boundingBox();
-    expect(after).toEqual(before);
+    const mainAfter = await page.locator("main").boundingBox();
+    // The button lifts 1 px while the pointer is on it (a deliberate hover effect with a 150 ms transition), so its top is
+    // compared with a tolerance. What must never change is its size, its sideways position and the layout around it.
+    expect(after!.width).toBe(before!.width);
+    expect(after!.height).toBe(before!.height);
+    expect(after!.x).toBe(before!.x);
+    expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1.5);
     expect(headerAfter!.height).toBe(headerBefore!.height);
+    expect(mainAfter!.y).toBe(mainBefore!.y);
   });
 });
 

@@ -124,7 +124,6 @@ export const orders: Record<string, string> = {
     "Возможно, его удалили или креатор сейчас не принимает заказы.",
   "Boshqa ijodkorlarni topish": "Найти других креаторов",
   "Buyurtma: {title}": "Заказ: {title}",
-  "{days} kunda topshiriladi": "Срок: {days} дн.",
   "Nima kerakligini yozing": "Опишите, что нужно",
   "Video nima uchun, qayerda va qachon suratga olinadi? Qanday uslub yoqadi?":
     "Для чего нужно видео, где и когда его снимать? Какой стиль вам нравится?",

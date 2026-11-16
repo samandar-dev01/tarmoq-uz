@@ -43,7 +43,6 @@ export const dashboard: Record<string, string> = {
   // ---- The profile statuses (PROFILE_STATUS_LABEL in src/lib/orderUi.ts)
   "Qoralama": "Черновик",
   "Koʻrib chiqilmoqda": "На проверке",
-  "Tasdiqlangan": "Подтверждён",
   "Toʻxtatilgan": "Приостановлен",
   // ---- The profile wizard
   "Ijodkor profilingiz": "Ваш профиль креатора",
@@ -53,8 +52,6 @@ export const dashboard: Record<string, string> = {
     "Ваш профиль приостановлен. Чтобы вернуть доступ, обратитесь в поддержку.",
   "Asosiy": "Основное",
   "Joylashuv": "Локация",
-  "Paketlar": "Пакеты",
-  "Portfolio": "Портфолио",
   "Tekshirish": "Проверка",
   "Saqlab boʻlmadi.": "Не удалось сохранить.",
   "Saqlandi.": "Сохранено.",
@@ -64,10 +61,8 @@ export const dashboard: Record<string, string> = {
   "Masalan: reels, tadbirlar va toʻylar uchun mobilograf": "Например: мобильный видеограф для Reels, мероприятий и свадеб",
   "Oʻzingiz haqingizda": "О себе",
   "Tajribangiz, uslubingiz va mijozlar nimani kutishi mumkin.": "Ваш опыт, стиль и то, чего могут ожидать заказчики.",
-  "Yoʻnalish": "Направление",
   "Tanlang…": "Выберите…",
   "Saqlash va davom etish": "Сохранить и продолжить",
-  "Shahar": "Город",
   "Tuman (ixtiyoriy)": "Район (необязательно)",
   "Jihozlar (ixtiyoriy)": "Оборудование (необязательно)",
   "Masalan: iPhone 15 Pro, gimbal, simsiz mikrofonlar": "Например: iPhone 15 Pro, стабилизатор, беспроводные микрофоны",

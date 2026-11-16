@@ -27,64 +27,8 @@ import { RU } from "@/i18n/ru";
 // What it cannot see: a key that is not a plain double-quoted literal on one line (see the rules at the top of
 // src/i18n/dictionary.ts), and Uzbek text that nobody wrapped in t( at all.
 
-const IN_SCOPE = [
-  "src/i18n/",
-  "src/proxy.ts",
-  // the shell
-  "src/app/layout.tsx",
-  "src/components/Header.tsx",
-  "src/components/AccountMenu.tsx",
-  "src/components/ui/",
-  "src/lib/shellNav.ts",
-  "src/lib/constants.ts",
-  // signing in and up, no access
-  "src/app/(auth)/",
-  "src/app/forbidden/",
-  "src/components/auth/",
-  "src/app/api/auth/",
-  // the server boundary
-  "src/lib/http.ts",
-  "src/lib/auth.ts",
-  "src/lib/body.ts",
-  "src/lib/validators.ts",
-  "src/lib/rateLimit.ts",
-  // feat-i18n-public
-  "src/app/page.tsx",
-  "src/app/search/",
-  "src/app/providers/",
-  "src/app/not-found.tsx",
-  "src/app/error.tsx",
-  "src/app/sitemap.ts",
-  "src/components/FilterPanel.tsx",
-  "src/components/ProviderCard.tsx",
-  "src/components/seo/",
-  "src/lib/seo.ts",
-  "src/lib/providers.ts",
-  "src/lib/searchLinks.ts",
-  "src/lib/publicFormat.ts",
-  // feat-i18n-app: everything a signed-in client or creator sees, and what the server says to them
-  "src/app/orders/",
-  "src/components/orders/",
-  "src/app/checkout/",
-  "src/components/checkout/",
-  "src/app/dashboard/",
-  "src/components/dashboard/",
-  "src/components/wizard/",
-  "src/app/messages/",
-  "src/components/chat/",
-  "src/app/api/orders/",
-  "src/app/api/payments/",
-  "src/app/api/profile/",
-  "src/app/api/conversations/",
-  "src/app/api/providers/",
-  "src/app/api/health/",
-  "src/lib/orderUi.ts",
-  "src/lib/orderMachine.ts",
-  "src/lib/orders.ts",
-  "src/lib/agreements.ts",
-  "src/lib/messaging.ts",
-  "src/lib/payments/",
-];
+// The whole site: every file under src/ except what OUT_OF_SCOPE (below) lists on purpose.
+const IN_SCOPE = ["src/"];
 
 // Never translated, on purpose (decided in the language plan): the admin area is Uzbek only (pages, components, API), the
 // Telegram texts stay English (src/lib/notify.ts), and prisma/ (the seed) is outside src/ anyway.
