@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { getLocale, getT } from "@/i18n/server";
 import { formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
 import { Alert } from "@/components/ui/Alert";
@@ -11,10 +12,15 @@ import { StatTile } from "@/components/ui/StatTile";
 import { OrderList } from "@/components/orders/OrderList";
 import { PayoutDetailsForm } from "@/components/dashboard/PayoutDetailsForm";
 
-export const metadata = { title: "Ijodkor kabineti" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Ijodkor kabineti") };
+}
 
 export default async function ProviderDashboard() {
   const user = await requirePageRole("PROVIDER");
+  const t = await getT();
+  const locale = await getLocale();
   const [profile, orders, earned, held, owed] = await Promise.all([
     prisma.providerProfile.findUnique({
       where: { userId: user.id },
@@ -40,56 +46,56 @@ export default async function ProviderDashboard() {
 
   return (
     <Container size="xl">
-      <h1>Ijodkor kabineti</h1>
+      <h1>{t("Ijodkor kabineti")}</h1>
 
       <div className="mt-6">
         {!profile || profile.status === "DRAFT" ? (
           <Alert variant="info">
-            Profilingiz hali yuborilmagan. Buyurtma olishni boshlash uchun{" "}
-            <ButtonLink href="/dashboard/provider/profile/wizard" variant="link">profilni toʻldiring</ButtonLink>.
+            {t("Profilingiz hali yuborilmagan. Buyurtma olishni boshlash uchun")}{" "}
+            <ButtonLink href="/dashboard/provider/profile/wizard" variant="link">{t("profilni toʻldiring")}</ButtonLink>.
           </Alert>
         ) : profile.status === "PENDING_REVIEW" ? (
-          <Alert variant="info">Profilingiz admin tasdigʻini kutmoqda. Tasdiqlangach, qidiruvda koʻrinasiz.</Alert>
+          <Alert variant="info">{t("Profilingiz admin tasdigʻini kutmoqda. Tasdiqlangach, qidiruvda koʻrinasiz.")}</Alert>
         ) : profile.status === "SUSPENDED" ? (
-          <Alert variant="error">Profilingiz toʻxtatilgan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.</Alert>
+          <Alert variant="error">{t("Profilingiz toʻxtatilgan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.")}</Alert>
         ) : (
           <Alert variant="success">
-            Profilingiz faol.{" "}
-            <ButtonLink href={`/providers/${profile.slug}`} variant="link">Ommaviy profilni koʻrish</ButtonLink>{" "}
-            yoki{" "}
-            <ButtonLink href="/dashboard/provider/profile/wizard" variant="link">tahrirlash</ButtonLink>.
+            {t("Profilingiz faol.")}{" "}
+            <ButtonLink href={`/providers/${profile.slug}`} variant="link">{t("Ommaviy profilni koʻrish")}</ButtonLink>{" "}
+            {t("yoki")}{" "}
+            <ButtonLink href="/dashboard/provider/profile/wizard" variant="link">{t("tahrirlash")}</ButtonLink>.
           </Alert>
         )}
       </div>
 
       <dl className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Yangi soʻrovlar" value={requests} tone="saffron" />
-        <StatTile label="Jarayonda" value={inProgress} />
-        <StatTile label="Ushlab turilgan mablagʻ" value={formatUZS(held._sum.amount ?? 0)} compact />
-        <StatTile label="Olingan daromad (komissiyasiz)" value={formatUZS(earned._sum.amount ?? 0)} tone="turquoise" compact />
+        <StatTile label={t("Yangi soʻrovlar")} value={requests} tone="saffron" />
+        <StatTile label={t("Jarayonda")} value={inProgress} />
+        <StatTile label={t("Ushlab turilgan mablagʻ")} value={formatUZS(held._sum.amount ?? 0, locale)} compact />
+        <StatTile label={t("Olingan daromad (komissiyasiz)")} value={formatUZS(earned._sum.amount ?? 0, locale)} tone="turquoise" compact />
       </dl>
 
       {profile && (
         <>
-          <h2 className="mb-4 mt-12">Pul olish</h2>
+          <h2 className="mb-4 mt-12">{t("Pul olish")}</h2>
           <Card>
             <p className="mb-5 text-ink-soft">
-              Mijoz ishni qabul qilgach, daromadingiz (komissiyasiz) shu kartaga oʻtkaziladi.
-              {owedNow > 0 && <> Hozir oʻtkazilishi kutilayotgan: <strong>{formatUZS(owedNow)}</strong>.</>}
+              {t("Mijoz ishni qabul qilgach, daromadingiz (komissiyasiz) shu kartaga oʻtkaziladi.")}
+              {owedNow > 0 && <> {t("Hozir oʻtkazilishi kutilayotgan:")} <strong>{formatUZS(owedNow, locale)}</strong>.</>}
             </p>
             <PayoutDetailsForm holder={profile.payoutHolder} last4={profile.payoutCardLast4} />
           </Card>
         </>
       )}
 
-      <h2 className="mb-4 mt-12">Buyurtmalar</h2>
+      <h2 className="mb-4 mt-12">{t("Buyurtmalar")}</h2>
       {orders.length === 0 ? (
-        <EmptyState title="Hozircha buyurtmalar yoʻq" description="Mijoz paketlaringizdan birini buyurtma qilganda, u shu yerda koʻrinadi." />
+        <EmptyState title={t("Hozircha buyurtmalar yoʻq")} description={t("Mijoz paketlaringizdan birini buyurtma qilganda, u shu yerda koʻrinadi.")} />
       ) : (
         <OrderList
           rows={orders.map((o) => ({
             id: o.id, status: o.status, title: o.service.title, other: o.client.name,
-            price: o.agreedPrice, updatedAt: o.updatedAt, action: nextAction(o.status, "provider"),
+            price: o.agreedPrice, updatedAt: o.updatedAt, action: t(nextAction(o.status, "provider")),
           }))}
         />
       )}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { useLocale, useT } from "@/i18n/client";
 import { formatMoment } from "@/lib/format";
 
 export type ChatMessage = { id: string; senderId: string; body: string; createdAt: string };
@@ -10,6 +11,8 @@ export type ChatMessage = { id: string; senderId: string; body: string; createdA
 const POLL_MS = 5000;
 
 export function ChatWindow({ conversationId, meId, initialMessages }: { conversationId: string; meId: string; initialMessages: ChatMessage[] }) {
+  const t = useT();
+  const locale = useLocale();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -67,13 +70,13 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.fieldErrors?.body?.[0] ?? json.error ?? "Xabarni yuborib boʻlmadi.");
+        setError(json.fieldErrors?.body?.[0] ?? json.error ?? t("Xabarni yuborib boʻlmadi."));
         return;
       }
       append([json.message]);
       setText("");
     } catch {
-      setError("Internet aloqasida muammo. Xabaringiz yuborilmadi.");
+      setError(t("Internet aloqasida muammo. Xabaringiz yuborilmadi."));
     } finally {
       setSending(false);
     }
@@ -89,7 +92,7 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
   return (
     <div className="flex h-[70vh] flex-col overflow-hidden rounded-card border border-line bg-surface">
       <div className="flex-1 space-y-3 overflow-y-auto bg-paper p-4" aria-live="polite">
-        {messages.length === 0 && <p className="py-10 text-center text-ink-soft">Hali xabarlar yoʻq. Salom yozing!</p>}
+        {messages.length === 0 && <p className="py-10 text-center text-ink-soft">{t("Hali xabarlar yoʻq. Salom yozing!")}</p>}
         {messages.map((m) => {
           const mine = m.senderId === meId;
           return (
@@ -99,31 +102,31 @@ export function ChatWindow({ conversationId, meId, initialMessages }: { conversa
                   mine ? "rounded-br-md border-on-accent/10 bg-cobalt text-on-accent" : "rounded-bl-md border-line-strong bg-paper-deep text-ink"
                 }`}
               >
-                {m.body}
-                <div className={`mt-1 text-xs ${mine ? "text-on-accent" : "text-ink-mute"}`}>{formatMoment(new Date(m.createdAt))}</div>
+                <span data-user-content>{m.body}</span>
+                <div className={`mt-1 text-xs ${mine ? "text-on-accent" : "text-ink-mute"}`}>{formatMoment(new Date(m.createdAt), locale)}</div>
               </div>
             </div>
           );
         })}
         <div ref={bottom} />
       </div>
-      {pollError && <div className="border-t border-line px-4 py-2"><Alert variant="info">Aloqa muammosi. Qayta uriniladi…</Alert></div>}
+      {pollError && <div className="border-t border-line px-4 py-2"><Alert variant="info">{t("Aloqa muammosi. Qayta uriniladi…")}</Alert></div>}
       {error && <div className="border-t border-line px-4 py-2"><Alert variant="error">{error}</Alert></div>}
       <form onSubmit={send} className="flex items-end gap-3 border-t border-line bg-surface p-3">
         <div className="flex-1">
           <Field
             as="textarea"
             hideLabel
-            label="Xabar"
+            label={t("Xabar")}
             rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Xabar yozing (Enter: yuborish, Shift+Enter: yangi qator)"
+            placeholder={t("Xabar yozing (Enter: yuborish, Shift+Enter: yangi qator)")}
             className="resize-none"
           />
         </div>
-        <Button type="submit" loading={sending} disabled={!text.trim()}>Yuborish</Button>
+        <Button type="submit" loading={sending} disabled={!text.trim()}>{t("Yuborish")}</Button>
       </form>
     </div>
   );

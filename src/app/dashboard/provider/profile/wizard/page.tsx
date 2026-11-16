@@ -1,13 +1,18 @@
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { getT } from "@/i18n/server";
 import { Alert } from "@/components/ui/Alert";
 import { Container } from "@/components/ui/Container";
 import { ProfileWizard, type WizardInitial } from "@/components/wizard/ProfileWizard";
 
-export const metadata = { title: "Ijodkor profilingiz" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Ijodkor profilingiz") };
+}
 
 export default async function WizardPage() {
   const user = await requirePageRole("PROVIDER");
+  const t = await getT();
   const [profile, categories] = await Promise.all([
     prisma.providerProfile.findUnique({
       where: { userId: user.id },
@@ -16,13 +21,13 @@ export default async function WizardPage() {
         portfolio: { orderBy: { sortOrder: "asc" } },
       },
     }),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, nameRu: true } }),
   ]);
 
   if (profile?.status === "SUSPENDED") {
     return (
       <Container size="md" pad="section">
-        <Alert variant="error">Profilingiz toʻxtatilgan. Kirishni tiklash uchun qoʻllab-quvvatlash xizmatiga murojaat qiling.</Alert>
+        <Alert variant="error">{t("Profilingiz toʻxtatilgan. Kirishni tiklash uchun qoʻllab-quvvatlash xizmatiga murojaat qiling.")}</Alert>
       </Container>
     );
   }
@@ -46,8 +51,8 @@ export default async function WizardPage() {
 
   return (
     <Container size="lg">
-      <h1>Ijodkor profilingiz</h1>
-      <p className="mt-2 text-ink-soft">Quyidagi qadamlarni bajaring. Yangi profillarni admin tekshiradi, shundan keyin ular ommaga chiqadi.</p>
+      <h1>{t("Ijodkor profilingiz")}</h1>
+      <p className="mt-2 text-ink-soft">{t("Quyidagi qadamlarni bajaring. Yangi profillarni admin tekshiradi, shundan keyin ular ommaga chiqadi.")}</p>
       <div className="mt-8">
         <ProfileWizard initial={initial} categories={categories} />
       </div>
