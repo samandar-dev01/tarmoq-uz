@@ -60,6 +60,12 @@ model User {
   phone         String?
   role          Role     @default(CLIENT)
   isActive      Boolean  @default(true)
+  /// Storage key of the profile photo (avatars/<userId>/<uuid>.<ext>). Server only: the client gets a URL built from the id and avatarUpdatedAt.
+  avatarKey       String?
+  /// When the photo last changed: "has a photo" and the cache-buster (?v=) of its URL. Null together with avatarKey.
+  avatarUpdatedAt DateTime?
+  /// Session version. A session cookie carries the number it was issued with (tv); a password change or "sign out everywhere" raises it and ends every older session.
+  tokenVersion    Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

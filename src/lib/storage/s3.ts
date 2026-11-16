@@ -1,5 +1,6 @@
 // S3-compatible storage (AWS S3, Cloudflare R2, MinIO, ...). Loaded only when STORAGE_DRIVER=s3.
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import type { Readable } from "stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { bucketFor, type StorageArea } from "./bucketPure";
 import { contentDisposition } from "./disposition";
@@ -25,7 +26,7 @@ function s3() {
 }
 
 const bucket = (area: StorageArea) => {
-  const name = bucketFor(area);
+  const name = bucketFor(area); // throws, with the variable's name, for an area that has its own bucket and none set
   if (!name) throw new Error(area === "receipts" ? "S3_RECEIPTS_BUCKET (or S3_BUCKET) is not configured" : "S3_BUCKET is not configured");
   return name;
 };
@@ -49,4 +50,16 @@ export async function signedUrl(key: string, filename: string, contentType: stri
     }),
     { expiresIn: 300 },
   );
+}
+
+/** The bytes of one object, to be streamed through the app (profile photos: public, small, and cached for a year by the browser). Null when there is no such object. */
+export async function read(key: string, area: StorageArea): Promise<{ stream: Readable; size: number | null } | null> {
+  try {
+    const out = await s3().send(new GetObjectCommand({ Bucket: bucket(area), Key: key }));
+    if (!out.Body) return null;
+    return { stream: out.Body as Readable, size: typeof out.ContentLength === "number" ? out.ContentLength : null };
+  } catch (e) {
+    if ((e as { name?: string }).name === "NoSuchKey") return null;
+    throw e;
+  }
 }

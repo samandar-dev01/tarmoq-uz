@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { DOORS } from "./authRole";
 
+/** What a phone number may look like (sign-up and the settings page both use it): an optional +, then 7 to 20 digits, spaces, brackets and dashes. */
+export const PHONE_PATTERN = /^\+?[0-9 ()-]{7,20}$/;
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Ism-familiyangizni kiriting").max(80),
   email: z.string().trim().toLowerCase().email("Email manzilini toʻgʻri kiriting"),
@@ -9,7 +12,7 @@ export const registerSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[0-9 ()-]{7,20}$/, "Telefon raqamini toʻgʻri kiriting")
+    .regex(PHONE_PATTERN, "Telefon raqamini toʻgʻri kiriting")
     .optional()
     .or(z.literal("").transform(() => undefined)),
   // ADMIN can never be self-registered

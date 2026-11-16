@@ -56,6 +56,6 @@ export const POST = handle(async (req) => {
   // stay: one good login must not reset an attacker who is guessing from elsewhere or at many accounts.
   resetLimit(pairKey);
 
-  await startSession({ id: user.id, role: user.role, name: user.name });
+  await startSession({ id: user.id, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
   return ok({ user: { id: user.id, name: user.name, role: user.role } });
 });
