@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/i18n/client";
 
 export type Issue = { path: string; message: string };
 type RunInit = { json?: unknown; form?: FormData; method?: string };
@@ -8,6 +9,7 @@ type RunInit = { json?: unknown; form?: FormData; method?: string };
 /** Shared loading/error handling for "click a button, call the API, refresh the page". */
 export function useAction() {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -24,7 +26,8 @@ export function useAction() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Nimadir xato ketdi. Qayta urinib koʻring.");
+        // `data.error` is already in the reader's language (the server translates it); the fallback is for an answer with no body.
+        setError(data.error ?? `${t("Nimadir xato ketdi.")} ${t("Qayta urinib koʻring.")}`);
         setIssues(data.issues ?? []);
         return false;
       }
@@ -32,7 +35,7 @@ export function useAction() {
       router.refresh();
       return true;
     } catch {
-      setError("Internet aloqasida muammo. Qayta urinib koʻring.");
+      setError(t("Internet aloqasida muammo. Qayta urinib koʻring."));
       return false;
     } finally {
       setLoading(false);

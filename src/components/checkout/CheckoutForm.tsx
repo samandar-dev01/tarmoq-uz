@@ -7,18 +7,22 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Spinner } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useLocale, useT } from "@/i18n/client";
+import { tk } from "@/i18n/dictionary";
 import { formatUZS } from "@/lib/format";
 
 type Intent = { paymentId: string; amount: number; fee: number; payout: number };
 
 const TEST_CARDS = [
-  { label: "Muvaffaqiyatli", number: "4242 4242 4242 4242" },
-  { label: "Rad etilgan", number: "4000 0000 0000 0002" },
-  { label: "Mablagʻ yetarli emas", number: "4000 0000 0000 9995" },
+  { label: tk("Muvaffaqiyatli"), number: "4242 4242 4242 4242" },
+  { label: tk("Rad etilgan"), number: "4000 0000 0000 0002" },
+  { label: tk("Mablagʻ yetarli emas"), number: "4000 0000 0000 9995" },
 ];
 
 export function CheckoutForm({ orderId }: { orderId: string }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [number, setNumber] = useState("");
@@ -35,12 +39,12 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId }),
       });
       const json = await res.json();
-      if (!res.ok) { setLoadError(json.error ?? "Toʻlovni boshlab boʻlmadi."); return; }
+      if (!res.ok) { setLoadError(json.error ?? t("Toʻlovni boshlab boʻlmadi.")); return; }
       setIntent({ paymentId: json.payment.id, amount: json.payment.amount, fee: json.fees.fee, payout: json.fees.payout });
     } catch {
-      setLoadError("Internet aloqasida muammo. Qayta urinib koʻring.");
+      setLoadError(t("Internet aloqasida muammo. Qayta urinib koʻring."));
     }
-  }, [orderId]);
+  }, [orderId, t]);
 
   useEffect(() => { void loadIntent(); }, [loadIntent]);
 
@@ -50,9 +54,9 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
     setError(null);
     const errs: Record<string, string> = {};
     const m = /^\s*(\d{1,2})\s*\/\s*(\d{2}|\d{4})\s*$/.exec(expiry);
-    if (!number.trim()) errs.number = "Karta raqamini kiriting.";
-    if (!m) errs.expiry = "MM/YY formatida kiriting.";
-    if (!/^\d{3,4}$/.test(cvc)) errs.cvc = "3 xonali kodni kiriting.";
+    if (!number.trim()) errs.number = t("Karta raqamini kiriting.");
+    if (!m) errs.expiry = t("MM/YY formatida kiriting.");
+    if (!/^\d{3,4}$/.test(cvc)) errs.cvc = t("3 xonali kodni kiriting.");
     setFieldError(errs);
     if (Object.keys(errs).length || !m) return;
 
@@ -69,18 +73,18 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
         router.refresh();
         return;
       }
-      setError(json.error ?? "Toʻlov amalga oshmadi.");
+      setError(json.error ?? t("Toʻlov amalga oshmadi."));
       // A declined attempt is closed on the server; fetch a fresh attempt so the client can retry.
       if (res.status === 402 || res.status === 409) await loadIntent();
     } catch {
-      setError("Internet aloqasida muammo. Pul yechilmadi. Qayta urinib koʻring.");
+      setError(t("Internet aloqasida muammo. Pul yechilmadi. Qayta urinib koʻring."));
     } finally {
       setPaying(false);
     }
   }
 
   if (loadError) return <ErrorState message={loadError} onRetry={loadIntent} />;
-  if (!intent) return <div className="flex items-center gap-3 py-10 font-medium text-ink-soft"><Spinner /> Toʻlov tayyorlanmoqda…</div>;
+  if (!intent) return <div className="flex items-center gap-3 py-10 font-medium text-ink-soft"><Spinner /> {t("Toʻlov tayyorlanmoqda…")}</div>;
 
   // A live preview of the card, filled in as you type.
   const digits = number.replace(/\D/g, "").slice(0, 19);
@@ -89,7 +93,7 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <Alert variant="info"><strong>Sinov rejimi.</strong> Haqiqiy pul yechilmaydi. Quyidagi test kartalaridan birini tanlang.</Alert>
+      <Alert variant="info"><strong>{t("Sinov rejimi.")}</strong> {t("Haqiqiy pul yechilmaydi. Quyidagi test kartalaridan birini tanlang.")}</Alert>
       {error && <Alert variant="error">{error}</Alert>}
 
       <div aria-hidden="true" className="overflow-hidden rounded-card border border-line-strong bg-gradient-to-br from-cobalt-tint via-surface to-paper text-ink shadow-lift">
@@ -100,8 +104,8 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
           <p className="text-lg font-bold tabular-nums tracking-widest sm:text-xl">{shownNumber}</p>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs text-ink-mute">Amal qilish muddati</p>
-              <p className="font-semibold">{expiry || "MM/YY"}</p>
+              <p className="text-xs text-ink-mute">{t("Amal qilish muddati")}</p>
+              <p className="font-semibold">{expiry || t("MM/YY")}</p>
             </div>
             <p className="font-display text-lg font-bold">{brand}</p>
           </div>
@@ -114,18 +118,18 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
             key={c.number} type="button" variant="chip"
             onClick={() => { setNumber(c.number); setExpiry("12/34"); setCvc("123"); }}
           >
-            Toʻldirish: {c.label}
+            {t("Toʻldirish: {label}", { label: t(c.label) })}
           </Button>
         ))}
       </div>
 
-      <Field label="Karta raqami" inputMode="numeric" autoComplete="off" placeholder="4242 4242 4242 4242" value={number} onChange={(e) => setNumber(e.target.value)} error={fieldError.number} />
+      <Field label={t("Karta raqami")} inputMode="numeric" autoComplete="off" placeholder="4242 4242 4242 4242" value={number} onChange={(e) => setNumber(e.target.value)} error={fieldError.number} />
       <div className="grid grid-cols-2 items-end gap-4">
-        <Field label="Amal qilish muddati (MM/YY)" inputMode="numeric" autoComplete="off" placeholder="12/34" value={expiry} onChange={(e) => setExpiry(e.target.value)} error={fieldError.expiry} />
-        <Field label="Xavfsizlik kodi (CVC)" inputMode="numeric" autoComplete="off" placeholder="123" value={cvc} onChange={(e) => setCvc(e.target.value)} error={fieldError.cvc} />
+        <Field label={t("Amal qilish muddati (MM/YY)")} inputMode="numeric" autoComplete="off" placeholder="12/34" value={expiry} onChange={(e) => setExpiry(e.target.value)} error={fieldError.expiry} />
+        <Field label={t("Xavfsizlik kodi (CVC)")} inputMode="numeric" autoComplete="off" placeholder="123" value={cvc} onChange={(e) => setCvc(e.target.value)} error={fieldError.cvc} />
       </div>
-      <Button type="submit" size="lg" loading={paying} className="w-full">{paying ? "Jarayonda…" : `${formatUZS(intent.amount)} toʻlash`}</Button>
-      <p className="text-center text-sm text-ink-soft">Karta maʼlumotlari serverda tekshiriladi va saqlanmaydi: faqat karta turi va oxirgi 4 ta raqam saqlanadi.</p>
+      <Button type="submit" size="lg" loading={paying} className="w-full">{paying ? t("Jarayonda…") : t("{amount} toʻlash", { amount: formatUZS(intent.amount, locale) })}</Button>
+      <p className="text-center text-sm text-ink-soft">{t("Karta maʼlumotlari serverda tekshiriladi va saqlanmaydi: faqat karta turi va oxirgi 4 ta raqam saqlanadi.")}</p>
     </form>
   );
 }

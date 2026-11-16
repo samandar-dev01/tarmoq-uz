@@ -1,17 +1,20 @@
 import type { OrderStatus } from "@prisma/client";
+import { tk } from "@/i18n/dictionary";
+import { getT } from "@/i18n/server";
 
-const STEPS = ["Soʻrov", "Shartlar kelishildi", "Toʻlandi", "Topshirildi", "Yakunlandi"];
+const STEPS = [tk("Soʻrov"), tk("Shartlar kelishildi"), tk("Toʻlandi"), tk("Topshirildi"), tk("Yakunlandi")];
 const DONE: Record<OrderStatus, number> = {
   REQUESTED: 1, AGREEMENT_PENDING: 1, AWAITING_PAYMENT: 2, IN_PROGRESS: 3,
   DELIVERED: 4, COMPLETED: 5, DISPUTED: 3, CANCELLED: 1,
 };
 
 /** An order really is a sequence, so its steps are numbered; finished steps show a tick. */
-export function OrderTimeline({ status }: { status: OrderStatus }) {
+export async function OrderTimeline({ status }: { status: OrderStatus }) {
+  const t = await getT();
   const done = DONE[status];
   const stopped = status === "CANCELLED" || status === "DISPUTED";
   return (
-    <ol className="grid grid-cols-5 text-center" aria-label="Buyurtma jarayoni">
+    <ol className="grid grid-cols-5 text-center" aria-label={t("Buyurtma jarayoni")}>
       {STEPS.map((label, i) => {
         const complete = i < done;
         const current = i === done && !stopped && status !== "COMPLETED";
@@ -33,7 +36,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
                 i + 1
               )}
             </span>
-            <span className={`text-[11px] leading-tight sm:text-xs ${complete || current ? "font-bold text-ink" : "text-ink-mute"}`}>{label}</span>
+            <span className={`text-[11px] leading-tight sm:text-xs ${complete || current ? "font-bold text-ink" : "text-ink-mute"}`}>{t(label)}</span>
           </li>
         );
       })}
