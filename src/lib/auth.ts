@@ -79,15 +79,5 @@ export async function requirePageRole(...roles: AppRole[]) {
   return user;
 }
 
-export const ROLE_HOME: Record<AppRole, string> = {
-  CLIENT: "/dashboard/client",
-  PROVIDER: "/dashboard/provider",
-  ADMIN: "/admin",
-};
-
-/**
- * Creators do not see other creators. The creator list (the home page feed, the search, other creators' profiles)
- * is for visitors, clients and admins; a signed-in creator has only their own cabinet and their own public profile.
- * Every place that lists or links to creators asks this one question, so the rule lives here and nowhere else.
- */
-export const canBrowseCreators = (user: { role: AppRole } | null) => user?.role !== "PROVIDER";
+// ROLE_HOME and canBrowseCreators live in ./authRole (it has no server imports), so a client component and the unit tests can use them too.
+export { canBrowseCreators, ROLE_HOME } from "./authRole";

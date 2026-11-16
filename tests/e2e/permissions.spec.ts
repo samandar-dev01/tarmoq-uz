@@ -34,9 +34,14 @@ test.describe("creators do not see other creators", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/dashboard\/provider$/);
 
-    // No menu or footer entry for the creator list.
+    // No menu or footer entry for the creator list: not in the header, not in the account menu, not in the footer.
     await expect(page.getByRole("link", { name: "Ijodkorlar", exact: true })).toHaveCount(0);
     await expect(page.locator('a[href="/search"]')).toHaveCount(0);
+    await page.getByRole("button", { name: /^Hisob menyusi/ }).click();
+    await expect(page.getByRole("menuitem", { name: "Kabinet" })).toBeVisible(); // the menu is really open
+    await expect(page.getByRole("menuitem", { name: "Ijodkorlar" })).toHaveCount(0);
+    await expect(page.locator('a[href="/search"]')).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     // The search and another creator's profile are closed, with and without filters.
     // A profile that does not exist answers the same as one that does, so a creator cannot find out who is on the site.

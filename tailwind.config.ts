@@ -69,6 +69,8 @@ export default {
           "100%": { transform: "scale(1)" },
         },
         rise: { from: { opacity: "0", transform: "translateY(16px)" }, to: { opacity: "1", transform: "none" } },
+        // A dropdown panel (src/components/ui/Menu.tsx) settling under its button.
+        "menu-in": { from: { opacity: "0", transform: "translateY(-4px) scale(.97)" }, to: { opacity: "1", transform: "none" } },
       },
       animation: {
         "drift-up": "drift-up 52s linear infinite",
@@ -77,6 +79,7 @@ export default {
         "pop-in": "pop-in .45s cubic-bezier(.2,.9,.3,1.2) both",
         "star-pop": "star-pop .35s ease-out",
         rise: "rise .6s cubic-bezier(.2,.7,.2,1) both",
+        "menu-in": "menu-in .14s cubic-bezier(.2,.7,.2,1) both",
       },
     },
   },

@@ -255,7 +255,7 @@ test.describe("signed in", () => {
     expect(await themeOf(page)).toBe("light");
     expect((await themeCookie(context))?.value).toBe("light");
     await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Chiqish" }).first()).toBeVisible(); // really signed in
+    await expect(page.getByRole("button", { name: /^Hisob menyusi/ })).toBeVisible(); // really signed in (the account menu is the signed-in header)
 
     // Flip it as a signed-in user, and go to another page: the choice stays.
     await toggle(page).click();
@@ -266,7 +266,8 @@ test.describe("signed in", () => {
     await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
 
     // Signing out refreshes the header from the server: the scheme and the button agree with the cookie.
-    await page.getByRole("button", { name: "Chiqish" }).first().click();
+    await page.getByRole("button", { name: /^Hisob menyusi/ }).click();
+    await page.getByRole("menuitem", { name: "Chiqish" }).click();
     await expect(page).toHaveURL(/\/$/);
     await settled(page);
     expect(await themeOf(page)).toBe("dark");
@@ -278,7 +279,7 @@ test.describe("signed in", () => {
 test.describe("on a phone (390 px wide)", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-  test("the toggle is visible next to Menyu, not inside it, and works for signed-out and signed-in visitors", async ({ page, context }) => {
+  test("the toggle is visible next to Menyu, not inside it, and works for signed-out and signed-in visitors (next to the account menu once signed in)", async ({ page, context }) => {
     await page.goto("/");
     await settled(page);
     const menu = page.locator("header summary", { hasText: "Menyu" });
@@ -306,7 +307,12 @@ test.describe("on a phone (390 px wide)", () => {
     await settled(page);
     expect(await themeOf(page)).toBe("light");
     await expect(toggle(page)).toBeVisible();
-    await expect(menu).toBeVisible();
+    // A signed-in phone has the account menu where signed-out visitors have Menyu, and the scheme button is still beside it.
+    const account = page.getByRole("button", { name: /^Hisob menyusi/ });
+    await expect(account).toBeVisible();
+    await expect(menu).toHaveCount(0);
+    const scheme = (await toggle(page).boundingBox())!;
+    expect(scheme.x + scheme.width).toBeLessThanOrEqual((await account.boundingBox())!.x);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await toggle(page).tap();
     await expect.poll(() => themeOf(page)).toBe("dark");

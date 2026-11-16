@@ -2,11 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
-import { FlashToast } from "@/components/ui/FlashToast";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
-import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { paymentsAreTest } from "@/lib/payments/mode";
+import { footerLinks } from "@/lib/shellNav";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { getTheme } from "@/lib/theme";
 import { THEME_BROWSER_COLOR } from "@/lib/themePure";
@@ -53,7 +53,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </svg>
         <Header />
         <main className="flex-1">{children}</main>
-        <FlashToast />
         <footer className="mt-24 border-t border-line bg-surface">
           <Container pad="none" className="grid gap-8 py-12 sm:grid-cols-[1.4fr_1fr] sm:items-start">
             <div>
@@ -63,9 +62,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <p className="mt-2 max-w-sm text-ink-soft">Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.</p>
             </div>
             <nav aria-label="Pastki menyu" className="flex flex-wrap gap-x-6 gap-y-0 sm:justify-end">
-              {canBrowseCreators(viewer) && <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Ijodkorlar</ButtonLink>}
-              <ButtonLink href="/register?role=provider" variant="link" className="inline-flex min-h-11 items-center">Ijodkor boʻlib qoʻshilish</ButtonLink>
-              <ButtonLink href="/register?role=client" variant="link" className="inline-flex min-h-11 items-center">Buyurtma bermoqchiman</ButtonLink>
+              {footerLinks(viewer).map((link) => (
+                <ButtonLink key={link.href} href={link.href} variant="link" className="inline-flex min-h-11 items-center">{link.label}</ButtonLink>
+              ))}
             </nav>
           </Container>
           <div className="border-t border-line bg-paper">

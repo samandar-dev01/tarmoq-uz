@@ -67,8 +67,15 @@ export function doorForRoles(roles: readonly AppRole[], lastRole?: string | null
   return only ? doorForRole(only) : parseDoor(lastRole);
 }
 
+export const ROLE_HOME: Record<AppRole, string> = {
+  CLIENT: "/dashboard/client",
+  PROVIDER: "/dashboard/provider",
+  ADMIN: "/admin",
+};
+
 /**
- * One-time message carried across a redirect (read and cleared by <FlashToast />). Nothing writes it since the
- * wrong-role sign-in notice went; FlashToast (mounted in layout.tsx) and this key can go once layout.tsx is free to edit.
+ * Creators do not see other creators. The creator list (the home page feed, the search, other creators' profiles)
+ * is for visitors, clients and admins; a signed-in creator has only their own cabinet and their own public profile.
+ * Every place that lists or links to creators asks this one question, so the rule lives here and nowhere else.
  */
-export const FLASH_KEY = "tarmoq:flash";
+export const canBrowseCreators = (user: { role: AppRole } | null) => user?.role !== "PROVIDER";
