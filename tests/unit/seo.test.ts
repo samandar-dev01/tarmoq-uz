@@ -6,6 +6,8 @@ import { absoluteUrl, siteUrl } from "@/lib/site";
 import { searchSchema } from "@/lib/providers";
 import { CITIES } from "@/lib/constants";
 import { THEME_BROWSER_COLOR } from "@/lib/themePure";
+import { translate } from "@/i18n/dictionary";
+import { BANNED_RU, bannedIn as bannedWordsIn } from "../bannedPaymentWords";
 import {
   AI_CRAWLERS,
   breadcrumbJsonLd,
@@ -17,6 +19,8 @@ import {
   faqJsonLd,
   HOME_DESCRIPTION,
   HOME_TITLE,
+  homeDescription,
+  homeTitle,
   jsonLdString,
   LLMS_MAX_CREATORS,
   ogDefaults,
@@ -25,6 +29,7 @@ import {
   SEARCH_DESCRIPTION,
   SEARCH_TITLE,
   searchIndexing,
+  searchMeta,
   websiteJsonLd,
   type CreatorSeo,
 } from "@/lib/seo";
@@ -57,13 +62,8 @@ const creator: CreatorSeo = {
 // ---------- the payment-words guard ----------
 
 // Payments are manual or test mode, and meta tags, JSON-LD, llms.txt and the FAQ cannot carry the "Sinov rejimi" badge.
-// So none of them may promise anything about money. Apostrophe look-alikes are removed first, so every spelling matches.
-const BANNED = [/tolov/, /оплат/, /платеж/, /escrow/, /pul himoya/, /kafolat/, /himoyalangan/];
-const normalise = (s: string) => s.toLowerCase().replace(/[ʻʼ'’‘`]/g, "");
-function bannedIn(text: string): string[] {
-  const t = normalise(text);
-  return BANNED.filter((re) => re.test(t)).map(String);
-}
+// So none of them may promise anything about money, in Uzbek or in Russian (the lists and why: tests/bannedPaymentWords.ts).
+const bannedIn = (text: string) => bannedWordsIn(text);
 /** Every string anywhere inside a value (keys are not text a reader sees, so only values). */
 function allStrings(value: unknown, out: string[] = []): string[] {
   if (typeof value === "string") out.push(value);
@@ -493,6 +493,19 @@ describe("no payment promise anywhere search engines and AI crawlers read", () =
     for (const fine of ["toʻldiring", "Narxlarini solishtiring", "paketlaringizni qoʻshing", "UZS", "price"]) expect(bannedIn(fine), fine).toEqual([]);
   });
 
+  it("the Russian guard catches every way of promising money, in any case, and leaves ordinary words alone", () => {
+    for (const bad of [
+      "Безопасная оплата", "ОПЛАТА ОНЛАЙН", "Оплатите заказ", "Заказ оплачен", "Платёж защищён", "Платежи без комиссии", "Платите по факту", "Платный пакет", "Эскроу-счёт", "Гарантия возврата",
+      "Деньги под защитой", "Ваши деньги в безопасности", "Оплата удерживается", "Средства хранятся до приёмки", "Хранение денег", "Выплата креатору", "Списание после приёмки", "Хранится до приёмки",
+      "денежные средства",
+    ]) {
+      expect(bannedIn(bad).length, bad).toBeGreaterThan(0);
+    }
+    for (const fine of ["Найдите креаторов", "Фильтры по городу, направлению и цене", "Цена от 450 000 сум", "Платформа для видео", "Сохраните страницу", "Города перечислены ниже", "Согласуйте условия письменно", "отзывы заказчиков", "Мобильная съёмка"]) {
+      expect(bannedIn(fine), fine).toEqual([]);
+    }
+  });
+
   it("holds for the titles, descriptions, JSON-LD, robots, FAQ, llms.txt, manifest and the layout's metadata", async () => {
     const faq = buildFaq(CATEGORIES.map((c) => c.name), CITIES);
     const { default: manifest } = await import("@/app/manifest");
@@ -519,5 +532,45 @@ describe("no payment promise anywhere search engines and AI crawlers read", () =
       expect(strings.length, where).toBeGreaterThan(0);
       for (const s of strings) expect(bannedIn(s), `${where}: ${s.slice(0, 80)}`).toEqual([]);
     }
+  });
+});
+
+describe("no payment promise in the Russian text search engines and AI crawlers read", () => {
+  const ruFaq = buildFaq(CATEGORIES.map((c) => translate("ru", c.name)), CITIES, "ru");
+
+  it("holds for the titles, descriptions, Open Graph, JSON-LD and the FAQ built in Russian", () => {
+    const texts: Record<string, string[]> = {
+      titles: [homeTitle("ru"), homeDescription("ru"), translate("ru", SEARCH_TITLE), translate("ru", SEARCH_DESCRIPTION)],
+      searchCategory: Object.values(searchMeta("ru", "Мобильная съёмка")),
+      creatorTitle: [translate("ru", "Ijodkor profili")],
+      layout: [translate("ru", "Tarmoq.uz: ijodkorlar tarmogʻi"), translate("ru", "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.")],
+      openGraph: allStrings(ogDefaults("ru")),
+      organization: allStrings(organizationJsonLd(BASE, "ru")),
+      website: allStrings(websiteJsonLd(BASE, "ru")),
+      breadcrumb: allStrings(breadcrumbJsonLd([{ name: translate("ru", "Bosh sahifa"), path: "/" }, { name: translate("ru", "Ijodkorlarni toping"), path: "/search" }], BASE, "ru")),
+      list: allStrings(creatorListJsonLd([{ slug: "a", name: "A" }], BASE, "ru")),
+      creator: allStrings(creatorJsonLd({ ...creator, city: "Андижан", category: "Мобильная съёмка", languages: ["Узбекский", "Русский"] }, BASE, "ru")),
+      faq: allStrings(ruFaq),
+      faqJsonLd: allStrings(faqJsonLd(ruFaq, "ru")),
+    };
+    for (const [where, strings] of Object.entries(texts)) {
+      expect(strings.length, where).toBeGreaterThan(0);
+      for (const s of strings) expect(bannedIn(s), `${where}: ${s.slice(0, 80)}`).toEqual([]);
+    }
+  });
+
+  it("holds for every Russian word the 'meta' sections of src/i18n/ru/public.ts hold (read from the source, so a new entry is checked too)", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/i18n/ru/public.ts"), "utf8");
+    const meta = source.slice(source.indexOf("// ---- meta: titles"), source.indexOf("// ---- home page ----"));
+    expect(meta.length).toBeGreaterThan(1000);
+    // Only the Russian side of each entry is text a reader sees; a key is Uzbek and the Uzbek guard covers it.
+    const russian = [...meta.matchAll(/":\s*\n?\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]!);
+    expect(russian.length).toBeGreaterThan(10);
+    for (const s of russian) expect(bannedIn(s), s.slice(0, 80)).toEqual([]);
+  });
+
+  it("the stems are all lower case, so the lower-cased text is what is matched", () => {
+    for (const re of BANNED_RU) expect(re.source, String(re)).toBe(re.source.toLowerCase());
+    expect(bannedIn("ё Ё")).toEqual([]); // folding ё to е must not turn ordinary text into a hit
   });
 });

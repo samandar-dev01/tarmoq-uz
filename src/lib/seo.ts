@@ -1,29 +1,65 @@
 // Pure builders for everything a search engine or an AI crawler reads: metadata pieces, JSON-LD, robots rules,
 // llms.txt and the home page FAQ. No database and no request here, so every string they produce is unit-tested.
 //
-// HARD RULE: no payment promise in any of it. Payments run in manual or test mode and none of these places can
-// carry the "Sinov rejimi" badge. A creator's real package price is a fact from the database and may be listed.
-// tests/unit/seo.test.ts guards the wording.
+// HARD RULE: no payment promise in any of it, in Russian too. Payments run in manual or test mode and none of these
+// places can carry the "Sinov rejimi" badge. A creator's real package price is a fact from the database and may be listed.
+// tests/unit/seo.test.ts guards the wording (Uzbek and Russian).
+//
+// LANGUAGES. Every builder that writes words takes the page's `locale` (last parameter, "uz" when left out, so the Uzbek
+// output is exactly what it was). The Russian text is in src/i18n/ru/public.ts; the addresses of a Russian page are
+// `/ru/...` (localHref). Whether a Russian page exists at all is decided by the caller: `getLocale()` is "uz" while
+// Russian is off, and `pageAlternates` / `hreflang` return no alternates then.
+import { DEFAULT_LOCALE, OG_LOCALE, russianLive, type Locale } from "../i18n/config";
+import { tk, translate } from "../i18n/dictionary";
+import { hreflang, localHref } from "../i18n/paths";
+import { labelFor } from "./constants";
 import { absoluteUrl, SITE_NAME, siteUrl } from "./site";
 
 /** The share picture (app/opengraph-image.tsx), as a path: Next makes it absolute with the layout's metadataBase. */
 export const OG_IMAGE_PATH = "/opengraph-image";
 
 /** A page that sets its own Open Graph block replaces the layout's whole block, so the shared part lives here. */
-export function ogDefaults() {
+export function ogDefaults(locale: Locale = DEFAULT_LOCALE) {
   return {
     siteName: SITE_NAME,
-    locale: "uz_UZ",
+    locale: OG_LOCALE[locale],
     type: "website" as const,
     images: [{ url: OG_IMAGE_PATH, width: 1200, height: 630, alt: SITE_NAME }],
   };
 }
 
-export const HOME_TITLE = "Tarmoq.uz: Oʻzbekistondagi videograf, fotograf va montajchilar";
-export const HOME_DESCRIPTION =
-  "Oʻzbekiston shaharlaridagi mobilograf, videograf, fotograf va montajchilarni bir joydan toping: paketlari, portfoliosi va mijozlar sharhlarini solishtiring.";
-export const SEARCH_TITLE = "Ijodkorlarni toping";
-export const SEARCH_DESCRIPTION = "Oʻzbekistondagi videograf, fotograf va montajchilar roʻyxati. Shahar, yoʻnalish va narx boʻyicha saralang.";
+// The Uzbek texts (they are the translation keys); `homeTitle(locale)` and the others give the reader's language.
+export const HOME_TITLE = tk("Tarmoq.uz: Oʻzbekistondagi videograf, fotograf va montajchilar");
+export const HOME_DESCRIPTION = tk(
+  "Oʻzbekiston shaharlaridagi mobilograf, videograf, fotograf va montajchilarni bir joydan toping: paketlari, portfoliosi va mijozlar sharhlarini solishtiring.",
+);
+export const SEARCH_TITLE = tk("Ijodkorlarni toping");
+export const SEARCH_DESCRIPTION = tk("Oʻzbekistondagi videograf, fotograf va montajchilar roʻyxati. Shahar, yoʻnalish va narx boʻyicha saralang.");
+
+export const homeTitle = (locale: Locale = DEFAULT_LOCALE) => translate(locale, HOME_TITLE);
+export const homeDescription = (locale: Locale = DEFAULT_LOCALE) => translate(locale, HOME_DESCRIPTION);
+
+/**
+ * The title and description of /search. `category` is the display name of a real category when the page is that
+ * category's own page (see searchIndexing), else null.
+ */
+export function searchMeta(locale: Locale, category: string | null): { title: string; description: string } {
+  if (category === null) return { title: translate(locale, SEARCH_TITLE), description: translate(locale, SEARCH_DESCRIPTION) };
+  return {
+    title: translate(locale, tk("{category}: ijodkorlarni toping"), { category }),
+    description: translate(locale, tk("Oʻzbekistondagi {category} yoʻnalishidagi ijodkorlar roʻyxati. Shahar va narx boʻyicha saralang."), { category: category.toLowerCase() }),
+  };
+}
+
+/**
+ * `alternates` of a PUBLIC page: its own address in this language (self-canonical) and, while Russian is on, the pair of
+ * languages for search engines (uz, ru, x-default -> uz). `path` has no language prefix. While Russian is off the locale is
+ * always Uzbek and there are no alternates, so the result is `{ canonical: path }` as before.
+ */
+export function pageAlternates(locale: Locale, path: string, live: boolean = russianLive()) {
+  const languages = hreflang(path, live);
+  return { canonical: localHref(locale, path), ...(languages ? { languages } : {}) };
+}
 
 /** JSON for a <script type="application/ld+json">. "<" is escaped so a value can never close the tag. */
 export function jsonLdString(data: unknown): string {
@@ -71,33 +107,36 @@ export function buildRobots(base: string = siteUrl()) {
 
 const CONTEXT = "https://schema.org";
 const orgId = (base: string) => `${base}/#organization`;
-const siteId = (base: string) => `${base}/#website`;
+// Each language's home page is its own WebSite (the Russian one is `/ru#website`), so a crawler never reads two languages for one id.
+const siteId = (base: string, locale: Locale = DEFAULT_LOCALE) => (locale === DEFAULT_LOCALE ? `${base}/#website` : `${base}${localHref(locale, "/")}#website`);
+/** The address of a public page in this language, absolute. */
+const pageUrl = (path: string, base: string, locale: Locale) => absoluteUrl(localHref(locale, path), base);
 
-export function organizationJsonLd(base: string = siteUrl()) {
+export function organizationJsonLd(base: string = siteUrl(), locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": CONTEXT,
     "@type": "Organization",
     "@id": orgId(base),
     name: SITE_NAME,
-    url: `${base}/`,
+    url: pageUrl("/", base, locale),
     logo: absoluteUrl("/icon.svg", base),
-    description: HOME_DESCRIPTION,
+    description: homeDescription(locale),
     areaServed: { "@type": "Country", name: "Uzbekistan" },
   };
 }
 
-export function websiteJsonLd(base: string = siteUrl()) {
+export function websiteJsonLd(base: string = siteUrl(), locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": CONTEXT,
     "@type": "WebSite",
-    "@id": siteId(base),
+    "@id": siteId(base, locale),
     name: SITE_NAME,
-    url: `${base}/`,
-    inLanguage: "uz",
+    url: pageUrl("/", base, locale),
+    inLanguage: locale,
     publisher: { "@id": orgId(base) },
     potentialAction: {
       "@type": "SearchAction",
-      target: { "@type": "EntryPoint", urlTemplate: `${base}/search?q={search_term_string}` },
+      target: { "@type": "EntryPoint", urlTemplate: `${pageUrl("/search", base, locale)}?q={search_term_string}` },
       "query-input": "required name=search_term_string",
     },
   };
@@ -105,29 +144,32 @@ export function websiteJsonLd(base: string = siteUrl()) {
 
 export type Crumb = { name: string; path: string };
 
-export function breadcrumbJsonLd(crumbs: Crumb[], base: string = siteUrl()) {
+/** `name` is already in the reader's language; `path` has no language prefix. */
+export function breadcrumbJsonLd(crumbs: Crumb[], base: string = siteUrl(), locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": CONTEXT,
     "@type": "BreadcrumbList",
-    itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: absoluteUrl(c.path, base) })),
+    itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: pageUrl(c.path, base, locale) })),
   };
 }
 
-export function creatorListJsonLd(items: { slug: string; name: string }[], base: string = siteUrl()) {
+export function creatorListJsonLd(items: { slug: string; name: string }[], base: string = siteUrl(), locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": CONTEXT,
     "@type": "ItemList",
     numberOfItems: items.length,
-    itemListElement: items.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.name, url: absoluteUrl(`/providers/${p.slug}`, base) })),
+    itemListElement: items.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.name, url: pageUrl(`/providers/${p.slug}`, base, locale) })),
   };
 }
 
 export type FaqItem = { question: string; answer: string };
 
-export function faqJsonLd(items: FaqItem[]) {
+/** `items` come from `buildFaq(..., locale)`, so they are already in the language. Uzbek output has no `inLanguage`, as before. */
+export function faqJsonLd(items: FaqItem[], locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": CONTEXT,
     "@type": "FAQPage",
+    ...(locale === DEFAULT_LOCALE ? {} : { inLanguage: locale }),
     mainEntity: items.map((f) => ({ "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } })),
   };
 }
@@ -152,9 +194,11 @@ export type CreatorSeo = {
 /**
  * A creator's public page: the page itself, the person, and the service with one offer per active package.
  * The rating appears only when visitors can read real reviews on the page; it is never made up.
+ * What the creator wrote (name, headline, bio, package titles and descriptions) goes in as written; `city`, `category`
+ * and `languages` are the reader's-language labels the caller made (labelFor, categoryName).
  */
-export function creatorJsonLd(c: CreatorSeo, base: string = siteUrl()) {
-  const url = absoluteUrl(`/providers/${c.slug}`, base);
+export function creatorJsonLd(c: CreatorSeo, base: string = siteUrl(), locale: Locale = DEFAULT_LOCALE) {
+  const url = pageUrl(`/providers/${c.slug}`, base, locale);
   const personId = `${url}#person`;
   const person: Record<string, unknown> = {
     "@type": "Person",
@@ -198,7 +242,7 @@ export function creatorJsonLd(c: CreatorSeo, base: string = siteUrl()) {
   return {
     "@context": CONTEXT,
     "@graph": [
-      { "@type": "ProfilePage", "@id": url, url, name: c.name, description: c.headline, inLanguage: "uz", isPartOf: { "@id": siteId(base) }, mainEntity: { "@id": personId } },
+      { "@type": "ProfilePage", "@id": url, url, name: c.name, description: c.headline, inLanguage: locale, isPartOf: { "@id": siteId(base, locale) }, mainEntity: { "@id": personId } },
       person,
       service,
     ],
@@ -207,28 +251,35 @@ export function creatorJsonLd(c: CreatorSeo, base: string = siteUrl()) {
 
 // ---------- the home page FAQ (shown on the page, and the same text as FAQPage data) ----------
 
-/** Only what the site does today. The category names come from the database, the cities from the search filter. */
-export function buildFaq(categoryNames: string[], cities: readonly string[]): FaqItem[] {
-  const directions = categoryNames.length > 0 ? `Yoʻnalishlar: ${categoryNames.join(", ")}. ` : "";
+/**
+ * Only what the site does today. The category names are the reader's-language names (categoryName); the cities are the
+ * stored Uzbek values and are written in the reader's language here. No sentence promises anything about money.
+ */
+export function buildFaq(categoryNames: string[], cities: readonly string[], locale: Locale = DEFAULT_LOCALE): FaqItem[] {
+  const t = (key: string, params?: Record<string, string>) => translate(locale, key, params);
+  const directions = categoryNames.length > 0 ? `${t("Yoʻnalishlar: {names}.", { names: categoryNames.join(", ") })} ` : "";
   return [
     {
-      question: "Ijodkorni qanday topaman?",
-      answer:
+      question: t("Ijodkorni qanday topaman?"),
+      answer: t(
         "Qidiruv sahifasida kerakli ishni soʻz bilan yozing yoki ijodkorlarni shahar, yoʻnalish va narx boʻyicha saralang. Har bir ijodkorning sahifasida paketlari, portfoliosi va mijozlar sharhlari koʻrinadi.",
+      ),
     },
     {
-      question: "Buyurtma topshiriqdan tayyor videogacha qanday boradi?",
-      answer:
+      question: t("Buyurtma topshiriqdan tayyor videogacha qanday boradi?"),
+      answer: t(
         "Ijodkorning paketini tanlab, topshiriqni yozib yuborasiz. Ijodkor uni koʻrib chiqadi, narx, muddat va tuzatishlar soni yozma kelishiladi va ikkala tomon shartlarni qabul qiladi. Ijodkor tayyor videoni sayt orqali topshiradi; kerak boʻlsa paketdagi tuzatishlar doirasida oʻzgartirish soʻraysiz, soʻng ishni qabul qilib sharh qoldirasiz.",
+      ),
     },
     {
-      question: "Qaysi yoʻnalishlar va shaharlar bor?",
-      answer: `${directions}Qidiruvda quyidagi shaharlar boʻyicha saralash mumkin: ${cities.join(", ")}.`,
+      question: t("Qaysi yoʻnalishlar va shaharlar bor?"),
+      answer: `${directions}${t("Qidiruvda quyidagi shaharlar boʻyicha saralash mumkin: {cities}.", { cities: cities.map((c) => labelFor(locale, c)).join(", ") })}`,
     },
     {
-      question: "Ijodkor sifatida qanday qoʻshilaman?",
-      answer:
+      question: t("Ijodkor sifatida qanday qoʻshilaman?"),
+      answer: t(
         "Ijodkor sifatida roʻyxatdan oʻting, profilingizni toʻldiring va paketlaringizni qoʻshing. Sayt maʼmurlari profilni koʻrib chiqadi va tasdiqlagach, u ijodkorlar roʻyxatida koʻrinadi.",
+      ),
     },
   ];
 }
