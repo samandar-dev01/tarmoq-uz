@@ -16,6 +16,10 @@ case "$RUNS" in ''|*[!0-9]*|0) echo "rig: RIG_RUNS must be 1 or more" >&2; exit 
 FWD_PORT="$BASE_PORT"
 APP_PORT=$((BASE_PORT + 300))
 PG_PORT=$((54000 + BASE_PORT % 1000))
+# A second copy of the same build with Russian switched on (RUSSIAN_LIVE=1), behind its own forwarder. Only
+# tests/e2e/language-core.spec.ts opens it (E2E_RU_BASE_URL); everything else runs against the default, Uzbek-only app.
+RU_FWD_PORT=$((BASE_PORT + 1))
+RU_APP_PORT=$((BASE_PORT + 301))
 
 if [ -z "${PG_MODULE_DIR:-}" ] || [ ! -d "$PG_MODULE_DIR/node_modules/embedded-postgres" ]; then
   cat >&2 <<MSG
@@ -29,7 +33,7 @@ PG_MODULE_DIR="$(cd "$PG_MODULE_DIR" && pwd)"
 [ -d node_modules ] || { echo "rig: node_modules is missing in $ROOT (run npm install yourself first)" >&2; exit 2; }
 
 port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
-for p in "$FWD_PORT" "$APP_PORT" "$PG_PORT"; do
+for p in "$FWD_PORT" "$APP_PORT" "$RU_FWD_PORT" "$RU_APP_PORT" "$PG_PORT"; do
   if port_busy "$p"; then
     echo "rig: port $p is already in use. Stop what is using it, or pick another RIG_BASE_PORT." >&2
     exit 2
@@ -51,7 +55,7 @@ LOGS="$SCRATCH/logs-$BASE_PORT"
 rm -rf "$PGDATA" "$UPLOADS" "$LOGS"
 mkdir -p "$UPLOADS" "$LOGS"
 
-PG_PID="" APP_PID="" FWD_PID=""
+PG_PID="" APP_PID="" FWD_PID="" RU_APP_PID="" RU_FWD_PID=""
 RESULT=1
 
 stop_proc() { # name pid seconds-to-wait
@@ -90,7 +94,9 @@ cleanup() {
   set +e
   echo
   stop_proc "forwarder :$FWD_PORT" "$FWD_PID" 5
+  stop_proc "russian forwarder :$RU_FWD_PORT" "$RU_FWD_PID" 5
   stop_proc "app :$APP_PORT" "$APP_PID" 10
+  stop_proc "russian app :$RU_APP_PORT" "$RU_APP_PID" 10
   stop_proc "postgres :$PG_PORT" "$PG_PID" 20
   # If the database outlived its starter script, the pid file inside OUR data folder names it. Only a process that is
   # really a postgres is touched, so a recycled pid can never hit something else.
@@ -114,7 +120,7 @@ cleanup() {
   else
     echo "rig cleanup: logs kept in $LOGS"
   fi
-  for p in "$FWD_PORT" "$APP_PORT" "$PG_PORT"; do
+  for p in "$FWD_PORT" "$APP_PORT" "$RU_FWD_PORT" "$RU_APP_PORT" "$PG_PORT"; do
     if port_busy "$p"; then echo "rig cleanup: WARNING port $p is still in use"; else echo "rig cleanup: port $p is free"; fi
   done
   exit "$code"
@@ -143,6 +149,7 @@ AUTH_SECRET="$(rand 48)"; export AUTH_SECRET
 export SESSION_MAX_AGE_DAYS=7
 export APP_URL="http://localhost:$FWD_PORT"
 export E2E_BASE_URL="$APP_URL"
+export E2E_RU_BASE_URL="http://localhost:$RU_FWD_PORT"
 export PAYMENT_PROVIDER="sandbox"
 export MANUAL_PAY_CARD="" MANUAL_PAY_HOLDER="" MANUAL_PAY_BANK="" PAYOUT_ENCRYPTION_KEY=""
 export TELEGRAM_BOT_TOKEN="" TELEGRAM_CHAT_ID=""
@@ -154,8 +161,10 @@ export NEXT_TELEMETRY_DISABLED=1
 # NODE_ENV stays unset on purpose: `next build` and `next start` set "production" themselves, and the seed
 # (prisma/seed.ts) creates the demo accounts only when NODE_ENV is NOT "production".
 unset NODE_ENV RENDER_EXTERNAL_URL PORT
+# The default app must run exactly as the live site does: Russian off. Only the second copy below gets the variable.
+unset RUSSIAN_LIVE
 
-echo "rig: forwarder :$FWD_PORT -> app :$APP_PORT, postgres :$PG_PORT, scratch $SCRATCH"
+echo "rig: forwarder :$FWD_PORT -> app :$APP_PORT, russian forwarder :$RU_FWD_PORT -> app :$RU_APP_PORT, postgres :$PG_PORT, scratch $SCRATCH"
 
 echo "rig: starting a fresh database"
 node "$HERE/pg-start.mjs" "$PG_MODULE_DIR" "$PGDATA" >"$LOGS/postgres.log" 2>&1 &
@@ -185,6 +194,20 @@ for _ in $(seq 1 150); do
   sleep 0.4
 done
 [ "$ready" -eq 1 ] || { echo "rig: the app did not answer on /api/health, see $LOGS/app.log" >&2; tail -n 30 "$LOGS/app.log" >&2; exit 1; }
+
+echo "rig: the same build again with Russian on, next start on :$RU_APP_PORT"
+RUSSIAN_LIVE=1 node node_modules/next/dist/bin/next start -p "$RU_APP_PORT" -H 127.0.0.1 >"$LOGS/app-ru.log" 2>&1 &
+RU_APP_PID=$!
+FWD_PORT="$RU_FWD_PORT" UPSTREAM_PORT="$RU_APP_PORT" node "$HERE/forwarder.mjs" >"$LOGS/forwarder-ru.log" 2>&1 &
+RU_FWD_PID=$!
+wait_for_line "$LOGS/forwarder-ru.log" "FWD READY" "$RU_FWD_PID" 20 || { echo "rig: the russian forwarder did not start, see $LOGS/forwarder-ru.log" >&2; exit 1; }
+ready=0
+for _ in $(seq 1 150); do
+  kill -0 "$RU_APP_PID" 2>/dev/null || break
+  if node -e 'fetch(process.argv[1]).then(async (r) => process.exit(r.ok && (await r.json()).status === "ok" ? 0 : 1)).catch(() => process.exit(1))' "http://127.0.0.1:$RU_FWD_PORT/api/health"; then ready=1; break; fi
+  sleep 0.4
+done
+[ "$ready" -eq 1 ] || { echo "rig: the russian app did not answer on /api/health, see $LOGS/app-ru.log" >&2; tail -n 30 "$LOGS/app-ru.log" >&2; exit 1; }
 
 RESULT=0
 for run in $(seq 1 "$RUNS"); do

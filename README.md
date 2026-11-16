@@ -241,7 +241,8 @@ Supabase also publishes every table in the `public` schema over its public Data 
 See `ARCHITECTURE.md` for the design and `src/` for the code. Key conventions:
 - Every API route is wrapped in `handle()` (consistent JSON errors) and starts with `requireRole(...)` or `requireUser()`.
 - Order status changes go through `assertTransition()` and are applied with conditional `updateMany` so double clicks and races cannot apply twice.
-- Pages call `requirePageRole(...)`. That check and the one in each API route are the access control. The root `proxy.ts` (route guards by role) is **inactive**: the app lives in `src/`, Next.js only loads that file from `src/`, so it has never run. It protects nothing; do not count on it.
+- Pages call `requirePageRole(...)`. That check and the one in each API route are the access control. There is no route guard in front of them. `src/proxy.ts` is not one: it only serves the Russian addresses (`/ru`, `/ru/search`, `/ru/providers/<slug>`) and does nothing while Russian is off.
+- Text is Uzbek in the code and is translated through `src/i18n` (the guide is the comment at the top of `src/i18n/dictionary.ts`). Russian is behind one switch, `RUSSIAN_LIVE` in `src/i18n/config.ts`, which is **off**: no language button, `/ru/...` is a 404, every page and API answer is Uzbek. For tests and local work only, the environment variable `RUSSIAN_LIVE=1` turns it on for one server process; never set it on the live site.
 
 ## 13. Free deployment (Render + Supabase)
 

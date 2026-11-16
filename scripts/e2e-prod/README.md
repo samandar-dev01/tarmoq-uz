@@ -35,6 +35,7 @@ last failing run's), returned after the cleanup.
 3. `prisma migrate deploy`, `npm run db:constraints`, `npm run db:seed`.
 4. `npm run build`, then `next start` on the app port.
 5. Starts `forwarder.mjs` on the base port and waits for `/api/health`.
+   Then starts **the same build a second time with `RUSSIAN_LIVE=1`** (see "Russian" below), behind a second forwarder.
 6. `playwright test -c playwright.prod.config.ts` (no `webServer`, `E2E_BASE_URL` required, one worker).
 7. Cleanup, always, also after a failure or Ctrl+C.
 
@@ -46,6 +47,17 @@ runs as it does in development: `admin@demo.test`, `client@demo.test` and the de
 **Why the forwarder.** A production build ignores `RATE_LIMIT_DISABLED`, and the suite registers many accounts from
 one machine. The forwarder gives every request its own made-up address in `X-Forwarded-For`, so the real, switched-on
 rate limiter sees many visitors. It is a test tool only.
+
+## Russian
+
+Russian is behind one switch (`RUSSIAN_LIVE` in `src/i18n/config.ts`) and is off on the live site. The app the suite
+tests (the base port) runs exactly like that: Russian off. To test the language machinery anyway, the rig starts a
+second `next start` of the same build with the environment variable `RUSSIAN_LIVE=1` (read when the server runs, not
+when it is built), against the same database, and exports its address as `E2E_RU_BASE_URL`. Only
+`tests/e2e/language-core.spec.ts` opens it; the same spec also proves on the default app that nothing Russian is
+reachable. Under `npm run test:e2e` (dev mode) there is no second app and the Russian half of that spec skips itself;
+to run it there, start a second dev server yourself with `RUSSIAN_LIVE=1` and set `E2E_RU_BASE_URL` to it.
+Never set `RUSSIAN_LIVE` on the live site: the later language branch turns the switch on in the code.
 
 ## First run
 
@@ -60,6 +72,8 @@ pass has the review. (`manual-payments.spec.ts` always skips here: it needs `PAY
 |---|---|---|
 | Forwarder (what the tests open) | base | 3000 |
 | App (`next start`) | base + 300 | 3300 |
+| Forwarder of the Russian copy (`E2E_RU_BASE_URL`) | base + 1 | 3001 |
+| Russian copy of the app (`RUSSIAN_LIVE=1`) | base + 301 | 3301 |
 | PostgreSQL | 54000 + (base % 1000) | 54000 |
 
 Two rigs with different base ports can run at the same time **from two checkouts** (for example two git worktrees).
@@ -71,7 +85,7 @@ Database files, uploads and logs go to a new folder under the system temp direct
 On exit the rig stops the forwarder, the app and the database, removes the database and uploads folders, prints what
 it stopped and removed, and reports whether each port is free again. Its own temp folder is removed after a green
 run; after a failure (or with `RIG_SCRATCH_DIR`) the logs are kept and their path is printed: `postgres.log`,
-`migrate.log`, `constraints.log`, `seed.log`, `build.log`, `app.log`, `forwarder.log`.
+`migrate.log`, `constraints.log`, `seed.log`, `build.log`, `app.log`, `forwarder.log`, `app-ru.log`, `forwarder-ru.log`.
 
 ## Files
 

@@ -27,7 +27,6 @@ marketplace/
 ├─ .env.example
 ├─ next.config.mjs
 ├─ tailwind.config.ts
-├─ proxy.ts                       # route guards by role. INACTIVE: never loaded (see §3)
 ├─ prisma/
 │  ├─ schema.prisma
 │  ├─ migrations/
@@ -97,7 +96,7 @@ marketplace/
 - **CLIENT**: search, order, accept agreement, pay, approve, review own completed orders, message order counterparts.
 - **PROVIDER**: own profile/services, accept/decline orders, propose terms, deliver, message.
 - **ADMIN**: approve/suspend providers, view all orders, moderate reviews, view stats. Enforced by `requirePageRole('ADMIN')` in every admin page and `requireRole('ADMIN')` in every `/api/admin/*` handler.
-- The root `proxy.ts` was meant as an extra guard in front of these checks, but it is **inactive**: the app lives in `src/` and Next.js only loads that file from `src/`, so it has never run. All access control is in the pages and route handlers above.
+- There is no route guard in front of these checks: all access control is in the pages and route handlers above. (An old root `proxy.ts` with role rules was never loaded by Next.js and has been deleted. The only proxy, `src/proxy.ts`, handles the Russian `/ru` addresses and checks no roles.)
 - Object-level checks: every order/conversation/message route verifies the caller is a participant.
 
 ## 4. Order state machine
@@ -141,7 +140,7 @@ Every data view implements: loading (skeleton/spinner), error (message + retry),
 ## 8. Delivery phases
 
 1. **Phase 1 (this)**: architecture, structure, schema, env, flows.
-2. **Phase 2**: project scaffold, config, migrations, seed, auth, route guard file (`proxy.ts`, which turned out never to be loaded), `lib/*`.
+2. **Phase 2**: project scaffold, config, migrations, seed, auth, route guard file (a root `proxy.ts`, which turned out never to be loaded and was later deleted), `lib/*`.
 3. **Phase 3**: homepage, search/filters, provider profiles, wizard.
 4. **Phase 4**: orders, agreements, state machine, dashboards.
 5. **Phase 5**: messaging, reviews, uploads/delivery.
