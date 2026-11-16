@@ -17,7 +17,8 @@ FWD_PORT="$BASE_PORT"
 APP_PORT=$((BASE_PORT + 300))
 PG_PORT=$((54000 + BASE_PORT % 1000))
 # A second copy of the same build with Russian switched on (RUSSIAN_LIVE=1), behind its own forwarder. Only
-# tests/e2e/language-core.spec.ts and language-public.spec.ts open it (E2E_RU_BASE_URL); everything else runs against the default, Uzbek-only app.
+# tests/e2e/language-core.spec.ts, language-public.spec.ts and language-app.spec.ts open it (E2E_RU_BASE_URL); everything else
+# runs against the default, Uzbek-only app.
 RU_FWD_PORT=$((BASE_PORT + 1))
 RU_APP_PORT=$((BASE_PORT + 301))
 
