@@ -1,8 +1,11 @@
+"use client";
+import { useT } from "@/i18n/client";
 import { Container } from "@/components/ui/Container";
 
 export default function Loading() {
+  const t = useT();
   return (
-    <Container aria-busy="true" aria-label="Ijodkorlar yuklanmoqda">
+    <Container aria-busy="true" aria-label={t("Ijodkorlar yuklanmoqda")}>
       <div className="skeleton h-10 w-72 animate-shimmer rounded-ctl" />
       <div className="skeleton mt-6 h-44 animate-shimmer rounded-card border border-line" />
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

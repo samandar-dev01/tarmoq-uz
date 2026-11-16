@@ -71,7 +71,7 @@ export async function searchProviders(filters: SearchFilters, pageSize = PAGE_SI
         id: true, slug: true, headline: true, city: true, district: true,
         startingPrice: true, ratingAvg: true, ratingCount: true, languages: true,
         user: { select: { name: true } },
-        category: { select: { name: true } },
+        category: { select: { name: true, nameRu: true } },
       },
     }),
   ]);

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { canBrowseCreators, getCurrentUser, ROLE_HOME } from "@/lib/auth";
-import { CITIES } from "@/lib/constants";
+import { tk, translator } from "@/i18n/dictionary";
+import { localHref } from "@/i18n/paths";
+import { getLocale } from "@/i18n/server";
+import { categoryName, CITIES, labelFor } from "@/lib/constants";
 import { parseSearch, searchProviders } from "@/lib/providers";
-import { buildFaq, faqJsonLd, HOME_DESCRIPTION, HOME_TITLE, ogDefaults, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
+import { buildFaq, faqJsonLd, homeDescription, homeTitle, ogDefaults, organizationJsonLd, pageAlternates, websiteJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ProviderCard } from "@/components/ProviderCard";
 import { Button } from "@/components/ui/Button";
@@ -18,26 +21,33 @@ import { TestModeBadge } from "@/components/ui/TestModeBadge";
 export const dynamic = "force-dynamic";
 
 // The home page has its own title (without the "· Tarmoq.uz" tail, the name is already in it), description and address.
-export const metadata: Metadata = {
-  title: { absolute: HOME_TITLE },
-  description: HOME_DESCRIPTION,
-  alternates: { canonical: "/" },
-  openGraph: { ...ogDefaults(), title: HOME_TITLE, description: HOME_DESCRIPTION, url: "/" },
-};
+// In Russian it is `/ru` (self-canonical), and while Russian is on both languages name each other (hreflang).
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const title = homeTitle(locale);
+  const description = homeDescription(locale);
+  const alternates = pageAlternates(locale, "/");
+  return {
+    title: { absolute: title },
+    description,
+    alternates,
+    openGraph: { ...ogDefaults(locale), title, description, url: alternates.canonical },
+  };
+}
 
-// A real sequence, so these are numbered.
+// A real sequence, so these are numbered. The words are marked with tk(): they are translated where they are shown.
 const STEPS = [
-  ["Toping", "Shahar, yoʻnalish va byudjet boʻyicha ijodkorlarni qidiring."],
-  ["Kelishing", "Topshiriqni yuboring, narx va muddatni kelishing. Ikkala tomon shartlarni qabul qiladi."],
-  ["Toʻlang", "Pul ish qabul qilinmaguncha xavfsiz saqlanadi.", "escrow"],
-  ["Qabul qiling", "Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring."],
+  [tk("Toping"), tk("Shahar, yoʻnalish va byudjet boʻyicha ijodkorlarni qidiring.")],
+  [tk("Kelishing"), tk("Topshiriqni yuboring, narx va muddatni kelishing. Ikkala tomon shartlarni qabul qiladi.")],
+  [tk("Toʻlang"), tk("Pul ish qabul qilinmaguncha xavfsiz saqlanadi."), "escrow"],
+  [tk("Qabul qiling"), tk("Videoni oling, kerak boʻlsa tuzatish soʻrang, soʻng qabul qilib sharh qoldiring.")],
 ] as const;
 const STEP_COLORS = ["bg-cobalt text-on-accent", "bg-saffron text-night", "bg-turquoise text-night", "bg-pomegranate text-on-accent"];
 
 const PROMISES = [
-  { title: "Shartlar yozma", text: "Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi.", tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },
-  { title: "Pul himoyada", escrow: true, text: "Toʻlov ish qabul qilinmaguncha ushlab turiladi, shundan keyingina ijodkorga oʻtadi.", tone: "turquoise", icon: "M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6zM9 12l2.2 2.2L15.5 10" },
-  { title: "Haqiqiy sharhlar", text: "Sharhni faqat buyurtmasi yakunlangan mijoz qoldira oladi.", tone: "saffron", icon: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" },
+  { title: tk("Shartlar yozma"), text: tk("Narx, muddat va tuzatishlar yozma kelishiladi. Ikkala tomon qabul qilgan matn saqlanib qoladi."), tone: "cobalt", icon: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" },
+  { title: tk("Pul himoyada"), escrow: true, text: tk("Toʻlov ish qabul qilinmaguncha ushlab turiladi, shundan keyingina ijodkorga oʻtadi."), tone: "turquoise", icon: "M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6zM9 12l2.2 2.2L15.5 10" },
+  { title: tk("Haqiqiy sharhlar"), text: tk("Sharhni faqat buyurtmasi yakunlangan mijoz qoldira oladi."), tone: "saffron", icon: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" },
 ] as const;
 
 /** Both columns of the hero feed need enough posters to loop without a visible gap. */
@@ -49,9 +59,11 @@ export default async function HomePage() {
   // The home page is the client's way in (a creator feed and a search). A creator who lands here, from the logo or an old link, goes to their cabinet.
   const viewer = await getCurrentUser();
   if (!canBrowseCreators(viewer)) redirect(ROLE_HOME.PROVIDER);
+  const locale = await getLocale();
+  const t = translator(locale);
   const [featured, categories] = await Promise.all([
     searchProviders(parseSearch({ sort: "rating" }), 6),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true } }),
+    prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true, nameRu: true } }),
   ]);
 
   const pool = featured.items;
@@ -60,38 +72,38 @@ export default async function HomePage() {
   // At least two posters per column, so the loop never shows the same creator twice in a row (unless there is only one).
   const colA = pool.length ? cycle(evens.length ? evens : pool, 2) : [];
   const colB = pool.length ? cycle(odds.length ? odds : pool, 2) : [];
-  const faq = buildFaq(categories.map((c) => c.name), CITIES);
+  const faq = buildFaq(categories.map((c) => categoryName(locale, c)), CITIES, locale);
 
   return (
     <>
-      <JsonLd data={organizationJsonLd()} />
-      <JsonLd data={websiteJsonLd()} />
-      <JsonLd data={faqJsonLd(faq)} />
+      <JsonLd data={organizationJsonLd(undefined, locale)} />
+      <JsonLd data={websiteJsonLd(undefined, locale)} />
+      <JsonLd data={faqJsonLd(faq, locale)} />
       <section className="overflow-hidden border-b border-line">
         <Container pad="none" className="grid gap-14 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
           <div>
-            <h1 className="animate-rise text-display">Ijodkorni shu yerdan toping.</h1>
+            <h1 className="animate-rise text-display">{t("Ijodkorni shu yerdan toping.")}</h1>
             <p className="mt-5 max-w-xl animate-rise text-lg text-ink-soft [animation-delay:120ms]">
-              Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi. <TestModeBadge />
+              {t("Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi.")} <TestModeBadge />
             </p>
-            <form action="/search" method="get" className="mt-8 animate-rise [animation-delay:240ms]">
+            <form action={localHref(locale, "/search")} method="get" className="mt-8 animate-rise [animation-delay:240ms]">
               {/* One command card: what on top, then where and go. The card draws the border and shows focus for the controls inside it. */}
               <div className="rounded-hero border border-line-strong bg-surface p-2 shadow-lift transition-[border-color,box-shadow] duration-200 ease-snap focus-within:border-cobalt focus-within:shadow-[0_0_0_3px_rgb(var(--c-cobalt)/0.35)]">
-                <Field big bare hideLabel label="Sizga nima kerak?" name="q" placeholder="Toʻy videosi, reel, kafe reklamasi…" />
+                <Field big bare hideLabel label={t("Sizga nima kerak?")} name="q" placeholder={t("Toʻy videosi, reel, kafe reklamasi…")} />
                 <div className="mt-1 flex items-center gap-2 border-t border-line pt-1">
                   <div className="min-w-0 flex-1">
-                    <Field big bare as="select" hideLabel label="Shahar" name="city" defaultValue="">
-                      <option value="">Barcha shaharlar</option>
-                      {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <Field big bare as="select" hideLabel label={t("Shahar")} name="city" defaultValue="">
+                      <option value="">{t("Barcha shaharlar")}</option>
+                      {CITIES.map((c) => <option key={c} value={c}>{labelFor(locale, c)}</option>)}
                     </Field>
                   </div>
-                  <Button type="submit" size="lg" className="h-14 shrink-0 px-8">Qidirish</Button>
+                  <Button type="submit" size="lg" className="h-14 shrink-0 px-8">{t("Qidirish")}</Button>
                 </div>
               </div>
             </form>
             <div className="mt-6 flex animate-rise flex-wrap gap-2 [animation-delay:340ms]">
               {categories.map((c) => (
-                <ButtonLink key={c.slug} href={`/search?category=${c.slug}`} variant="chip">{c.name}</ButtonLink>
+                <ButtonLink key={c.slug} href={localHref(locale, `/search?category=${c.slug}`)} variant="chip">{categoryName(locale, c)}</ButtonLink>
               ))}
             </div>
           </div>
@@ -118,14 +130,14 @@ export default async function HomePage() {
 
       <Container pad="section">
         <div className="mb-6 flex items-end justify-between gap-4">
-          <h2>Top ijodkorlar</h2>
-          <ButtonLink href="/search" variant="link" className="inline-flex min-h-11 items-center">Hammasini koʻrish</ButtonLink>
+          <h2>{t("Top ijodkorlar")}</h2>
+          <ButtonLink href={localHref(locale, "/search")} variant="link" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap">{t("Hammasini koʻrish")}</ButtonLink>
         </div>
         {featured.items.length === 0 ? (
           <EmptyState
-            title="Hozircha ijodkorlar yoʻq"
-            description="Tasdiqlangan ijodkorlar tez orada shu yerda paydo boʻladi."
-            action={<ButtonLink href="/register?role=provider">Ijodkor boʻlib qoʻshilish</ButtonLink>}
+            title={t("Hozircha ijodkorlar yoʻq")}
+            description={t("Tasdiqlangan ijodkorlar tez orada shu yerda paydo boʻladi.")}
+            action={<ButtonLink href="/register?role=provider">{t("Ijodkor boʻlib qoʻshilish")}</ButtonLink>}
           />
         ) : (
           // Four across when the count divides by four, otherwise three, so the last row is never a lone card.
@@ -137,14 +149,14 @@ export default async function HomePage() {
 
       <section className="border-y border-line bg-surface">
         <Container pad="section">
-          <h2>Buyurtma qanday ishlaydi</h2>
+          <h2>{t("Buyurtma qanday ishlaydi")}</h2>
           <ol className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {STEPS.map(([title, text, promise], i) => (
               <li key={title} className="relative">
                 {i < STEPS.length - 1 && <span aria-hidden="true" className="absolute left-16 top-7 -right-6 hidden border-t border-dashed border-line-strong lg:block" />}
                 <span className={`relative grid h-14 w-14 place-items-center rounded-full font-display text-xl font-bold shadow-lift-sm ${STEP_COLORS[i]}`}>{i + 1}</span>
-                <h3 className="mt-4 text-xl">{title}</h3>
-                <p className="mt-1.5 text-ink-soft">{text} {promise === "escrow" && <TestModeBadge />}</p>
+                <h3 className="mt-4 text-xl">{t(title)}</h3>
+                <p className="mt-1.5 text-ink-soft">{t(text)} {promise === "escrow" && <TestModeBadge />}</p>
               </li>
             ))}
           </ol>
@@ -152,15 +164,15 @@ export default async function HomePage() {
       </section>
 
       <Container pad="section">
-        <h2>Nega Tarmoq.uz?</h2>
+        <h2>{t("Nega Tarmoq.uz?")}</h2>
         <ul className="mt-8 grid gap-5 md:grid-cols-3">
           {PROMISES.map((x) => (
             <Card as="li" key={x.title} tone={x.tone} padding="lg">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--c-ink))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={x.icon} />
               </svg>
-              <h3 className="mt-4 text-xl">{x.title}</h3>
-              <p className="mt-1.5 text-ink-soft">{x.text} {"escrow" in x && <TestModeBadge />}</p>
+              <h3 className="mt-4 text-xl">{t(x.title)}</h3>
+              <p className="mt-1.5 text-ink-soft">{t(x.text)} {"escrow" in x && <TestModeBadge />}</p>
             </Card>
           ))}
         </ul>
@@ -168,7 +180,7 @@ export default async function HomePage() {
 
       {/* The same questions and answers go out as FAQPage data (faqJsonLd above): what search engines read is what is shown here. */}
       <Container pad="section">
-        <h2>Koʻp beriladigan savollar</h2>
+        <h2>{t("Koʻp beriladigan savollar")}</h2>
         <ul className="mt-8 grid gap-5 md:grid-cols-2">
           {faq.map((f) => (
             <Card as="li" key={f.question} padding="lg">
@@ -182,10 +194,10 @@ export default async function HomePage() {
       <Container pad="none" className="pb-4">
         <Card tone="ink" padding="lg" radius="hero" className="sm:flex sm:items-center sm:justify-between sm:gap-8">
           <div>
-            <h2>Ijodkormisiz? Buyurtmalar sizni kutmoqda.</h2>
-            <p className="mt-2 max-w-xl text-ink-soft">Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.</p>
+            <h2>{t("Ijodkormisiz? Buyurtmalar sizni kutmoqda.")}</h2>
+            <p className="mt-2 max-w-xl text-ink-soft">{t("Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.")}</p>
           </div>
-          <ButtonLink href="/register?role=provider" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">Ijodkor sifatida qoʻshilish</ButtonLink>
+          <ButtonLink href="/register?role=provider" variant="accent" size="lg" className="mt-6 shrink-0 sm:mt-0">{t("Ijodkor sifatida qoʻshilish")}</ButtonLink>
         </Card>
       </Container>
     </>
