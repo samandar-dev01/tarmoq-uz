@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { localeOfRequest } from "@/i18n/config";
+import { translateRendered } from "@/i18n/rendered";
 import { paymentsAreTest } from "@/lib/payments/mode";
 import { requireRole } from "@/lib/auth";
 import { handle, ok, readJson } from "@/lib/http";
@@ -30,7 +32,8 @@ export const POST = handle(async (req) => {
     card: { number: input.cardNumber, expMonth: input.expMonth, expYear: input.expYear, cvc: input.cvc },
   });
   if (!result.ok) {
-    return Response.json({ error: result.message, code: result.code }, { status: 402 });
+    // A declined test card is an answer, not a thrown error, so `handle()` does not see it: put it into the request's language here.
+    return Response.json({ error: translateRendered(localeOfRequest(req), result.message), code: result.code }, { status: 402 });
   }
   return ok({ status: "HELD", orderStatus: "IN_PROGRESS" });
 });
