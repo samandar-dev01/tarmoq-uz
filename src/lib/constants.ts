@@ -1,5 +1,5 @@
 import type { Locale } from "../i18n/config";
-import { translate } from "../i18n/dictionary";
+import { tk, translate } from "../i18n/dictionary";
 
 export const CITIES = [
   "Andijon", "Toshkent", "Samarqand", "Buxoro", "Namangan",
@@ -8,11 +8,12 @@ export const CITIES = [
 
 export const LANGUAGES = ["Oʻzbek", "Rus", "Ingliz", "Qoraqalpoq", "Tojik"] as const;
 
+// The labels of the search page's sort menu: the Uzbek text is the translation key (FilterPanel writes `t(label)`).
 export const SORTS = {
-  rating: "Reyting boʻyicha",
-  price_asc: "Narx: arzondan qimmatga",
-  price_desc: "Narx: qimmatdan arzonga",
-  newest: "Eng yangilari",
+  rating: tk("Reyting boʻyicha"),
+  price_asc: tk("Narx: arzondan qimmatga"),
+  price_desc: tk("Narx: qimmatdan arzonga"),
+  newest: tk("Eng yangilari"),
 } as const;
 
 export const PAGE_SIZE = 12;

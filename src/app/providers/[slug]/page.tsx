@@ -1,10 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { translator } from "@/i18n/dictionary";
+import { getLocale } from "@/i18n/server";
 import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
+import { categoryName, labelFor } from "@/lib/constants";
 import { formatDay, formatUZS, shortName } from "@/lib/format";
 import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
-import { breadcrumbJsonLd, creatorJsonLd, ogDefaults } from "@/lib/seo";
+import { formatPriceFrom } from "@/lib/publicFormat";
+import { breadcrumbJsonLd, creatorJsonLd, ogDefaults, pageAlternates } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar, coverArt } from "@/components/ui/Avatar";
@@ -20,25 +24,30 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
+  const locale = await getLocale();
+  const t = translator(locale);
   // A creator is sent away from this page; even the title it would have carried (a name, a headline) stays out of the response.
-  if (!canBrowseCreators(await getCurrentUser())) return { title: "Ijodkor profili", robots: { index: false, follow: false } };
+  if (!canBrowseCreators(await getCurrentUser())) return { title: t("Ijodkor profili"), robots: { index: false, follow: false } };
   const p = await prisma.providerProfile.findUnique({
     where: { slug: params.slug },
     select: { headline: true, status: true, user: { select: { name: true } } },
   });
   // A page that is not public (unknown, or shown only to its owner or an admin as a preview) must never be indexed.
-  if (!p || p.status !== "APPROVED") return { title: "Ijodkor profili", robots: { index: false, follow: false } };
-  const path = `/providers/${params.slug}`;
+  if (!p || p.status !== "APPROVED") return { title: t("Ijodkor profili"), robots: { index: false, follow: false } };
+  // The name and the headline are the creator's own words and stay as written in both languages; the address is this language's own.
+  const alternates = pageAlternates(locale, `/providers/${params.slug}`);
   return {
     title: p.user.name,
     description: p.headline,
-    alternates: { canonical: path },
-    openGraph: { ...ogDefaults(), title: p.user.name, description: p.headline, url: path },
+    alternates,
+    openGraph: { ...ogDefaults(locale), title: p.user.name, description: p.headline, url: alternates.canonical },
   };
 }
 
 export default async function ProviderPage(props: Props) {
   const params = await props.params;
+  const locale = await getLocale();
+  const t = translator(locale);
   const viewer = await getCurrentUser();
   // A creator sees their own public profile and no one else's. Decided before the lookup, so the answer is the same
   // for a profile that exists, one that is not approved and one that does not exist (no way to find out which are there).
@@ -50,7 +59,7 @@ export default async function ProviderPage(props: Props) {
     where: { slug: params.slug },
     include: {
       user: { select: { id: true, name: true, isActive: true, createdAt: true } },
-      category: true,
+      category: { select: { name: true, nameRu: true } },
       services: { where: { isActive: true }, orderBy: { price: "asc" } },
       portfolio: { orderBy: { sortOrder: "asc" } },
     },
@@ -75,6 +84,12 @@ export default async function ProviderPage(props: Props) {
   };
   const canOrder = !viewer || viewer.role === "CLIENT";
   const approved = profile.status === "APPROVED";
+  // What the creator wrote stays as written. Everything the site says, and the stored values it shows (city, category, languages), is in the reader's language.
+  const city = labelFor(locale, profile.city);
+  const category = categoryName(locale, profile.category);
+  const languages = profile.languages.map((l) => labelFor(locale, l));
+  // The preview note has the status in bold in the middle of the sentence: the sentence is translated whole, split at the status.
+  const [noteBefore = "", noteAfter = ""] = t("Koʻrib chiqish rejimi. Bu profil hozir {status} holatida va ommaga koʻrinmaydi.", { status: "\u0000" }).split("\u0000");
 
   return (
     <Container size="xl">
@@ -87,28 +102,28 @@ export default async function ProviderPage(props: Props) {
               name: profile.user.name,
               headline: profile.headline,
               bio: profile.bio,
-              city: profile.city,
-              category: profile.category.name,
-              languages: profile.languages,
+              city,
+              category,
+              languages,
               services: profile.services.map((s) => ({ title: s.title, description: s.description, price: s.price })),
               ratingAvg: profile.ratingAvg,
               ratingCount: profile.ratingCount,
               visibleReviews: reviews.length,
-            })}
+            }, undefined, locale)}
           />
           <JsonLd
             data={breadcrumbJsonLd([
-              { name: "Bosh sahifa", path: "/" },
-              { name: "Ijodkorlarni toping", path: "/search" },
+              { name: t("Bosh sahifa"), path: "/" },
+              { name: t("Ijodkorlarni toping"), path: "/search" },
               { name: profile.user.name, path: `/providers/${profile.slug}` },
-            ])}
+            ], undefined, locale)}
           />
         </>
       )}
       {!approved && (
         <div className="mb-6">
           <Alert variant="info">
-            Koʻrib chiqish rejimi. Bu profil hozir <strong>{PROFILE_STATUS_LABEL[profile.status].toLowerCase()}</strong> holatida va ommaga koʻrinmaydi.
+            {noteBefore}<strong>{t(PROFILE_STATUS_LABEL[profile.status]).toLowerCase()}</strong>{noteAfter}
           </Alert>
         </div>
       )}
@@ -122,13 +137,13 @@ export default async function ProviderPage(props: Props) {
             <Avatar name={profile.user.name} size="xl" className="-mt-12 ring-4 ring-surface" />
             <div className="flex gap-2 pt-4">
               {isOwner ? (
-                <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">Profilni tahrirlash</ButtonLink>
+                <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">{t("Profilni tahrirlash")}</ButtonLink>
               ) : canOrder && approved ? (
                 <ButtonLink
                   href={viewer ? `/messages/new?to=${profile.userId}` : `/login?role=client&next=${encodeURIComponent(`/messages/new?to=${profile.userId}`)}`}
                   variant="secondary"
                 >
-                  Xabar yozish
+                  {t("Xabar yozish")}
                 </ButtonLink>
               ) : null}
             </div>
@@ -137,14 +152,14 @@ export default async function ProviderPage(props: Props) {
           <p className="mt-1.5 max-w-2xl text-lg text-ink-soft">{profile.headline}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className={tagClasses("paper")}>
-              {profile.city}
+              {city}
               {profile.district ? `, ${profile.district}` : ""}
             </span>
-            <span className={tagClasses("cobalt")}>{profile.category.name}</span>
+            <span className={tagClasses("cobalt")}>{category}</span>
             {profile.ratingCount > 0 ? (
               <Stars value={profile.ratingAvg} count={profile.ratingCount} className="ml-1" />
             ) : (
-              <span className={tagClasses("saffron")}>Yangi ijodkor</span>
+              <span className={tagClasses("saffron")}>{t("Yangi ijodkor")}</span>
             )}
           </div>
         </div>
@@ -153,14 +168,14 @@ export default async function ProviderPage(props: Props) {
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_19rem] lg:items-start">
         <div className="space-y-12">
           <section>
-            <h2>Ijodkor haqida</h2>
+            <h2>{t("Ijodkor haqida")}</h2>
             <p className="mt-3 max-w-2xl whitespace-pre-line text-[1.0625rem] leading-7 text-ink-soft">{profile.bio}</p>
           </section>
 
           <section>
-            <h2>Paketlar</h2>
+            <h2>{t("Paketlar")}</h2>
             {profile.services.length === 0 ? (
-              <div className="mt-4"><EmptyState title="Hozircha paketlar yoʻq" description="Bu ijodkor hali paket qoʻshmagan." /></div>
+              <div className="mt-4"><EmptyState title={t("Hozircha paketlar yoʻq")} description={t("Bu ijodkor hali paket qoʻshmagan.")} /></div>
             ) : (
               <ul className="mt-4 space-y-4">
                 {profile.services.map((s) => (
@@ -169,13 +184,13 @@ export default async function ProviderPage(props: Props) {
                       <h3 className="text-lg">{s.title}</h3>
                       <p className="mt-1.5 text-ink-soft">{s.description}</p>
                       <p className="mt-3 flex flex-wrap gap-2">
-                        <span className={tagClasses("paper")}>{s.deliveryDays} kunda topshiriladi</span>
-                        <span className={tagClasses("paper")}>{s.revisions} ta tuzatish</span>
+                        <span className={tagClasses("paper")}>{t("{days} kunda topshiriladi", { days: s.deliveryDays })}</span>
+                        <span className={tagClasses("paper")}>{t("{count} ta tuzatish", { count: s.revisions })}</span>
                       </p>
                     </div>
                     <div className="flex items-center justify-between gap-4 border-t border-dashed border-saffron/30 bg-saffron-tint p-5 sm:w-56 sm:shrink-0 sm:flex-col sm:items-stretch sm:justify-center sm:border-l-2 sm:border-t-0">
-                      <span className="text-xl font-extrabold tabular-nums tracking-tight">{formatUZS(s.price)}</span>
-                      {canOrder && approved && <ButtonLink href={orderHref(s.id)}>Buyurtma berish</ButtonLink>}
+                      <span className="text-xl font-extrabold tabular-nums tracking-tight">{formatUZS(s.price, locale)}</span>
+                      {canOrder && approved && <ButtonLink href={orderHref(s.id)}>{t("Buyurtma berish")}</ButtonLink>}
                     </div>
                   </li>
                 ))}
@@ -184,9 +199,9 @@ export default async function ProviderPage(props: Props) {
           </section>
 
           <section>
-            <h2>Portfolio</h2>
+            <h2>{t("Portfolio")}</h2>
             {profile.portfolio.length === 0 ? (
-              <div className="mt-4"><EmptyState title="Portfolioga hali ish qoʻshilmagan" description="Ijodkor ishlarini qoʻshganda, ular shu yerda koʻrinadi." /></div>
+              <div className="mt-4"><EmptyState title={t("Portfolioga hali ish qoʻshilmagan")} description={t("Ijodkor ishlarini qoʻshganda, ular shu yerda koʻrinadi.")} /></div>
             ) : (
               <ul className="mt-4 grid gap-5 sm:grid-cols-2">
                 {profile.portfolio.map((item) => (
@@ -203,7 +218,7 @@ export default async function ProviderPage(props: Props) {
                       <p className="font-bold">{item.title}</p>
                       {item.videoUrl && (
                         <a href={item.videoUrl} target="_blank" rel="noopener noreferrer nofollow" className={`${buttonClasses({ variant: "link" })} mt-1 inline-block`}>
-                          Videoni koʻrish
+                          {t("Videoni koʻrish")}
                         </a>
                       )}
                     </div>
@@ -214,9 +229,9 @@ export default async function ProviderPage(props: Props) {
           </section>
 
           <section>
-            <h2>Sharhlar</h2>
+            <h2>{t("Sharhlar")}</h2>
             {reviews.length === 0 ? (
-              <div className="mt-4"><EmptyState title="Hali sharhlar yoʻq" description="Sharhlar buyurtma yakunlangandan keyin shu yerda paydo boʻladi." /></div>
+              <div className="mt-4"><EmptyState title={t("Hali sharhlar yoʻq")} description={t("Sharhlar buyurtma yakunlangandan keyin shu yerda paydo boʻladi.")} /></div>
             ) : (
               <ul className="mt-4 space-y-4">
                 {reviews.map((r) => (
@@ -226,7 +241,7 @@ export default async function ProviderPage(props: Props) {
                       <Stars value={r.rating} />
                     </div>
                     <p className="mt-2 text-ink-soft">{r.comment}</p>
-                    <p className="mt-2 text-sm text-ink-mute">{formatDay(r.createdAt)}</p>
+                    <p className="mt-2 text-sm text-ink-mute">{formatDay(r.createdAt, locale)}</p>
                   </li>
                 ))}
               </ul>
@@ -236,29 +251,29 @@ export default async function ProviderPage(props: Props) {
 
         <aside className="space-y-4 lg:sticky lg:top-24">
           <Card>
-            <h2 className="font-sans text-base tracking-normal">Qisqacha</h2>
+            <h2 className="font-sans text-base tracking-normal">{t("Qisqacha")}</h2>
             <dl className="mt-3 space-y-3">
               {profile.equipment && (
                 <div>
-                  <dt className="text-sm font-semibold text-ink-soft">Jihozlar</dt>
+                  <dt className="text-sm font-semibold text-ink-soft">{t("Jihozlar")}</dt>
                   <dd className="mt-0.5">{profile.equipment}</dd>
                 </div>
               )}
-              {profile.languages.length > 0 && (
+              {languages.length > 0 && (
                 <div>
-                  <dt className="text-sm font-semibold text-ink-soft">Ish tillari</dt>
-                  <dd className="mt-0.5">{profile.languages.join(", ")}</dd>
+                  <dt className="text-sm font-semibold text-ink-soft">{t("Ish tillari")}</dt>
+                  <dd className="mt-0.5">{languages.join(", ")}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-sm font-semibold text-ink-soft">Boshlangʻich narx</dt>
-                <dd className="mt-0.5 font-bold">{formatUZS(profile.startingPrice)}dan</dd>
+                <dt className="text-sm font-semibold text-ink-soft">{t("Boshlangʻich narx")}</dt>
+                <dd className="mt-0.5 font-bold">{formatPriceFrom(profile.startingPrice, locale)}</dd>
               </div>
             </dl>
           </Card>
           <Card tone="turquoise">
-            <h2 className="font-sans text-base tracking-normal">Himoyalangan buyurtma</h2>
-            <p className="mt-2 text-[0.9375rem]">Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi. <TestModeBadge /></p>
+            <h2 className="font-sans text-base tracking-normal">{t("Himoyalangan buyurtma")}</h2>
+            <p className="mt-2 text-[0.9375rem]">{t("Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi.")} <TestModeBadge /></p>
           </Card>
         </aside>
       </div>

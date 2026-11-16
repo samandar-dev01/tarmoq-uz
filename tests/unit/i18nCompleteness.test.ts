@@ -44,6 +44,20 @@ const IN_SCOPE = [
   "src/lib/body.ts",
   "src/lib/validators.ts",
   "src/lib/rateLimit.ts",
+  // feat-i18n-public
+  "src/app/page.tsx",
+  "src/app/search/",
+  "src/app/providers/",
+  "src/app/not-found.tsx",
+  "src/app/error.tsx",
+  "src/app/sitemap.ts",
+  "src/components/FilterPanel.tsx",
+  "src/components/ProviderCard.tsx",
+  "src/components/seo/",
+  "src/lib/seo.ts",
+  "src/lib/providers.ts",
+  "src/lib/searchLinks.ts",
+  "src/lib/publicFormat.ts",
 ];
 
 const ROOT = join(__dirname, "..", "..");
