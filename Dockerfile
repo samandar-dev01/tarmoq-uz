@@ -13,5 +13,7 @@ COPY --chown=node:node . .
 RUN npm run build
 ENV NODE_ENV=production
 EXPOSE 3000
-# Applies migrations and DB constraints on every start (both are idempotent), then serves the app.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run db:constraints && npm start"]
+# scripts/boot.mjs applies migrations and the DB constraints only when there is something to apply (a new migration, or a
+# changed prisma/constraints.sql); on a plain wake-up of the free instance it skips both, then the app is served.
+# If it cannot tell, it runs both exactly as this line used to. A failing step still stops the start.
+CMD ["sh", "-c", "node scripts/boot.mjs && npm start"]
