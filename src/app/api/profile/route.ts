@@ -6,6 +6,7 @@ import { CITIES, LANGUAGES } from "@/lib/constants";
 import { slugify } from "@/lib/format";
 import { logAudit } from "@/lib/audit";
 import { notifyProfileSubmitted } from "@/lib/notify";
+import { invalidatePublicListing } from "@/lib/publicCache";
 
 const httpsUrl = z
   .string()
@@ -180,5 +181,7 @@ export const PUT = handle(async (req) => {
     void notifyProfileSubmitted({ name: user.name, city: profile!.city });
   }
 
+  // What an approved creator wrote (headline, city, prices) is shown on the public lists.
+  invalidatePublicListing();
   return ok({ profile: await summary(user.id) });
 });

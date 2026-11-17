@@ -1,29 +1,23 @@
 import type { MetadataRoute } from "next";
 import { russianLive } from "@/i18n/config";
 import { hreflang, localHref } from "@/i18n/paths";
-import { prisma } from "@/lib/db";
+import { getSitemapSource } from "@/lib/publicCache";
 import { absoluteUrl, siteUrl } from "@/lib/site";
 
 // Reads the database, so it is built per request and never at build time (the build has no database).
 export const dynamic = "force-dynamic";
 
-/** Far below the 50 000 a sitemap may hold; one query. Split into several sitemaps before this is ever reached. */
-const MAX_CREATORS = 5000;
+// The list of creators (up to 5 000, far below the 50 000 a sitemap may hold; split it before that is reached) comes from
+// src/lib/publicCache.ts, which keeps it for an hour, so a crawler does not run a database query on every visit.
 
 type Page = { path: string; lastModified?: Date; changeFrequency: "daily" | "weekly"; priority: number };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
-  const [categories, creators] = await Promise.all([
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true } }),
-    // The same rule as the public list: approved profiles of active accounts only.
-    prisma.providerProfile.findMany({
-      where: { status: "APPROVED", user: { isActive: true } },
-      orderBy: { updatedAt: "desc" },
-      take: MAX_CREATORS,
-      select: { slug: true, updatedAt: true },
-    }),
-  ]);
+  const source = await getSitemapSource();
+  const categories = source.categories;
+  // The cache hands dates back as text.
+  const creators = source.creators.map((c) => ({ slug: c.slug, updatedAt: new Date(c.updatedAt) }));
   const newest = creators[0]?.updatedAt;
   const pages: Page[] = [
     { path: "/", lastModified: newest, changeFrequency: "daily", priority: 1 },

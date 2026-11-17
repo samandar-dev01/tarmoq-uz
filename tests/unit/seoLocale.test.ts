@@ -240,10 +240,14 @@ describe("the sitemap with Russian on and off (database mocked)", () => {
     findCategories.mockReset().mockResolvedValue([{ slug: "photography" }]);
     findProfiles.mockReset().mockResolvedValue([{ slug: "jasur-karimov", updatedAt: new Date("2026-11-10T00:00:00Z") }]);
     vi.doMock("@/lib/db", () => ({ prisma: { category: { findMany: findCategories }, providerProfile: { findMany: findProfiles } } }));
+    // The data cache needs Next's runtime, which a unit test does not have: stand in with a pass-through, so what is tested
+    // is still this file's own output (src/lib/publicCache.ts is only a thin wrapper around the same queries).
+    vi.doMock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn, revalidateTag: vi.fn() }));
     process.env.APP_URL = BASE_URL;
   });
   afterEach(() => {
     vi.doUnmock("@/lib/db");
+    vi.doUnmock("next/cache");
     vi.unstubAllEnvs();
     delete process.env.APP_URL;
   });

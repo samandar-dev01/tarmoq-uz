@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { translator } from "@/i18n/dictionary";
 import { getLocale } from "@/i18n/server";
@@ -22,16 +23,29 @@ import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
 type Props = { params: Promise<{ slug: string }> };
 
+/**
+ * The profile with everything the page shows. `cache` shares ONE query between `generateMetadata` and the page of the
+ * same request (they used to run it twice). Callers decide who may see the result; this only loads it.
+ */
+const getProfile = cache((slug: string) =>
+  prisma.providerProfile.findUnique({
+    where: { slug },
+    include: {
+      user: { select: { id: true, name: true, isActive: true, createdAt: true } },
+      category: { select: { name: true, nameRu: true } },
+      services: { where: { isActive: true }, orderBy: { price: "asc" } },
+      portfolio: { orderBy: { sortOrder: "asc" } },
+    },
+  }),
+);
+
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
   const locale = await getLocale();
   const t = translator(locale);
   // A creator is sent away from this page; even the title it would have carried (a name, a headline) stays out of the response.
   if (!canBrowseCreators(await getCurrentUser())) return { title: t("Ijodkor profili"), robots: { index: false, follow: false } };
-  const p = await prisma.providerProfile.findUnique({
-    where: { slug: params.slug },
-    select: { headline: true, status: true, user: { select: { name: true } } },
-  });
+  const p = await getProfile(params.slug);
   // A page that is not public (unknown, or shown only to its owner or an admin as a preview) must never be indexed.
   if (!p || p.status !== "APPROVED") return { title: t("Ijodkor profili"), robots: { index: false, follow: false } };
   // The name and the headline are the creator's own words and stay as written in both languages; the address is this language's own.
@@ -51,19 +65,14 @@ export default async function ProviderPage(props: Props) {
   const viewer = await getCurrentUser();
   // A creator sees their own public profile and no one else's. Decided before the lookup, so the answer is the same
   // for a profile that exists, one that is not approved and one that does not exist (no way to find out which are there).
-  if (viewer && !canBrowseCreators(viewer)) {
-    const own = await prisma.providerProfile.findUnique({ where: { userId: viewer.id }, select: { slug: true } });
-    if (own?.slug !== params.slug) redirect("/forbidden");
-  }
-  const profile = await prisma.providerProfile.findUnique({
-    where: { slug: params.slug },
-    include: {
-      user: { select: { id: true, name: true, isActive: true, createdAt: true } },
-      category: { select: { name: true, nameRu: true } },
-      services: { where: { isActive: true }, orderBy: { price: "asc" } },
-      portfolio: { orderBy: { sortOrder: "asc" } },
-    },
-  });
+  // The two lookups do not depend on each other, so a creator's check of "is this my own page" runs next to the profile load.
+  const [own, profile] = await Promise.all([
+    viewer && !canBrowseCreators(viewer)
+      ? prisma.providerProfile.findUnique({ where: { userId: viewer.id }, select: { slug: true } })
+      : null,
+    getProfile(params.slug),
+  ]);
+  if (viewer && !canBrowseCreators(viewer) && own?.slug !== params.slug) redirect("/forbidden");
   if (!profile || !profile.user.isActive) notFound();
 
   const isOwner = viewer?.id === profile.userId;

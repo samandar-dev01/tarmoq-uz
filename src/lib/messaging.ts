@@ -19,6 +19,23 @@ export async function getParticipantConversation(conversationId: string, userId:
   return { conversation: c, other };
 }
 
+/**
+ * Only says whether this person is in the conversation (one cheap query, no names loaded). For the chat poll, which runs
+ * every few seconds and does not need `getParticipantConversation`'s two user lookups. Same rule, same 404.
+ */
+export async function assertParticipant(conversationId: string, userId: string) {
+  const c = await prisma.conversation.findFirst({
+    where: { id: conversationId, OR: [{ userAId: userId }, { userBId: userId }] },
+    select: { id: true },
+  });
+  if (!c) throw new HttpError(404, "Suhbat topilmadi.");
+}
+
+/** True when at least one of these messages came from the other person and has not been read yet. */
+export function hasUnreadFromOthers(messages: { senderId: string; readAt: Date | null }[], userId: string): boolean {
+  return messages.some((m) => m.senderId !== userId && m.readAt === null);
+}
+
 export async function listConversations(userId: string) {
   const where = { OR: [{ userAId: userId }, { userBId: userId }] };
   const [conversations, unread] = await Promise.all([

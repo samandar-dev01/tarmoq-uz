@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { logAudit } from "@/lib/audit";
+import { invalidatePublicListing } from "@/lib/publicCache";
 
 type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ action: z.enum(["approve", "reject", "suspend", "reinstate"]) });
@@ -33,6 +34,8 @@ export const PATCH = handle(async (req, ctx: Ctx) => {
     data: { status: rule.to, ...(action === "reject" ? { wizardStep: 5 } : {}) },
   });
   if (moved.count !== 1) throw new HttpError(409, "Profil holati bu amalga ruxsat bermaydi.");
+  // Approving, suspending or reinstating changes who the public lists show.
+  invalidatePublicListing();
 
   await logAudit({ actorId: admin.id, action: `PROVIDER_${action.toUpperCase()}`, entity: "ProviderProfile", entityId: params.id });
   return ok({ status: rule.to });

@@ -8,6 +8,7 @@ import { plural } from "@/i18n/plural";
 import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { categoryName } from "@/lib/constants";
 import { parseSearch, searchProviders } from "@/lib/providers";
+import { getCategories } from "@/lib/publicCache";
 import { breadcrumbJsonLd, creatorListJsonLd, ogDefaults, pageAlternates, searchIndexing, searchMeta } from "@/lib/seo";
 import { searchCategoryHref, searchPageHref } from "@/lib/searchLinks";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -49,7 +50,7 @@ export default async function SearchPage(props: Props) {
   const filters = parseSearch(searchParams);
   const [result, categories] = await Promise.all([
     searchProviders(filters),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true, nameRu: true } }),
+    getCategories(),
   ]);
 
   // Every link goes through localHref (src/lib/searchLinks.ts): on a Russian page a crawler without cookies only meets /ru/... links.
