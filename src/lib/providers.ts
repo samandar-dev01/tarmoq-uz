@@ -38,9 +38,16 @@ const ORDER: Record<SearchFilters["sort"], Prisma.ProviderProfileOrderByWithRela
   newest: [{ createdAt: "desc" }],
 };
 
-export async function searchProviders(filters: SearchFilters, pageSize = PAGE_SIZE) {
-  const { q, city, category, minPrice, maxPrice, sort, page } = filters;
+/** What a creator card needs, and nothing else (no bio, no payout fields). */
+const CARD_SELECT = {
+  id: true, slug: true, headline: true, city: true, district: true,
+  startingPrice: true, ratingAvg: true, ratingCount: true, languages: true,
+  user: { select: { name: true } },
+  category: { select: { name: true, nameRu: true } },
+} satisfies Prisma.ProviderProfileSelect;
 
+function buildWhere(filters: SearchFilters): Prisma.ProviderProfileWhereInput {
+  const { q, city, category, minPrice, maxPrice } = filters;
   const where: Prisma.ProviderProfileWhereInput = {
     status: "APPROVED",
     user: { isActive: true },
@@ -59,24 +66,41 @@ export async function searchProviders(filters: SearchFilters, pageSize = PAGE_SI
       { services: { some: { isActive: true, title: { contains: q, mode: "insensitive" } } } },
     ];
   }
+  return where;
+}
 
-  const [total, items] = await prisma.$transaction([
+export async function searchProviders(filters: SearchFilters, pageSize = PAGE_SIZE) {
+  const { sort, page } = filters;
+  const where = buildWhere(filters);
+
+  // Two plain reads at the same time. They used to run inside one transaction (BEGIN, count, select, COMMIT: four round
+  // trips one after another); a count next to a list does not need to be one consistent snapshot.
+  const [total, items] = await Promise.all([
     prisma.providerProfile.count({ where }),
     prisma.providerProfile.findMany({
       where,
       orderBy: ORDER[sort],
       skip: (page - 1) * pageSize,
       take: pageSize,
-      select: {
-        id: true, slug: true, headline: true, city: true, district: true,
-        startingPrice: true, ratingAvg: true, ratingCount: true, languages: true,
-        user: { select: { name: true } },
-        category: { select: { name: true, nameRu: true } },
-      },
+      select: CARD_SELECT,
     }),
   ]);
 
   return { items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
-export type ProviderCardData = Awaited<ReturnType<typeof searchProviders>>["items"][number];
+/**
+ * The best-rated creators for the home page: the same cards and the same order as `searchProviders` with no filter, but
+ * one query and no count (the home page never shows a total).
+ */
+export function featuredProviders(limit: number) {
+  const filters = parseSearch({ sort: "rating" });
+  return prisma.providerProfile.findMany({
+    where: buildWhere(filters),
+    orderBy: ORDER[filters.sort],
+    take: limit,
+    select: CARD_SELECT,
+  });
+}
+
+export type ProviderCardData = Awaited<ReturnType<typeof featuredProviders>>[number];

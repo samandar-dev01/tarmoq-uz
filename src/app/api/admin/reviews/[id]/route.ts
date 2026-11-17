@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { recomputeRating } from "@/lib/reviews";
 import { logAudit } from "@/lib/audit";
+import { invalidatePublicListing } from "@/lib/publicCache";
 
 type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ hidden: z.boolean() });
@@ -19,6 +20,8 @@ export const PATCH = handle(async (req, ctx: Ctx) => {
     await tx.review.update({ where: { id: review.id }, data: { isHidden: hidden } });
     await recomputeRating(tx, review.providerUserId);
   });
+  // The rating decides the order of the public lists.
+  invalidatePublicListing();
   await logAudit({ actorId: admin.id, action: hidden ? "REVIEW_HIDDEN" : "REVIEW_RESTORED", entity: "Review", entityId: review.id });
   return ok({ hidden });
 });

@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { canBrowseCreators, getCurrentUser, ROLE_HOME } from "@/lib/auth";
 import { tk, translator } from "@/i18n/dictionary";
 import { localHref } from "@/i18n/paths";
 import { getLocale } from "@/i18n/server";
 import { categoryName, CITIES, labelFor } from "@/lib/constants";
-import { parseSearch, searchProviders } from "@/lib/providers";
+import { getCategories, getFeaturedProviders } from "@/lib/publicCache";
 import { buildFaq, faqJsonLd, homeDescription, homeTitle, ogDefaults, organizationJsonLd, pageAlternates, websiteJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -61,12 +60,8 @@ export default async function HomePage() {
   if (!canBrowseCreators(viewer)) redirect(ROLE_HOME.PROVIDER);
   const locale = await getLocale();
   const t = translator(locale);
-  const [featured, categories] = await Promise.all([
-    searchProviders(parseSearch({ sort: "rating" }), 6),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true, nameRu: true } }),
-  ]);
-
-  const pool = featured.items;
+  // The same for every visitor, so it comes from the short-lived data cache (src/lib/publicCache.ts), not from the database each time.
+  const [pool, categories] = await Promise.all([getFeaturedProviders(), getCategories()]);
   const evens = pool.filter((_, i) => i % 2 === 0);
   const odds = pool.filter((_, i) => i % 2 === 1);
   // At least two posters per column, so the loop never shows the same creator twice in a row (unless there is only one).
@@ -133,7 +128,7 @@ export default async function HomePage() {
           <h2>{t("Top ijodkorlar")}</h2>
           <ButtonLink href={localHref(locale, "/search")} variant="link" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap">{t("Hammasini koʻrish")}</ButtonLink>
         </div>
-        {featured.items.length === 0 ? (
+        {pool.length === 0 ? (
           <EmptyState
             title={t("Hozircha ijodkorlar yoʻq")}
             description={t("Tasdiqlangan ijodkorlar tez orada shu yerda paydo boʻladi.")}
@@ -141,8 +136,8 @@ export default async function HomePage() {
           />
         ) : (
           // Four across when the count divides by four, otherwise three, so the last row is never a lone card.
-          <div className={`grid gap-5 sm:grid-cols-2 ${featured.items.length % 4 === 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-            {featured.items.map((p) => <ProviderCard key={p.id} p={p} />)}
+          <div className={`grid gap-5 sm:grid-cols-2 ${pool.length % 4 === 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+            {pool.map((p) => <ProviderCard key={p.id} p={p} />)}
           </div>
         )}
       </Container>

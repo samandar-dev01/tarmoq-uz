@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { authHref, doorForRole, doorForRoles, LAST_ROLE_COOKIE } from "./authRole";
 import { prisma } from "./db";
@@ -40,8 +41,16 @@ export async function getSession(): Promise<SessionPayload | null> {
   return token ? verifyToken(token) : null;
 }
 
-/** Authoritative user lookup: role and active flag always come from the database, not the token. */
-export async function getCurrentUser() {
+/**
+ * Authoritative user lookup: role and active flag always come from the database, not the token.
+ *
+ * Wrapped in React's `cache`, so while one page is being rendered the layout, the header and the page itself share a
+ * single query instead of running it three or four times (a signed-in visitor used to cost that many round trips to the
+ * database on every page). The memo lives for ONE request only; the next request asks the database again, so a role
+ * change or a deactivated account still takes effect immediately. There is no server action that changes the session in
+ * the middle of a render (sign-in, sign-up and sign-out are route handlers), so the memo can not go stale.
+ */
+export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
   const user = await prisma.user.findUnique({
@@ -50,7 +59,7 @@ export async function getCurrentUser() {
   });
   if (!user || !user.isActive) return null;
   return user;
-}
+});
 
 /** For API route handlers (throws HttpError). */
 export async function requireUser() {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
-import { getParticipantConversation, markRead } from "@/lib/messaging";
+import { assertParticipant, getParticipantConversation, hasUnreadFromOthers, markRead } from "@/lib/messaging";
 import { rateLimit } from "@/lib/rateLimit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -14,7 +14,8 @@ const select = { id: true, senderId: true, body: true, createdAt: true, readAt: 
 export const GET = handle(async (req, ctx: Ctx) => {
   const params = await ctx.params;
   const user = await requireUser();
-  await getParticipantConversation(params.id, user.id);
+  // This runs every few seconds per open chat, so it only checks membership and loads no names.
+  await assertParticipant(params.id, user.id);
   const after = new URL(req.url).searchParams.get("after");
 
   let messages;
@@ -34,7 +35,9 @@ export const GET = handle(async (req, ctx: Ctx) => {
       await prisma.message.findMany({ where: { conversationId: params.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 50, select })
     ).reverse();
   }
-  await markRead(params.id, user.id);
+  // Opening the chat (no `after`) marks everything unread, however old. A poll only writes when it brought something new
+  // from the other person; an empty poll, the usual case, no longer runs an UPDATE.
+  if (!after || hasUnreadFromOthers(messages, user.id)) await markRead(params.id, user.id);
   return ok({ messages });
 });
 

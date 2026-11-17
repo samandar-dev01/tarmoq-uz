@@ -73,7 +73,7 @@ npm test             # unit tests (Vitest)
 npm run test:e2e     # end-to-end tests (Playwright); first: npx playwright install chromium
 ```
 
-`GET /api/health` answers `{"status":"ok"}` without touching the database. `GET /api/health/stream` is a one-minute Server-Sent Events test stream (one `data: tick N` line about every 2 seconds) for checking that streaming survives the host's proxy: `curl -N https://<site>/api/health/stream`. At most 5 such streams run at once, and one address may start 10 per minute; beyond that the answer is HTTP 429.
+`GET /api/health` answers `{"status":"ok"}` without touching the database (this is what Render's health check calls). `GET /api/health?db=1` also asks the database one trivial question (`SELECT 1`, 3 second limit) and answers `{"status":"ok","db":"ok"}`, or HTTP 503 `{"status":"degraded","db":"down"}`; one address may ask 30 times a minute. It is for the outside uptime monitor. `GET /api/health/stream` is a one-minute Server-Sent Events test stream (one `data: tick N` line about every 2 seconds) for checking that streaming survives the host's proxy: `curl -N https://<site>/api/health/stream`. At most 5 such streams run at once, and one address may start 10 per minute; beyond that the answer is HTTP 429.
 
 ## 6. Demo accounts
 
@@ -253,7 +253,7 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
 | App (pages + API) | Render free web service, built from `Dockerfile`, described by `render.yaml` |
 | Database | Supabase free Postgres (use the **Session pooler** connection string, port 5432) |
 | Delivered videos | Supabase Storage, private bucket `deliveries` (S3-compatible, `STORAGE_DRIVER=s3`) |
-| Keep awake | UptimeRobot free monitor: `GET /` every 5 minutes |
+| Keep awake | UptimeRobot free monitor: `GET /api/health?db=1` every 5 minutes |
 
 1. **Supabase:** create a project (region `eu-central-1`) and a private bucket `deliveries` (25 MB limit). In *Storage > S3 connection* create access keys. In *Connect* copy the **Session pooler** string (put your database password into it).
 2. **GitHub:** push this repo to your own repository (the `.env` file is git-ignored and never leaves your machine).
@@ -263,7 +263,7 @@ The site is one Next.js app, so pages and API deploy together. Everything below 
    To remove demo and test data that is already there: `npm run db:purge-demo` (a dry run that lists what would go), then `npm run db:purge-demo -- --confirm`.
 5. **Make yourself admin:** register on the site, then run in the Supabase SQL editor:
    `UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';`
-6. **UptimeRobot:** HTTP(s) monitor on the site's home page, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and stops Supabase pausing the project after a week of silence.
+6. **UptimeRobot:** HTTP(s) monitor on `https://<site>/api/health?db=1`, interval 5 minutes. This keeps the Render instance awake (it sleeps after 15 idle minutes) and, because that address asks the database a question, stops Supabase pausing the project after a week of silence. (The home page no longer does that by itself: it is served from a short-lived cache, see `src/lib/publicCache.ts`.) A monitor that still points at `/` keeps the instance awake but no longer touches the database.
 
 Free-plan limits to know: videos up to 25 MB (set by `MAX_UPLOAD_MB`), 512 MB RAM, shared CPU, no SLA. Payments are still the sandbox.
 

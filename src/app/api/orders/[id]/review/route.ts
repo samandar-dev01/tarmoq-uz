@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { recomputeRating } from "@/lib/reviews";
 import { logAudit } from "@/lib/audit";
+import { invalidatePublicListing } from "@/lib/publicCache";
 
 type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({
@@ -29,6 +30,8 @@ export const POST = handle(async (req, ctx: Ctx) => {
       await recomputeRating(tx, order.providerId);
       return created;
     });
+    // The rating decides the order of the public lists.
+    invalidatePublicListing();
     await logAudit({ actorId: user.id, action: "REVIEW_CREATED", entity: "Review", entityId: review.id });
     return ok({ review: { id: review.id } }, 201);
   } catch (e) {
