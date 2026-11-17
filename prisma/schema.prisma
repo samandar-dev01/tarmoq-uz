@@ -128,6 +128,8 @@ model Service {
   revisions     Int             @default(1)
   isActive      Boolean         @default(true)
   orders        Order[]
+
+  @@index([profileId])
 }
 
 model PortfolioItem {
@@ -138,6 +140,8 @@ model PortfolioItem {
   videoUrl   String?
   imageUrl   String?
   sortOrder  Int             @default(0)
+
+  @@index([profileId])
 }
 
 model Order {
@@ -167,6 +171,7 @@ model Order {
 
   @@index([clientId, status])
   @@index([providerId, status])
+  @@index([serviceId])
 }
 
 model Agreement {
@@ -207,6 +212,8 @@ model Payment {
 
   ledger LedgerEntry[]
   payout Payout?
+
+  @@index([orderId])
 }
 
 /// Money owed to a creator after the client approved the work. Created PENDING when the escrow is released;
@@ -234,6 +241,8 @@ model LedgerEntry {
   type       LedgerType
   amount     Int
   createdAt  DateTime   @default(now())
+
+  @@index([paymentId])
 }
 
 model Delivery {
@@ -246,6 +255,8 @@ model Delivery {
   mimeType  String
   note      String?
   createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
 
 model Conversation {
@@ -260,6 +271,7 @@ model Conversation {
   messages  Message[]
 
   @@unique([userAId, userBId, orderId])
+  @@index([userBId])
 }
 
 model Message {
@@ -301,4 +313,5 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([entity, entityId])
+  @@index([action, entityId])
 }
