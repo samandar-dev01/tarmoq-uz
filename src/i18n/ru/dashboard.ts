@@ -1,3 +1,91 @@
-// Russian for the "dashboard" area. Uzbek sentence (the key) -> Russian. Filled by a later language branch.
-// Rules are at the top of src/i18n/dictionary.ts.
-export const dashboard: Record<string, string> = {};
+// Russian for the cabinets (client and creator), the payout card form, the profile statuses and the profile wizard.
+// Uzbek sentence (the key) -> Russian. Rules are at the top of src/i18n/dictionary.ts.
+export const dashboard: Record<string, string> = {
+  // ---- The client's cabinet
+  "Mijoz kabineti": "Кабинет заказчика",
+  "Salom, {name}!": "Здравствуйте, {name}!",
+  "Ijodkor topish": "Найти креатора",
+  "Faol buyurtmalar": "Активные заказы",
+  "Sizdan harakat kutilmoqda": "Ждут ваших действий",
+  "Yakunlangan": "Завершённые",
+  "Buyurtmalaringiz": "Ваши заказы",
+  "Hozircha buyurtmalar yoʻq": "Заказов пока нет",
+  "Ijodkorni qidiring, paket tanlang va birinchi buyurtmangizni yuboring.": "Найдите креатора, выберите пакет и отправьте первый заказ.",
+  "Ijodkorlarni koʻrish": "Смотреть креаторов",
+  // ---- The creator's cabinet
+  "Ijodkor kabineti": "Кабинет креатора",
+  "Profilingiz hali yuborilmagan. Buyurtma olishni boshlash uchun": "Профиль ещё не отправлен. Чтобы начать получать заказы,",
+  "profilni toʻldiring": "заполните профиль",
+  "Profilingiz admin tasdigʻini kutmoqda. Tasdiqlangach, qidiruvda koʻrinasiz.":
+    "Ваш профиль ждёт подтверждения администратора. После подтверждения вы появитесь в поиске.",
+  "Profilingiz toʻxtatilgan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.": "Ваш профиль приостановлен. Обратитесь в поддержку.",
+  "Profilingiz faol.": "Ваш профиль активен.",
+  "Ommaviy profilni koʻrish": "Посмотреть публичный профиль",
+  "yoki": "или",
+  "tahrirlash": "изменить",
+  "Yangi soʻrovlar": "Новые заявки",
+  "Ushlab turilgan mablagʻ": "Удерживаемые средства",
+  "Olingan daromad (komissiyasiz)": "Полученный доход (без комиссии)",
+  "Pul olish": "Получение денег",
+  "Mijoz ishni qabul qilgach, daromadingiz (komissiyasiz) shu kartaga oʻtkaziladi.":
+    "Когда заказчик примет работу, ваш доход (без комиссии) будет переведён на эту карту.",
+  "Hozir oʻtkazilishi kutilayotgan:": "Ожидает перевода сейчас:",
+  "Buyurtmalar": "Заказы",
+  "Mijoz paketlaringizdan birini buyurtma qilganda, u shu yerda koʻrinadi.": "Когда заказчик закажет один из ваших пакетов, заказ появится здесь.",
+  // ---- The card the creator is paid to
+  "Saqlangan karta:": "Сохранённая карта:",
+  "Karta saqlandi.": "Карта сохранена.",
+  "ISM FAMILIYA": "IVAN IVANOV",
+  "Karta ustida yozilgandek": "Как написано на карте",
+  "Serverda shifrlab saqlanadi": "Хранится на сервере в зашифрованном виде",
+  "Kartani yangilash": "Обновить карту",
+  "Kartani saqlash": "Сохранить карту",
+  // ---- The profile statuses (PROFILE_STATUS_LABEL in src/lib/orderUi.ts)
+  "Qoralama": "Черновик",
+  "Koʻrib chiqilmoqda": "На проверке",
+  "Toʻxtatilgan": "Приостановлен",
+  // ---- The profile wizard
+  "Ijodkor profilingiz": "Ваш профиль креатора",
+  "Quyidagi qadamlarni bajaring. Yangi profillarni admin tekshiradi, shundan keyin ular ommaga chiqadi.":
+    "Пройдите шаги ниже. Новые профили проверяет администратор, после чего они становятся публичными.",
+  "Profilingiz toʻxtatilgan. Kirishni tiklash uchun qoʻllab-quvvatlash xizmatiga murojaat qiling.":
+    "Ваш профиль приостановлен. Чтобы вернуть доступ, обратитесь в поддержку.",
+  "Asosiy": "Основное",
+  "Joylashuv": "Локация",
+  "Tekshirish": "Проверка",
+  "Saqlab boʻlmadi.": "Не удалось сохранить.",
+  "Saqlandi.": "Сохранено.",
+  "Tekshiruvga yuborildi.": "Отправлено на проверку.",
+  "Orqaga": "Назад",
+  "Sarlavha": "Заголовок",
+  "Masalan: reels, tadbirlar va toʻylar uchun mobilograf": "Например: мобильный видеограф для Reels, мероприятий и свадеб",
+  "Oʻzingiz haqingizda": "О себе",
+  "Tajribangiz, uslubingiz va mijozlar nimani kutishi mumkin.": "Ваш опыт, стиль и то, чего могут ожидать заказчики.",
+  "Tanlang…": "Выберите…",
+  "Saqlash va davom etish": "Сохранить и продолжить",
+  "Tuman (ixtiyoriy)": "Район (необязательно)",
+  "Jihozlar (ixtiyoriy)": "Оборудование (необязательно)",
+  "Masalan: iPhone 15 Pro, gimbal, simsiz mikrofonlar": "Например: iPhone 15 Pro, стабилизатор, беспроводные микрофоны",
+  "Qaysi tillarda ishlaysiz?": "На каких языках вы работаете?",
+  "{n}-paket": "Пакет {n}",
+  "Oʻchirish": "Удалить",
+  "Nomi": "Название",
+  "Nimalar kiradi?": "Что входит?",
+  "Tuzatishlar": "Правки",
+  "+ Yana paket qoʻshish": "+ Добавить ещё пакет",
+  "Eng yaxshi ishlaringizga havola qoʻying (YouTube, Instagram, Google Drive yoki rasm). Havolalar https:// bilan boshlanishi kerak.":
+    "Добавьте ссылки на лучшие работы (YouTube, Instagram, Google Drive или изображение). Ссылки должны начинаться с https://.",
+  "{n}-ish": "Работа {n}",
+  "Video havola": "Ссылка на видео",
+  "Rasm havolasi (ixtiyoriy)": "Ссылка на изображение (необязательно)",
+  "+ Yana ish qoʻshish": "+ Добавить ещё работу",
+  "Profilni tekshiring": "Проверьте профиль",
+  "Tillar": "Языки",
+  "Portfolio ishlari": "Работы в портфолио",
+  "{n} ta": "{n}",
+  "Yuborganingizdan keyin admin profilingizni tekshiradi, shundan soʻng u qidiruvda koʻrinadi.":
+    "После отправки администратор проверит ваш профиль, и он появится в поиске.",
+  "Yuborildi. Admin profilingizni tekshirmoqda. Tasdiqlangach, qidiruvda koʻrinasiz.":
+    "Отправлено. Администратор проверяет ваш профиль. После подтверждения вы появитесь в поиске.",
+  "Tekshiruvga yuborish": "Отправить на проверку",
+};

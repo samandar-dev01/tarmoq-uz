@@ -1,17 +1,22 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { getT } from "@/i18n/server";
 import { getParticipantConversation, markRead } from "@/lib/messaging";
 import { HttpError } from "@/lib/errors";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 
-export const metadata = { title: "Suhbat" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Suhbat") };
+}
 
 export default async function ConversationPage(props: { params: Promise<{ conversationId: string }> }) {
   const params = await props.params;
   const user = await requirePageRole("CLIENT", "PROVIDER");
+  const t = await getT();
   let other;
   let conversation;
   try {
@@ -34,11 +39,11 @@ export default async function ConversationPage(props: { params: Promise<{ conver
     <Container size="lg">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <ButtonLink href="/messages" variant="link" className="text-sm">Barcha xabarlar</ButtonLink>
+          <ButtonLink href="/messages" variant="link" className="text-sm">{t("Barcha xabarlar")}</ButtonLink>
           <h1 className="mt-1">{other.name}</h1>
         </div>
         {conversation.orderId && (
-          <ButtonLink href={`/orders/${conversation.orderId}`} variant="secondary" size="sm">Buyurtmani koʻrish</ButtonLink>
+          <ButtonLink href={`/orders/${conversation.orderId}`} variant="secondary" size="sm">{t("Buyurtmani koʻrish")}</ButtonLink>
         )}
       </div>
       <ChatWindow

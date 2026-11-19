@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
+import { getLocale, getT } from "@/i18n/server";
 import { formatUZS } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
@@ -13,11 +14,16 @@ import { ManualTransfer } from "@/components/checkout/ManualTransfer";
 import { manualPaymentsOn, paymentsAreTest } from "@/lib/payments/mode";
 import { manualInstructions, orderReference } from "@/lib/payments/manualPure";
 
-export const generateMetadata = () => ({ title: paymentsAreTest() ? "Toʻlov (sinov rejimi)" : "Toʻlov" });
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: paymentsAreTest() ? t("Toʻlov (sinov rejimi)") : t("Toʻlov") };
+}
 
 export default async function CheckoutPage(props: { params: Promise<{ orderId: string }> }) {
   const params = await props.params;
   const user = await requirePageRole("CLIENT");
+  const t = await getT();
+  const locale = await getLocale();
   const order = await prisma.order.findFirst({
     where: { id: params.orderId, clientId: user.id },
     include: { service: { select: { title: true } }, provider: { select: { name: true } } },
@@ -29,9 +35,9 @@ export default async function CheckoutPage(props: { params: Promise<{ orderId: s
     return (
       <Container size="sm" pad="section">
         <EmptyState
-          title="Bu buyurtma hali toʻlovga tayyor emas"
-          description="Toʻlov siz va ijodkor shartlarni qabul qilgandan keyin ochiladi."
-          action={<ButtonLink href={`/orders/${order.id}`}>Buyurtmaga qaytish</ButtonLink>}
+          title={t("Bu buyurtma hali toʻlovga tayyor emas")}
+          description={t("Toʻlov siz va ijodkor shartlarni qabul qilgandan keyin ochiladi.")}
+          action={<ButtonLink href={`/orders/${order.id}`}>{t("Buyurtmaga qaytish")}</ButtonLink>}
         />
       </Container>
     );
@@ -43,12 +49,12 @@ export default async function CheckoutPage(props: { params: Promise<{ orderId: s
 
   return (
     <Container size="sm">
-      <h1>Toʻlov</h1>
+      <h1>{t("Toʻlov")}</h1>
       <Card tone="tint" className="mt-6">
         <p className="font-bold">{order.service.title}</p>
-        <p className="text-ink-soft">{order.provider.name} bilan</p>
-        <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight">{order.agreedPrice ? formatUZS(order.agreedPrice) : "—"}</p>
-        <p className="mt-1 text-sm text-ink-soft">Siz tayyor videoni qabul qilmaguncha ushlab turiladi. <TestModeBadge /></p>
+        <p className="text-ink-soft">{t("{name} bilan", { name: order.provider.name })}</p>
+        <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight">{order.agreedPrice ? formatUZS(order.agreedPrice, locale) : "—"}</p>
+        <p className="mt-1 text-sm text-ink-soft">{t("Siz tayyor videoni qabul qilmaguncha ushlab turiladi.")} <TestModeBadge /></p>
       </Card>
       <div className="mt-6">
         {!manual ? (
@@ -64,7 +70,7 @@ export default async function CheckoutPage(props: { params: Promise<{ orderId: s
             waiting={waiting}
           />
         ) : (
-          <Alert variant="error">Toʻlov rekvizitlari hali sozlanmagan. Administrator bilan bogʻlaning.</Alert>
+          <Alert variant="error">{t("Toʻlov rekvizitlari hali sozlanmagan. Administrator bilan bogʻlaning.")}</Alert>
         )}
       </div>
     </Container>

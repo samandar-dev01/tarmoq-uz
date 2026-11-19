@@ -6,8 +6,9 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { useAction } from "@/components/orders/useAction";
+import { useLocale, useT } from "@/i18n/client";
 import { formatUZS } from "@/lib/format";
-import { receiptTooBigMessage, RECEIPT_MAX_BYTES, RECEIPT_MAX_MB } from "@/lib/payments/receiptPure";
+import { RECEIPT_MAX_BYTES, RECEIPT_MAX_MB } from "@/lib/payments/receiptPure";
 
 type Props = {
   orderId: string;
@@ -23,6 +24,8 @@ type Props = {
 /** Checkout when clients pay by sending money to the owner's card (PAYMENT_PROVIDER=manual). */
 export function ManualTransfer({ orderId, amount, reference, card, holder, bank, waiting }: Props) {
   const { run, loading, error } = useAction();
+  const t = useT();
+  const locale = useLocale();
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | undefined>();
 
@@ -30,7 +33,7 @@ export function ManualTransfer({ orderId, amount, reference, card, holder, bank,
     setFileError(undefined);
     if (chosen && chosen.size > RECEIPT_MAX_BYTES) {
       setFile(null);
-      setFileError(receiptTooBigMessage); // caught here so a phone never uploads a huge file first
+      setFileError(t("Fayl juda katta (eng koʻpi {max} MB).", { max: RECEIPT_MAX_MB })); // caught here so a phone never uploads a huge file first
       return;
     }
     setFile(chosen);
@@ -49,9 +52,9 @@ export function ManualTransfer({ orderId, amount, reference, card, holder, bank,
     return (
       <div className="space-y-5">
         <Alert variant="info">
-          <strong>Toʻlovingiz tekshirilmoqda.</strong> Administrator pulni koʻrgach tasdiqlaydi, soʻng ijodkor ishni boshlaydi.
+          <strong>{t("Toʻlovingiz tekshirilmoqda.")}</strong> {t("Administrator pulni koʻrgach tasdiqlaydi, soʻng ijodkor ishni boshlaydi.")}
         </Alert>
-        <ButtonLink href={`/orders/${orderId}`} variant="secondary" className="w-full">Buyurtmaga qaytish</ButtonLink>
+        <ButtonLink href={`/orders/${orderId}`} variant="secondary" className="w-full">{t("Buyurtmaga qaytish")}</ButtonLink>
       </div>
     );
   }
@@ -59,45 +62,45 @@ export function ManualTransfer({ orderId, amount, reference, card, holder, bank,
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <Alert variant="info">
-        Pulni quyidagi kartaga oʻtkazing, bank ilovasidagi chekni yuklang va <strong>Men toʻladim</strong> tugmasini bosing. Administrator pulni tekshirgach, ish boshlanadi.
+        {t("Pulni quyidagi kartaga oʻtkazing, bank ilovasidagi chekni yuklang va")} <strong>{t("Men toʻladim")}</strong> {t("tugmasini bosing. Administrator pulni tekshirgach, ish boshlanadi.")}
       </Alert>
       {error && <Alert variant="error">{error}</Alert>}
 
       <Card>
         <dl className="space-y-4">
           <div>
-            <dt className="text-sm font-semibold text-ink-soft">Karta raqami</dt>
+            <dt className="text-sm font-semibold text-ink-soft">{t("Karta raqami")}</dt>
             <dd className="mt-0.5 text-lg font-bold tabular-nums tracking-widest sm:text-xl">{card}</dd>
           </div>
           <div>
-            <dt className="text-sm font-semibold text-ink-soft">Karta egasi</dt>
+            <dt className="text-sm font-semibold text-ink-soft">{t("Karta egasi")}</dt>
             <dd className="mt-0.5 font-bold">{holder}{bank ? `, ${bank}` : ""}</dd>
           </div>
           <div>
-            <dt className="text-sm font-semibold text-ink-soft">Aniq summa</dt>
-            <dd className="mt-0.5 text-xl font-extrabold tabular-nums tracking-tight">{formatUZS(amount)}</dd>
+            <dt className="text-sm font-semibold text-ink-soft">{t("Aniq summa")}</dt>
+            <dd className="mt-0.5 text-xl font-extrabold tabular-nums tracking-tight">{formatUZS(amount, locale)}</dd>
           </div>
           <div>
-            <dt className="text-sm font-semibold text-ink-soft">Izoh kodi (oʻtkazma izohiga yozing)</dt>
+            <dt className="text-sm font-semibold text-ink-soft">{t("Izoh kodi (oʻtkazma izohiga yozing)")}</dt>
             <dd className="mt-0.5 text-xl font-extrabold tracking-widest">{reference}</dd>
           </div>
         </dl>
       </Card>
 
       <Field
-        label="Toʻlov cheki"
+        label={t("Toʻlov cheki")}
         id="receipt"
         type="file"
         accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf"
-        hint={`Bank ilovasidagi chek: rasm (JPG, PNG, WebP) yoki PDF, eng koʻpi ${RECEIPT_MAX_MB} MB.`}
+        hint={t("Bank ilovasidagi chek: rasm (JPG, PNG, WebP) yoki PDF, eng koʻpi {max} MB.", { max: RECEIPT_MAX_MB })}
         error={fileError}
         onChange={(e) => pick(e.target.files?.[0] ?? null)}
         className="py-2"
       />
       <Button type="submit" size="lg" loading={loading} disabled={!file} className="w-full">
-        {loading ? "Yuklanmoqda…" : "Men toʻladim"}
+        {loading ? t("Yuklanmoqda…") : t("Men toʻladim")}
       </Button>
-      <p className="text-center text-sm text-ink-soft">Chekni yuklamasdan toʻlovni yuborib boʻlmaydi. Pul tushmasa, toʻlov rad etiladi.</p>
+      <p className="text-center text-sm text-ink-soft">{t("Chekni yuklamasdan toʻlovni yuborib boʻlmaydi. Pul tushmasa, toʻlov rad etiladi.")}</p>
     </form>
   );
 }

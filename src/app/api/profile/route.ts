@@ -2,6 +2,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
+import { localeOfRequest } from "@/i18n/config";
+import { msg } from "@/i18n/dictionary";
+import { translateRendered } from "@/i18n/rendered";
 import { CITIES, LANGUAGES } from "@/lib/constants";
 import { slugify } from "@/lib/format";
 import { logAudit } from "@/lib/audit";
@@ -173,7 +176,12 @@ export const PUT = handle(async (req) => {
     if (profile!.languages.length === 0) problems.push("Kamida bitta tilni tanlang (2-qadam).");
     if (services === 0) problems.push("Kamida bitta paket qoʻshing (3-qadam).");
     if (portfolio === 0) problems.push("Portfolioga kamida bitta ish qoʻshing (4-qadam).");
-    if (problems.length) throw new HttpError(422, `Profilingiz hali toʻliq emas: ${problems.join(" ")}`, { problems });
+    if (problems.length) {
+      // The list is built here, so it is put into the request's language here too; the sentence around it is a template
+      // that `handle()` recognises (the finished Uzbek sentence is the same as before).
+      const say = (text: string) => translateRendered(localeOfRequest(req), text);
+      throw new HttpError(422, msg("Profilingiz hali toʻliq emas: {problems}", { problems: problems.map(say).join(" ") }), { problems: problems.map(say) });
+    }
     await prisma.providerProfile.update({ where: { id: profile!.id }, data: { status: "PENDING_REVIEW" } });
     await logAudit({ actorId: user.id, action: "PROFILE_SUBMITTED", entity: "ProviderProfile", entityId: profile!.id });
     // Tell the admin on Telegram. Not awaited, so a slow or unreachable Telegram never delays the creator's

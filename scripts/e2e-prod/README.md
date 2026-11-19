@@ -54,9 +54,10 @@ Russian is behind one switch (`RUSSIAN_LIVE` in `src/i18n/config.ts`) and is off
 tests (the base port) runs exactly like that: Russian off. To test the language machinery anyway, the rig starts a
 second `next start` of the same build with the environment variable `RUSSIAN_LIVE=1` (read when the server runs, not
 when it is built), against the same database, and exports its address as `E2E_RU_BASE_URL`. Only
-`tests/e2e/language-core.spec.ts` (the button, the cookie, the shell) and `tests/e2e/language-public.spec.ts` (the home page,
-the search and a creator's page in Russian, and what a crawler reads) open it; the same specs also prove on the default
-app that nothing Russian is reachable. Under `npm run test:e2e` (dev mode) there is no second app and the Russian half of that spec skips itself;
+`tests/e2e/language-core.spec.ts` (the button, the cookie, the shell, the sign-in pages), `tests/e2e/language-public.spec.ts` (the home
+page, the search and a creator's page in Russian, and what a crawler reads) and `tests/e2e/language-app.spec.ts` (what a signed-in
+client and creator see) open it; the same specs also prove on the default app that nothing Russian is reachable. Under
+`npm run test:e2e` (dev mode) there is no second app and the Russian half of those specs skips itself;
 to run it there, start a second dev server yourself with `RUSSIAN_LIVE=1` and set `E2E_RU_BASE_URL` to it.
 Never set `RUSSIAN_LIVE` on the live site: the later language branch turns the switch on in the code.
 

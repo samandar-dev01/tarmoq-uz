@@ -11,54 +11,28 @@ import { RU } from "@/i18n/ru";
 //   server keys   new HttpError(<status>, "...")  msg("...")   -> must be in ru/errors.ts or a page fragment
 //                 zod messages (.min(2, "..."), .email("..."), { message: "..." }, required_error: "...")
 //                 and t( / tk( in files under src/app/api (text only the server says)
+// Server code that returns a message instead of throwing it is read too: `message: "..."` and `invalid("...")` in src/lib and
+// src/app/api (the sandbox card rules, the receipt checks), whether or not the file uses zod.
 // It also fails on a server message built with a template literal (`...${x}...`), because nothing can translate that:
 // write it with msg("... {x} ...", { x }) instead.
 //
 // SCOPE. Only the files listed in IN_SCOPE are checked, so that a branch is red only for its own work. A later language
 // branch WIDENS the list with its folders (for example "src/app/orders/", "src/components/orders/", "src/app/api/orders/");
 // the last one replaces the whole list with ["src/"]. An entry is a path from the repo root: a folder ends with "/".
+// OUT_OF_SCOPE is what is never translated, on purpose; it is taken out of the scope AND out of the report below, so the final
+// state is IN_SCOPE = ["src/"] and this list.
 // The second test below never fails: it prints how many keys are still untranslated outside the scope, per file, so
 // each builder sees what is left for them.
 //
 // What it cannot see: a key that is not a plain double-quoted literal on one line (see the rules at the top of
 // src/i18n/dictionary.ts), and Uzbek text that nobody wrapped in t( at all.
 
-const IN_SCOPE = [
-  "src/i18n/",
-  "src/proxy.ts",
-  // the shell
-  "src/app/layout.tsx",
-  "src/components/Header.tsx",
-  "src/components/AccountMenu.tsx",
-  "src/components/ui/",
-  "src/lib/shellNav.ts",
-  "src/lib/constants.ts",
-  // signing in and up, no access
-  "src/app/(auth)/",
-  "src/app/forbidden/",
-  "src/components/auth/",
-  "src/app/api/auth/",
-  // the server boundary
-  "src/lib/http.ts",
-  "src/lib/auth.ts",
-  "src/lib/body.ts",
-  "src/lib/validators.ts",
-  "src/lib/rateLimit.ts",
-  // feat-i18n-public
-  "src/app/page.tsx",
-  "src/app/search/",
-  "src/app/providers/",
-  "src/app/not-found.tsx",
-  "src/app/error.tsx",
-  "src/app/sitemap.ts",
-  "src/components/FilterPanel.tsx",
-  "src/components/ProviderCard.tsx",
-  "src/components/seo/",
-  "src/lib/seo.ts",
-  "src/lib/providers.ts",
-  "src/lib/searchLinks.ts",
-  "src/lib/publicFormat.ts",
-];
+// The whole site: every file under src/ except what OUT_OF_SCOPE (below) lists on purpose.
+const IN_SCOPE = ["src/"];
+
+// Never translated, on purpose (decided in the language plan): the admin area is Uzbek only (pages, components, API), the
+// Telegram texts stay English (src/lib/notify.ts), and prisma/ (the seed) is outside src/ anyway.
+const OUT_OF_SCOPE = ["src/app/admin/", "src/components/admin/", "src/app/api/admin/", "src/lib/notify.ts"];
 
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
@@ -77,8 +51,15 @@ const SERVER_KEYS = [
   new RegExp(`new HttpError\\(\\s*[\\w.]+\\s*,\\s*${STRING}`, "g"),
   new RegExp(`(?<![\\w.])msg\\(\\s*${STRING}`, "g"),
 ];
+// Messages that code returns or passes on instead of throwing (src/lib, src/app/api), found with or without zod.
+const RETURNED_KEYS = [
+  new RegExp(`(?<![\\w.])invalid\\(\\s*${STRING}`, "g"),
+  new RegExp(`(?<![\\w])message\\s*:\\s*${STRING}`, "g"),
+];
 const ZOD_KEYS = [
-  new RegExp(`\\.(?:min|max|length|email|url|regex|refine|superRefine|int|positive|nonnegative|nonempty|gte|lte|gt|lt|datetime|startsWith|endsWith|includes)\\([^"\\n]*?${STRING}\\s*\\)`, "g"),
+  new RegExp(`\\.(?:min|max|length|email|url|regex|int|positive|nonnegative|nonempty|gte|lte|gt|lt|datetime)\\([^"\\n]*?${STRING}\\s*\\)`, "g"),
+  // .refine((u) => u.startsWith("https://"), "message"): the message is the LAST string of the call, not the first.
+  new RegExp(`\\.(?:refine|superRefine)\\([^\\n]*,\\s*${STRING}\\s*\\)`, "g"),
   new RegExp(`(?:message|required_error|invalid_type_error)\\s*:\\s*${STRING}`, "g"),
 ];
 const DYNAMIC = /new HttpError\(\s*[\w.]+\s*,\s*`[^`]*\$\{/g;
@@ -94,10 +75,12 @@ function scan(path: string): Found {
   const apiFile = file.startsWith("src/app/api/");
   const server = SERVER_KEYS.flatMap(all);
   if (/from "zod"/.test(code)) server.push(...ZOD_KEYS.flatMap(all));
+  else if (file.startsWith("src/lib/") || apiFile) server.push(...RETURNED_KEYS.flatMap(all));
   return { file, ui: apiFile ? [] : marked, server: apiFile ? [...server, ...marked] : server, dynamic: [...code.matchAll(DYNAMIC)].length };
 }
 
-const inScope = (file: string) => IN_SCOPE.some((entry) => (entry.endsWith("/") ? file.startsWith(entry) : file === entry));
+const matches = (file: string, entry: string) => (entry.endsWith("/") ? file.startsWith(entry) : file === entry);
+const inScope = (file: string) => IN_SCOPE.some((entry) => matches(file, entry)) && !OUT_OF_SCOPE.some((entry) => matches(file, entry));
 // The Russian fragments themselves are data, not users of the dictionary.
 const found = files(SRC).filter((p) => !p.includes(`${join("src", "i18n", "ru")}`)).map(scan);
 
@@ -120,7 +103,13 @@ describe("every Uzbek sentence has a Russian entry", () => {
       "Telefon raqamini toʻgʻri kiriting", "Email manzilini toʻgʻri kiriting", "Parolni kiriting",
     ]);
     expect(of("src/app/api/auth/login/route.ts").server).toContain("Email yoki parol notoʻgʻri.");
-    expect(of("src/app/api/profile/route.ts").dynamic).toBe(1);
+    expect(of("src/app/api/profile/route.ts").dynamic).toBe(0);
+    expect(of("src/app/api/profile/route.ts").server).toContain("Profilingiz hali toʻliq emas: {problems}");
+    expect(of("src/lib/orderUi.ts").ui).toContain("Soʻrov yuborildi");
+    expect(of("src/lib/orderUi.ts").ui).toContain("Tasdiqlangan");
+    expect(of("src/components/orders/OrderPanels.tsx").ui).toContain("Nizo ochish");
+    expect(of("src/lib/payments/pure.ts").server).toContain("Karta rad etildi.");
+    expect(of("src/lib/payments/receiptPure.ts").server).toContain("Fayl juda katta (eng koʻpi {max} MB).");
     expect(found.filter((f) => inScope(f.file)).reduce((n, f) => n + f.ui.length + f.server.length, 0)).toBeGreaterThan(80);
   });
 
@@ -129,9 +118,23 @@ describe("every Uzbek sentence has a Russian entry", () => {
   });
 
   it("reports what is left outside the scope (never fails)", () => {
-    const rest = found.filter((f) => !inScope(f.file)).map((f) => ({ file: f.file, n: missing(f).length })).filter((r) => r.n > 0);
+    const rest = found.filter((f) => !inScope(f.file) && !OUT_OF_SCOPE.some((entry) => matches(f.file, entry))).map((f) => ({ file: f.file, n: missing(f).length })).filter((r) => r.n > 0);
     if (rest.length) {
       console.info(`i18n: ${rest.reduce((n, r) => n + r.n, 0)} key(s) without Russian outside the scope:\n` + rest.map((r) => `  ${r.n}  ${r.file}`).join("\n"));
+    }
+    // What the scanner cannot see: Uzbek text that nobody wrapped. A file outside the scope that still has Uzbek letters
+    // (ʻ ʼ) on a line with no t( / tk( / msg( / HttpError( is a page waiting for its language branch.
+    const wrapped = /(?<![\w.])(?:t|tk|msg)\(|HttpError\(/;
+    const unwrapped = files(SRC)
+      .map((p) => ({ file: relative(ROOT, p).split("\\").join("/"), p }))
+      .filter(({ file }) => !file.startsWith("src/i18n/") && !inScope(file) && !OUT_OF_SCOPE.some((entry) => matches(file, entry)))
+      .map(({ file, p }) => ({
+        file,
+        n: readFileSync(p, "utf8").split("\n").filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line) && /[ʻʼ]/.test(line) && !wrapped.test(line)).length,
+      }))
+      .filter((r) => r.n > 0);
+    if (unwrapped.length) {
+      console.info(`i18n: ${unwrapped.reduce((n, r) => n + r.n, 0)} line(s) with Uzbek text that is not wrapped, outside the scope:\n` + unwrapped.map((r) => `  ${r.n}  ${r.file}`).join("\n"));
     }
     expect(true).toBe(true);
   });

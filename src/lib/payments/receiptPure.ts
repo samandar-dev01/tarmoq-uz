@@ -1,10 +1,14 @@
 // Pure rules for the receipt a client uploads with "I paid" (no I/O, safe in the browser too), so they can be unit-tested.
+import { msg } from "../../i18n/dictionary";
 
 export const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
 export const RECEIPT_MAX_MB = RECEIPT_MAX_BYTES / 1024 / 1024;
 
-/** The one sentence for a file over the limit, used by the browser check and by the server. */
-export const receiptTooBigMessage = `Fayl juda katta (eng koʻpi ${RECEIPT_MAX_MB} MB).`;
+/**
+ * The one sentence for a file over the limit, used by the server (the boundary puts it into the request's language). The
+ * browser check says the same with `t("Fayl juda katta (eng koʻpi {max} MB).", { max: RECEIPT_MAX_MB })`.
+ */
+export const receiptTooBigMessage = msg("Fayl juda katta (eng koʻpi {max} MB).", { max: RECEIPT_MAX_MB });
 
 export type ReceiptType = { ext: "jpg" | "png" | "webp" | "pdf"; contentType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf" };
 

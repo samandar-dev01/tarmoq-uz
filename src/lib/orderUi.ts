@@ -1,14 +1,21 @@
 import type { OrderStatus, ProfileStatus } from "@prisma/client";
+import type { Locale } from "../i18n/config";
+import { tk } from "../i18n/dictionary";
+import { plural } from "../i18n/plural";
+
+// Every sentence below is a translation key (src/i18n/ru/orders.ts, guide at the top of src/i18n/dictionary.ts): `tk` marks it
+// and returns it unchanged, so a page puts it into the reader's language with `t(STATUS_LABEL[status])`.
+// The admin pages show these tables as they are, which is Uzbek.
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
-  REQUESTED: "Soʻrov yuborildi",
-  AGREEMENT_PENDING: "Kelishuv kutilmoqda",
-  AWAITING_PAYMENT: "Toʻlov kutilmoqda",
-  IN_PROGRESS: "Jarayonda",
-  DELIVERED: "Topshirildi",
-  COMPLETED: "Yakunlandi",
-  CANCELLED: "Bekor qilindi",
-  DISPUTED: "Nizoda",
+  REQUESTED: tk("Soʻrov yuborildi"),
+  AGREEMENT_PENDING: tk("Kelishuv kutilmoqda"),
+  AWAITING_PAYMENT: tk("Toʻlov kutilmoqda"),
+  IN_PROGRESS: tk("Jarayonda"),
+  DELIVERED: tk("Topshirildi"),
+  COMPLETED: tk("Yakunlandi"),
+  CANCELLED: tk("Bekor qilindi"),
+  DISPUTED: tk("Nizoda"),
 };
 
 export const STATUS_STYLE: Record<OrderStatus, string> = {
@@ -23,10 +30,10 @@ export const STATUS_STYLE: Record<OrderStatus, string> = {
 };
 
 export const PROFILE_STATUS_LABEL: Record<ProfileStatus, string> = {
-  DRAFT: "Qoralama",
-  PENDING_REVIEW: "Koʻrib chiqilmoqda",
-  APPROVED: "Tasdiqlangan",
-  SUSPENDED: "Toʻxtatilgan",
+  DRAFT: tk("Qoralama"),
+  PENDING_REVIEW: tk("Koʻrib chiqilmoqda"),
+  APPROVED: tk("Tasdiqlangan"),
+  SUSPENDED: tk("Toʻxtatilgan"),
 };
 
 export const PROFILE_STATUS_STYLE: Record<ProfileStatus, string> = {
@@ -38,24 +45,27 @@ export const PROFILE_STATUS_STYLE: Record<ProfileStatus, string> = {
 
 export function nextAction(status: OrderStatus, role: "client" | "provider", hasReview = true): string {
   const client: Record<OrderStatus, string> = {
-    REQUESTED: "Ijodkor shartlarni yuborishini kuting",
-    AGREEMENT_PENDING: "Shartlarni koʻrib chiqing va qabul qiling",
-    AWAITING_PAYMENT: "Ish boshlanishi uchun toʻlov qiling",
-    IN_PROGRESS: "Ijodkor videongiz ustida ishlamoqda",
-    DELIVERED: "Topshirilgan ishni koʻrib, qabul qiling",
-    COMPLETED: hasReview ? "Yakunlandi" : "Sharh qoldiring",
-    CANCELLED: "Bekor qilingan",
-    DISPUTED: "Administrator nizoni koʻrib chiqmoqda",
+    REQUESTED: tk("Ijodkor shartlarni yuborishini kuting"),
+    AGREEMENT_PENDING: tk("Shartlarni koʻrib chiqing va qabul qiling"),
+    AWAITING_PAYMENT: tk("Ish boshlanishi uchun toʻlov qiling"),
+    IN_PROGRESS: tk("Ijodkor videongiz ustida ishlamoqda"),
+    DELIVERED: tk("Topshirilgan ishni koʻrib, qabul qiling"),
+    COMPLETED: hasReview ? tk("Yakunlandi") : tk("Sharh qoldiring"),
+    CANCELLED: tk("Bekor qilingan"),
+    DISPUTED: tk("Administrator nizoni koʻrib chiqmoqda"),
   };
   const provider: Record<OrderStatus, string> = {
-    REQUESTED: "Shartlaringizni yuboring",
-    AGREEMENT_PENDING: "Mijoz shartlarni qabul qilishini kuting",
-    AWAITING_PAYMENT: "Mijoz toʻlov qilishini kuting",
-    IN_PROGRESS: "Tayyor videoni yuklang",
-    DELIVERED: "Mijoz ishni qabul qilishini kuting",
-    COMPLETED: "Yakunlandi",
-    CANCELLED: "Bekor qilingan",
-    DISPUTED: "Administrator nizoni koʻrib chiqmoqda",
+    REQUESTED: tk("Shartlaringizni yuboring"),
+    AGREEMENT_PENDING: tk("Mijoz shartlarni qabul qilishini kuting"),
+    AWAITING_PAYMENT: tk("Mijoz toʻlov qilishini kuting"),
+    IN_PROGRESS: tk("Tayyor videoni yuklang"),
+    DELIVERED: tk("Mijoz ishni qabul qilishini kuting"),
+    COMPLETED: tk("Yakunlandi"),
+    CANCELLED: tk("Bekor qilingan"),
+    DISPUTED: tk("Administrator nizoni koʻrib chiqmoqda"),
   };
   return (role === "client" ? client : provider)[status];
 }
+
+/** "2 ta tuzatish" / «2 правки»: the number of revisions a package or an order includes, in the reader's language. */
+export const revisionsText = (locale: Locale, n: number): string => plural(locale, n, "tuzatish", ["правка", "правки", "правок"]);
