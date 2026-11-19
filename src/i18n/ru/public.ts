@@ -15,7 +15,16 @@ export const publicPages: Record<string, string> = {
   "Oʻzbekistondagi videograf, fotograf va montajchilar roʻyxati. Shahar, yoʻnalish va narx boʻyicha saralang.":
     "Список видеографов, фотографов и монтажёров Узбекистана. Фильтры по городу, направлению и цене.",
   "{category}: ijodkorlarni toping": "{category}: найдите креаторов",
-  "Oʻzbekistondagi {category} yoʻnalishidagi ijodkorlar roʻyxati. Shahar va narx boʻyicha saralang.": "Список креаторов Узбекистана в направлении «{category}». Фильтры по городу и цене.",
+  "Oʻzbekistondagi {category} yoʻnalishidagi ijodkorlar: {facts}. Shahar va narx boʻyicha saralang.": "Креаторы Узбекистана в направлении «{category}»: {facts}. Фильтры по городу и цене.",
+  "{category}, {city}: ijodkorlarni toping": "{category}, {city}: найдите креаторов",
+  "{category}: {city}dagi ijodkorlar": "{category}: креаторы, {city}",
+  "{city}dagi {category} yoʻnalishidagi ijodkorlar: {facts}. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring.":
+    "Креаторы в городе {city}, направление «{category}»: {facts}. Сравнивайте пакеты, портфолио и отзывы заказчиков.",
+  "{city}: videograf, fotograf va montajchilar": "{city}: видеографы, фотографы и монтажёры",
+  "{city}dagi videograf, fotograf va montajchilar": "Видеографы, фотографы и монтажёры: {city}",
+  "{city}dagi mobilograf, videograf, fotograf va montajchilar: {facts}. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring.":
+    "Мобильные видеографы, видеографы, фотографы и монтажёры в городе {city}: {facts}. Сравнивайте пакеты, портфолио и отзывы заказчиков.",
+  "narxi {price}": "цена {price}",
   "Ijodkor profili": "Профиль креатора",
   "Bosh sahifa": "Главная",
 
@@ -42,6 +51,9 @@ export const publicPages: Record<string, string> = {
   "Shahar": "Город",
   "Barcha shaharlar": "Все города",
   "Qidirish": "Найти",
+  "Shahar va yoʻnalish boʻyicha": "По городам и направлениям",
+  "Shaharlar": "Города",
+  "Yoʻnalishlar": "Направления",
   "Top ijodkorlar": "Лучшие креаторы",
   "Hammasini koʻrish": "Смотреть всех",
   "Hozircha ijodkorlar yoʻq": "Пока нет креаторов",

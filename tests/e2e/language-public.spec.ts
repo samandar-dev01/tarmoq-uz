@@ -71,7 +71,7 @@ test.describe("Russian off (the live site today): the public pages are what they
   const ASKING = { cookie: "lang=ru", "x-locale": "ru" };
 
   test("home, search and a creator's page are Uzbek, self-canonical, with no hreflang, no ru_RU and no /ru link, even when Russian is asked for", async ({ request }) => {
-    for (const path of ["/", "/search", "/search?category=photography", "/providers/jasur-karimov"]) {
+    for (const path of ["/", "/search", "/search?category=mobile-videography", "/providers/jasur-karimov"]) {
       for (const headers of [{}, ASKING]) {
         const res = await request.get(path, { headers });
         expect(res.status(), path).toBe(200);
@@ -142,7 +142,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
         uz: "/",
       },
       "/ru/search": { title: "Найдите креаторов · Tarmoq.uz", h: ["Найдите креаторов", "Фильтруйте по городу, направлению и цене."], uz: "/search" },
-      "/ru/providers/jasur-karimov": { title: "Jasur Karimov · Tarmoq.uz", h: ["О креаторе", "Пакеты", "Портфолио", "Отзывы", "Защищённый заказ"], uz: "/providers/jasur-karimov" },
+      "/ru/providers/jasur-karimov": { title: "Jasur Karimov: Мобильная съёмка, Андижан · Tarmoq.uz", h: ["О креаторе", "Пакеты", "Портфолио", "Отзывы", "Защищённый заказ"], uz: "/providers/jasur-karimov" },
     };
     for (const path of PUBLIC_PAGES) {
       const c = await crawler();
@@ -184,23 +184,29 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
 
   test("(a) a category's search page: self-canonical at /ru/search?category=..., indexable, with the pair", async () => {
     const c = await crawler();
-    const html = await (await c.get("/ru/search?category=photography")).text();
-    expect(titleOf(html)).toBe("Фотография: найдите креаторов · Tarmoq.uz");
-    expect(pathOf(canonicalOf(html)!)).toBe("/ru/search?category=photography");
+    const html = await (await c.get("/ru/search?category=mobile-videography")).text();
+    expect(titleOf(html)).toBe("Мобильная съёмка: найдите креаторов · Tarmoq.uz");
+    expect(pathOf(canonicalOf(html)!)).toBe("/ru/search?category=mobile-videography");
     expect(metaOf(html, "robots")).toBeUndefined();
     const alt = alternatesOf(html);
-    expect(pathOf(alt.uz!)).toBe("/search?category=photography");
-    expect(pathOf(alt.ru!)).toBe("/ru/search?category=photography");
-    expect(pathOf(alt["x-default"]!)).toBe("/search?category=photography");
+    expect(pathOf(alt.uz!)).toBe("/search?category=mobile-videography");
+    expect(pathOf(alt.ru!)).toBe("/ru/search?category=mobile-videography");
+    expect(pathOf(alt["x-default"]!)).toBe("/search?category=mobile-videography");
+    // A city with creators is a page of its own, in Russian too (the same pair of languages).
+    const city = await (await c.get("/ru/search?city=Andijon")).text();
+    expect(titleOf(city)).toBe("Андижан: видеографы, фотографы и монтажёры · Tarmoq.uz");
+    expect(pathOf(canonicalOf(city)!)).toBe("/ru/search?city=Andijon");
+    expect(metaOf(city, "robots")).toBeUndefined();
+    expect(pathOf(alternatesOf(city).uz!)).toBe("/search?city=Andijon");
     // Any other cut of the list is noindex and points at /ru/search.
-    const cut = await (await c.get("/ru/search?city=Andijon")).text();
+    const cut = await (await c.get("/ru/search?q=reel")).text();
     expect(metaOf(cut, "robots")).toBe("noindex, follow");
     expect(pathOf(canonicalOf(cut)!)).toBe("/ru/search");
     await c.dispose();
   });
 
   test("(b) a visitor with no cookie sees only /ru links to public pages, and private links keep their one address", async () => {
-    for (const path of [...PUBLIC_PAGES, "/ru/search?category=photography"]) {
+    for (const path of [...PUBLIC_PAGES, "/ru/search?category=mobile-videography"]) {
       const c = await crawler();
       const res = await c.get(path);
       const html = await res.text();
@@ -271,12 +277,12 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
       expect(body).toContain(q.acceptedAnswer.text);
     }
 
-    const search = nodesOf(jsonLdOf(await (await c.get("/ru/search?category=photography")).text()));
+    const search = nodesOf(jsonLdOf(await (await c.get("/ru/search?category=mobile-videography")).text()));
     const crumbs = search.find((n) => n["@type"] === "BreadcrumbList")!;
     expect(crumbs.itemListElement.map((i: any) => [i.name, pathOf(i.item)])).toEqual([
       ["Главная", "/ru"],
       ["Найдите креаторов", "/ru/search"],
-      ["Фотография", "/ru/search?category=photography"],
+      ["Мобильная съёмка", "/ru/search?category=mobile-videography"],
     ]);
     for (const item of search.find((n) => n["@type"] === "ItemList")!.itemListElement) expect(pathOf(item.url)).toMatch(/^\/ru\/providers\/[a-z0-9-]+$/);
 
@@ -330,7 +336,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
       return { loc, alternates };
     });
     const locs = entries.map((e) => e.loc);
-    for (const p of ["/", "/search", "/search?category=photography", "/providers/jasur-karimov", "/ru", "/ru/search", "/ru/search?category=photography", "/ru/providers/jasur-karimov"]) {
+    for (const p of ["/", "/search", "/search?category=mobile-videography", "/search?city=Andijon", "/providers/jasur-karimov", "/ru", "/ru/search", "/ru/search?category=mobile-videography", "/ru/search?city=Andijon", "/ru/providers/jasur-karimov"]) {
       expect(locs, p).toContain(p);
     }
     // Every Uzbek page has its Russian twin and the other way round, and nothing private is listed.
@@ -469,7 +475,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await settled(page);
     const nav = page.getByRole("navigation", { name: "Все направления" });
     await nav.getByRole("link", { name: "Фотография" }).click();
-    await expect(page).toHaveURL(/\/ru\/search\?sort=rating&category=photography$/);
+    await expect(page).toHaveURL(/\/ru\/search\?category=photography$/);
     await expect(nav.getByRole("link", { name: "Фотография" })).toHaveAttribute("aria-current", "true");
     await page.goto("/ru/search");
     await settled(page);

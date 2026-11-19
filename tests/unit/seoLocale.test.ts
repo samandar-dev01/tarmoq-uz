@@ -55,23 +55,26 @@ describe("titles and descriptions", () => {
     expect(homeTitle("uz")).toBe(HOME_TITLE);
     expect(homeTitle()).toBe(HOME_TITLE);
     expect(homeDescription("uz")).toBe(HOME_DESCRIPTION);
-    expect(searchMeta("uz", null)).toEqual({ title: SEARCH_TITLE, description: SEARCH_DESCRIPTION });
-    expect(searchMeta("uz", "Fotografiya")).toEqual({
+    expect(searchMeta("uz", null)).toEqual({ title: SEARCH_TITLE, heading: null, description: SEARCH_DESCRIPTION });
+    expect(searchMeta("uz", { category: "Fotografiya", city: null, count: 2, fromPrice: null })).toEqual({
       title: "Fotografiya: ijodkorlarni toping",
-      description: "Oʻzbekistondagi fotografiya yoʻnalishidagi ijodkorlar roʻyxati. Shahar va narx boʻyicha saralang.",
+      heading: "Fotografiya: ijodkorlarni toping",
+      description: "Oʻzbekistondagi fotografiya yoʻnalishidagi ijodkorlar: 2 ta ijodkor. Shahar va narx boʻyicha saralang.",
     });
   });
 
   it("are Russian in Russian: Cyrillic, no Uzbek apostrophe letters, and not the Uzbek text", () => {
-    const ru = [homeTitle("ru"), homeDescription("ru"), ...Object.values(searchMeta("ru", null)), ...Object.values(searchMeta("ru", "Фотография"))];
+    const photo = { category: "Фотография", city: null, count: 2, fromPrice: null };
+    const ru = [homeTitle("ru"), homeDescription("ru"), ...Object.values(searchMeta("ru", null)), ...Object.values(searchMeta("ru", photo))].filter((v): v is string => v !== null);
     for (const s of ru) {
       expect(s).toMatch(CYRILLIC);
       expect(s).not.toMatch(UZ_APOSTROPHE);
     }
     expect(homeTitle("ru")).toBe("Tarmoq.uz: видеографы, фотографы и монтажёры Узбекистана");
-    expect(searchMeta("ru", "Фотография")).toEqual({
+    expect(searchMeta("ru", photo)).toEqual({
       title: "Фотография: найдите креаторов",
-      description: "Список креаторов Узбекистана в направлении «фотография». Фильтры по городу и цене.",
+      heading: "Фотография: найдите креаторов",
+      description: "Креаторы Узбекистана в направлении «фотография»: 2 креатора. Фильтры по городу и цене.",
     });
   });
 });
@@ -235,11 +238,15 @@ describe("the sitemap with Russian on and off (database mocked)", () => {
   const BASE_URL = "https://tarmoq.example";
   const findCategories = vi.fn();
   const findProfiles = vi.fn();
+  const groupProfiles = vi.fn();
+  // One creator, in photography in Andijon: that gives the category's page, the city's page and the two together.
+  const PATHS = ["/", "/search", "/search?category=photography", "/search?city=Andijon", "/search?category=photography&city=Andijon", "/providers/jasur-karimov"];
   beforeEach(() => {
     vi.resetModules();
-    findCategories.mockReset().mockResolvedValue([{ slug: "photography" }]);
+    findCategories.mockReset().mockResolvedValue([{ id: "c1", slug: "photography" }]);
     findProfiles.mockReset().mockResolvedValue([{ slug: "jasur-karimov", updatedAt: new Date("2026-11-10T00:00:00Z") }]);
-    vi.doMock("@/lib/db", () => ({ prisma: { category: { findMany: findCategories }, providerProfile: { findMany: findProfiles } } }));
+    groupProfiles.mockReset().mockResolvedValue([{ city: "Andijon", categoryId: "c1", _count: { _all: 1 } }]);
+    vi.doMock("@/lib/db", () => ({ prisma: { category: { findMany: findCategories }, providerProfile: { findMany: findProfiles, groupBy: groupProfiles } } }));
     // The data cache needs Next's runtime, which a unit test does not have: stand in with a pass-through, so what is tested
     // is still this file's own output (src/lib/publicCache.ts is only a thin wrapper around the same queries).
     vi.doMock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn, revalidateTag: vi.fn() }));
@@ -256,7 +263,7 @@ describe("the sitemap with Russian on and off (database mocked)", () => {
     vi.stubEnv("RUSSIAN_LIVE", "");
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
-    expect(entries.map((e) => e.url)).toEqual([`${BASE_URL}/`, `${BASE_URL}/search`, `${BASE_URL}/search?category=photography`, `${BASE_URL}/providers/jasur-karimov`]);
+    expect(entries.map((e) => e.url)).toEqual(PATHS.map((p) => BASE_URL + p));
     expect(entries.every((e) => e.alternates === undefined)).toBe(true);
     expect(entries.some((e) => e.url.includes("/ru"))).toBe(false);
   });
@@ -266,21 +273,18 @@ describe("the sitemap with Russian on and off (database mocked)", () => {
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
     const urls = entries.map((e) => e.url);
-    expect(urls).toEqual([
-      `${BASE_URL}/`, `${BASE_URL}/search`, `${BASE_URL}/search?category=photography`, `${BASE_URL}/providers/jasur-karimov`,
-      `${BASE_URL}/ru`, `${BASE_URL}/ru/search`, `${BASE_URL}/ru/search?category=photography`, `${BASE_URL}/ru/providers/jasur-karimov`,
-    ]);
-    const pairs: [string, string][] = [
-      ["/", "/ru"], ["/search", "/ru/search"], ["/search?category=photography", "/ru/search?category=photography"], ["/providers/jasur-karimov", "/ru/providers/jasur-karimov"],
-    ];
-    pairs.forEach(([uz, ru], i) => {
+    const toRu = (p: string) => (p === "/" ? "/ru" : `/ru${p}`);
+    const n = PATHS.length;
+    expect(urls).toEqual([...PATHS.map((p) => BASE_URL + p), ...PATHS.map((p) => BASE_URL + toRu(p))]);
+    PATHS.forEach((uz, i) => {
+      const ru = toRu(uz);
       const languages = { uz: BASE_URL + uz, ru: BASE_URL + ru, "x-default": BASE_URL + uz };
       expect(entries[i]!.alternates, uz).toEqual({ languages });
-      expect(entries[i + 4]!.alternates, ru).toEqual({ languages });
+      expect(entries[i + n]!.alternates, ru).toEqual({ languages });
     });
     // The Russian entries keep the dates and priorities of the Uzbek ones.
-    expect(entries[4]!.lastModified).toEqual(entries[0]!.lastModified);
-    expect(entries[7]!.priority).toBe(entries[3]!.priority);
+    expect(entries[n]!.lastModified).toEqual(entries[0]!.lastModified);
+    expect(entries[2 * n - 1]!.priority).toBe(entries[n - 1]!.priority);
     // Nothing private, ever.
     expect(urls.some((u) => /\/(login|register|orders|dashboard|admin|messages|checkout|api)\b/.test(u))).toBe(false);
   });

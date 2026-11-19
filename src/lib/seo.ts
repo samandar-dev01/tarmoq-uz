@@ -12,7 +12,9 @@
 import { DEFAULT_LOCALE, OG_LOCALE, russianLive, type Locale } from "../i18n/config";
 import { tk, translate } from "../i18n/dictionary";
 import { hreflang, localHref } from "../i18n/paths";
-import { labelFor } from "./constants";
+import { plural } from "../i18n/plural";
+import { CITIES, labelFor } from "./constants";
+import { formatPriceFrom } from "./publicFormat";
 import { absoluteUrl, SITE_NAME, siteUrl } from "./site";
 
 /** The share picture (app/opengraph-image.tsx), as a path: Next makes it absolute with the layout's metadataBase. */
@@ -39,15 +41,70 @@ export const SEARCH_DESCRIPTION = tk("Oʻzbekistondagi videograf, fotograf va mo
 export const homeTitle = (locale: Locale = DEFAULT_LOCALE) => translate(locale, HOME_TITLE);
 export const homeDescription = (locale: Locale = DEFAULT_LOCALE) => translate(locale, HOME_DESCRIPTION);
 
+/** A landing view of /search: the creators of one category, one city, or one category in one city (see searchIndexing). */
+export type Landing = {
+  /** The display name of the category (reader's language), or null when the view is not cut by category. */
+  category: string | null;
+  /** The stored (Uzbek) city, or null when the view is not cut by city. */
+  city: string | null;
+  /** How many approved creators the view lists. Always at least one: an empty view is not a landing. */
+  count: number;
+  /** The lowest starting price among them, when any of them states one. */
+  fromPrice: number | null;
+};
+
 /**
- * The title and description of /search. `category` is the display name of a real category when the page is that
- * category's own page (see searchIndexing), else null.
+ * The title, the page's own heading and the description of /search. With no `landing` it is the plain search page and
+ * `heading` is null (the page keeps its usual heading and sentence). A landing view gets words of its own, and the numbers
+ * in them (how many creators, from what price) are read from the database, never made up.
  */
-export function searchMeta(locale: Locale, category: string | null): { title: string; description: string } {
-  if (category === null) return { title: translate(locale, SEARCH_TITLE), description: translate(locale, SEARCH_DESCRIPTION) };
+export function searchMeta(locale: Locale, landing: Landing | null): { title: string; heading: string | null; description: string } {
+  if (landing === null) return { title: translate(locale, SEARCH_TITLE), heading: null, description: translate(locale, SEARCH_DESCRIPTION) };
+  const city = landing.city === null ? null : labelFor(locale, landing.city);
+  const facts = [
+    plural(locale, landing.count, "ijodkor", ["креатор", "креатора", "креаторов"]),
+    ...(landing.fromPrice ? [translate(locale, tk("narxi {price}"), { price: formatPriceFrom(landing.fromPrice, locale) })] : []),
+  ].join(", ");
+  if (landing.category !== null && city !== null) {
+    const category = landing.category;
+    return {
+      title: translate(locale, tk("{category}, {city}: ijodkorlarni toping"), { category, city }),
+      heading: translate(locale, tk("{category}: {city}dagi ijodkorlar"), { category, city }),
+      description: translate(locale, tk("{city}dagi {category} yoʻnalishidagi ijodkorlar: {facts}. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring."), { category: category.toLowerCase(), city, facts }),
+    };
+  }
+  if (landing.category !== null) {
+    const category = landing.category;
+    const title = translate(locale, tk("{category}: ijodkorlarni toping"), { category });
+    return {
+      title,
+      heading: title,
+      description: translate(locale, tk("Oʻzbekistondagi {category} yoʻnalishidagi ijodkorlar: {facts}. Shahar va narx boʻyicha saralang."), { category: category.toLowerCase(), facts }),
+    };
+  }
   return {
-    title: translate(locale, tk("{category}: ijodkorlarni toping"), { category }),
-    description: translate(locale, tk("Oʻzbekistondagi {category} yoʻnalishidagi ijodkorlar roʻyxati. Shahar va narx boʻyicha saralang."), { category: category.toLowerCase() }),
+    title: translate(locale, tk("{city}: videograf, fotograf va montajchilar"), { city: city ?? "" }),
+    heading: translate(locale, tk("{city}dagi videograf, fotograf va montajchilar"), { city: city ?? "" }),
+    description: translate(locale, tk("{city}dagi mobilograf, videograf, fotograf va montajchilar: {facts}. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring."), { city: city ?? "", facts }),
+  };
+}
+
+const clip = (text: string, max: number): string => {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 30)).replace(/[\s,.;:·-]+$/, "")}…`;
+};
+
+/**
+ * The title and description of a creator's page: who they are, what they do and where, so a search for "mobilograf Andijon"
+ * can match the page. The name and the headline stay as the creator wrote them; `category` is the reader's-language name.
+ */
+export function creatorMeta(c: { name: string; headline: string; category: string; city: string }, locale: Locale = DEFAULT_LOCALE): { title: string; description: string } {
+  const city = labelFor(locale, c.city);
+  const headline = c.headline.trim().replace(/[\s.!?,;:]+$/, "");
+  return {
+    title: `${c.name}: ${c.category}, ${city}`,
+    description: clip([headline, c.category, city].filter(Boolean).join(" · "), 160),
   };
 }
 
@@ -70,19 +127,66 @@ export function jsonLdString(data: unknown): string {
 
 export type SearchIndexing = { canonical: string; index: boolean };
 
+/** The address of a landing view: the category, the city, or both, in this fixed order (so one view has one address). */
+export function landingPath(category?: string, city?: string): string {
+  const qs = [category ? `category=${encodeURIComponent(category)}` : "", city ? `city=${encodeURIComponent(city)}` : ""].filter(Boolean).join("&");
+  return qs ? `/search?${qs}` : "/search";
+}
+
+const isCity = (v: string): boolean => (CITIES as readonly string[]).includes(v);
+
+/** The parameters that cut the list: the empty ones (the search form sends all of them) and the default order are no cut at all. */
+const setParams = (sp: Record<string, string | string[] | undefined>) =>
+  Object.entries(sp).filter(([key, v]) => (Array.isArray(v) ? v.some((x) => x !== "") : v !== undefined && v !== "") && !(key === "sort" && v === "rating"));
+
 /**
- * /search and /search?category=<a real slug> are pages of their own. Every other combination (a search word, a city,
- * a price, a sort order, a page number, an unknown parameter) is the same list cut another way: not indexed, its
- * links still followed, canonical /search.
+ * The category and/or city asked for, when the address carries nothing else: no search word, no price, no sort order, no
+ * page number, no unknown parameter, and each of the two is one plain value. Null for any other address. Empty form
+ * fields and the default order (`sort=rating`) are ignored. Whether the category and city are real is not decided here.
  */
-export function searchIndexing(sp: Record<string, string | string[] | undefined>, categoryExists: boolean): SearchIndexing {
-  const set = Object.entries(sp).filter(([, v]) => (Array.isArray(v) ? v.some((x) => x !== "") : v !== undefined && v !== ""));
-  if (set.length === 0) return { canonical: "/search", index: true };
-  const [key, value] = set[0]!;
-  if (set.length === 1 && key === "category" && typeof value === "string" && categoryExists) {
-    return { canonical: `/search?category=${encodeURIComponent(value)}`, index: true };
+export function landingRequest(sp: Record<string, string | string[] | undefined>): { category?: string; city?: string } | null {
+  const set = setParams(sp);
+  if (set.length === 0) return null;
+  const out: { category?: string; city?: string } = {};
+  for (const [key, value] of set) {
+    if ((key !== "category" && key !== "city") || typeof value !== "string") return null;
+    out[key] = value;
   }
-  return { canonical: "/search", index: false };
+  return out;
+}
+
+/**
+ * /search is an indexed page. So is a LANDING view of it: one real category, one real city, or both together, and only
+ * while it lists at least one creator (an empty page is not worth a place in a search result). Every other cut of the list
+ * (a search word, a price, a sort order, a page number, an unknown parameter, an unknown city or category, an empty view)
+ * is the same list cut another way: not indexed, its links still followed, canonical /search.
+ */
+export function searchIndexing(
+  sp: Record<string, string | string[] | undefined>,
+  known: { categoryExists: boolean; hasResults: boolean },
+): SearchIndexing {
+  if (setParams(sp).length === 0) return { canonical: "/search", index: true };
+  const off: SearchIndexing = { canonical: "/search", index: false };
+  const want = landingRequest(sp);
+  if (!want || !known.hasResults) return off;
+  if (want.category !== undefined && !known.categoryExists) return off;
+  if (want.city !== undefined && !isCity(want.city)) return off;
+  return { canonical: landingPath(want.category, want.city), index: true };
+}
+
+/** One row of "which creators are where": how many approved creators work in this city in this category (slug). */
+export type LandingCombo = { city: string; category: string; count: number };
+
+/**
+ * Every landing view that has creators, from the counts above: the categories, the cities, and each category in each city.
+ * Cities the site does not know (free text in the database) are left out. Sorted, so the sitemap is stable.
+ */
+export function landingViews(combos: LandingCombo[]): { category?: string; city?: string }[] {
+  const real = combos.filter((c) => c.count > 0 && isCity(c.city));
+  const categories = [...new Set(real.map((c) => c.category))].sort();
+  const cities = [...new Set(real.map((c) => c.city))].sort();
+  const both = real.map(({ category, city }) => ({ category, city })).sort((a, b) => `${a.category}|${a.city}`.localeCompare(`${b.category}|${b.city}`));
+  return [...categories.map((category) => ({ category })), ...cities.map((city) => ({ city })), ...both];
 }
 
 // ---------- robots.txt ----------
@@ -290,7 +394,13 @@ export const LLMS_MAX_CREATORS = 500;
 const oneLine = (s: string) => s.replace(/\s+/g, " ").replace(/[\[\]]/g, "").trim();
 
 export function buildLlmsTxt(
-  input: { categories: { slug: string; name: string }[]; creators: { slug: string; name: string; headline: string; city: string }[]; cities: readonly string[] },
+  input: {
+    categories: { slug: string; name: string }[];
+    creators: { slug: string; name: string; headline: string; city: string }[];
+    cities: readonly string[];
+    /** The cities that have at least one creator: each has a page of its own. */
+    cityPages?: readonly string[];
+  },
   base: string = siteUrl(),
 ): string {
   const lines = [
@@ -315,6 +425,10 @@ export function buildLlmsTxt(
   if (input.categories.length > 0) {
     lines.push("", "## Categories", "");
     for (const c of input.categories) lines.push(`- [${oneLine(c.name)}](${base}/search?category=${encodeURIComponent(c.slug)})`);
+  }
+  if (input.cityPages && input.cityPages.length > 0) {
+    lines.push("", "## Cities", "");
+    for (const city of input.cityPages) lines.push(`- [${oneLine(city)}](${base}${landingPath(undefined, city)})`);
   }
   if (input.creators.length > 0) {
     lines.push("", "## Creators", "");

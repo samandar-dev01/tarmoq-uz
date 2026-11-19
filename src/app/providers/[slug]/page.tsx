@@ -9,7 +9,7 @@ import { categoryName, labelFor } from "@/lib/constants";
 import { formatDay, formatUZS, shortName } from "@/lib/format";
 import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
 import { formatPriceFrom } from "@/lib/publicFormat";
-import { breadcrumbJsonLd, creatorJsonLd, ogDefaults, pageAlternates } from "@/lib/seo";
+import { breadcrumbJsonLd, creatorJsonLd, creatorMeta, ogDefaults, pageAlternates } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar, coverArt } from "@/components/ui/Avatar";
@@ -48,13 +48,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const p = await getProfile(params.slug);
   // A page that is not public (unknown, or shown only to its owner or an admin as a preview) must never be indexed.
   if (!p || p.status !== "APPROVED") return { title: t("Ijodkor profili"), robots: { index: false, follow: false } };
-  // The name and the headline are the creator's own words and stay as written in both languages; the address is this language's own.
+  // The name and the headline are the creator's own words and stay as written in both languages; the title and the description
+  // add what they do and where (src/lib/seo.ts), and the address is this language's own.
   const alternates = pageAlternates(locale, `/providers/${params.slug}`);
+  const meta = creatorMeta({ name: p.user.name, headline: p.headline, category: categoryName(locale, p.category), city: p.city }, locale);
   return {
-    title: p.user.name,
-    description: p.headline,
+    title: meta.title,
+    description: meta.description,
     alternates,
-    openGraph: { ...ogDefaults(locale), title: p.user.name, description: p.headline, url: alternates.canonical },
+    openGraph: { ...ogDefaults(locale), title: meta.title, description: meta.description, url: alternates.canonical },
   };
 }
 

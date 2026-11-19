@@ -103,4 +103,17 @@ export function featuredProviders(limit: number) {
   });
 }
 
+/**
+ * What a landing view of /search (one category, one city, or both) says about itself: how many approved creators it lists and
+ * the lowest starting price among them (null when none of them states one: a starting price of 0 means "no package yet").
+ */
+export async function landingFacts(category?: string, city?: string): Promise<{ count: number; fromPrice: number | null }> {
+  const where = buildWhere(parseSearch({ ...(category ? { category } : {}), ...(city ? { city } : {}) }));
+  const [count, cheapest] = await Promise.all([
+    prisma.providerProfile.count({ where }),
+    prisma.providerProfile.findFirst({ where: { ...where, startingPrice: { gt: 0 } }, orderBy: { startingPrice: "asc" }, select: { startingPrice: true } }),
+  ]);
+  return { count, fromPrice: cheapest?.startingPrice ?? null };
+}
+
 export type ProviderCardData = Awaited<ReturnType<typeof featuredProviders>>[number];

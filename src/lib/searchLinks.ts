@@ -19,15 +19,32 @@ export function searchPageHref(locale: Locale, filters: SearchFilters, page: num
 }
 
 /**
+ * What a chip link carries over: every filter that is set, except the page number and the default order. `?sort=rating` is
+ * the same list as no `sort` at all, and leaving it out keeps the chip's address the clean one a search engine indexes.
+ */
+const carried = (k: string, v: unknown): boolean => v !== undefined && v !== "" && k !== "page" && !(k === "sort" && v === "rating");
+
+/**
  * A category pill changes only the category: every other filter stays and the page number starts over. With no `slug`
  * it is the "all categories" pill.
  */
 export function searchCategoryHref(locale: Locale, filters: SearchFilters, slug?: string): string {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(filters)) {
-    if (v !== undefined && v !== "" && k !== "page" && k !== "category") qs.set(k, String(v));
+    if (carried(k, v) && k !== "category") qs.set(k, String(v));
   }
   if (slug) qs.set("category", slug);
+  const query = qs.toString();
+  return localHref(locale, query ? `/search?${query}` : "/search");
+}
+
+/** The same for a city chip: it changes only the city, every other filter stays and the page number starts over. With no `city` it is the "all cities" chip. */
+export function searchCityHref(locale: Locale, filters: SearchFilters, city?: string): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) {
+    if (carried(k, v) && k !== "city") qs.set(k, String(v));
+  }
+  if (city) qs.set("city", city);
   const query = qs.toString();
   return localHref(locale, query ? `/search?${query}` : "/search");
 }

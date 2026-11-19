@@ -5,7 +5,7 @@ import { isCurrentPath } from "@/lib/currentPath";
 import { formatUZS } from "@/lib/format";
 import { formatPriceFrom } from "@/lib/publicFormat";
 import { parseSearch } from "@/lib/providers";
-import { providerHref, searchCategoryHref, searchPageHref } from "@/lib/searchLinks";
+import { providerHref, searchCategoryHref, searchCityHref, searchPageHref } from "@/lib/searchLinks";
 
 // A crawler carries no cookie, so on a Russian page every link to a public page has to say `/ru` itself. The helpers below
 // are what the search page, the cards and the filter panel use; the last test checks that no public page writes such a link by hand.
@@ -34,8 +34,28 @@ describe("the search page's own links", () => {
     expect(searchCategoryHref("ru", filters, "drone")).toBe("/ru/search?q=toy&city=Andijon&sort=newest&category=drone");
     // "All categories": the other filters stay.
     expect(searchCategoryHref("ru", filters)).toBe("/ru/search?q=toy&city=Andijon&sort=newest");
-    expect(searchCategoryHref("uz", parseSearch({ sort: "rating" }))).toBe("/search?sort=rating");
-    expect(searchCategoryHref("ru", parseSearch({ sort: "rating" }), "photography")).toBe("/ru/search?sort=rating&category=photography");
+    // The default order is left out: `?sort=rating` is the same list as none, and the clean address is the one search engines index.
+    expect(searchCategoryHref("uz", parseSearch({ sort: "rating" }))).toBe("/search");
+    expect(searchCategoryHref("ru", parseSearch({ sort: "rating" }), "photography")).toBe("/ru/search?category=photography");
+    expect(searchCategoryHref("uz", parseSearch({ sort: "rating", city: "Andijon" }), "drone")).toBe("/search?city=Andijon&category=drone");
+  });
+});
+
+describe("a city chip", () => {
+  const filters = parseSearch({ q: "toy", category: "drone", sort: "newest", page: "3" });
+
+  it("changes only the city, starts at page 1, and gets the language prefix", () => {
+    expect(searchCityHref("uz", filters, "Andijon")).toBe("/search?q=toy&category=drone&sort=newest&city=Andijon");
+    expect(searchCityHref("ru", filters, "Toshkent")).toBe("/ru/search?q=toy&category=drone&sort=newest&city=Toshkent");
+    // "All cities": the other filters stay.
+    expect(searchCityHref("uz", filters)).toBe("/search?q=toy&category=drone&sort=newest");
+  });
+
+  it("is the clean address of the page when only the default order is set, and replaces a city already chosen", () => {
+    expect(searchCityHref("uz", parseSearch({}), "Andijon")).toBe("/search?city=Andijon");
+    expect(searchCityHref("uz", parseSearch({}))).toBe("/search");
+    expect(searchCityHref("uz", parseSearch({ city: "Nukus" }), "Andijon")).toBe("/search?city=Andijon");
+    expect(searchCityHref("uz", parseSearch({ category: "drone" }), "Qoʻqon")).toBe("/search?category=drone&city=Qo%CA%BBqon");
   });
 });
 

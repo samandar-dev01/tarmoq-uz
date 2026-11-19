@@ -30,6 +30,27 @@ export const getCategories = unstable_cache(
   { revalidate: 3600, tags: [TAG] },
 );
 
+/**
+ * How many approved creators work in each city in each category (category as its slug). It decides which landing views of
+ * /search exist: the sitemap, the link rows on the home and search pages and llms.txt all read it, so none of them points at
+ * an empty page.
+ */
+export const getLandingCombos = unstable_cache(
+  async (): Promise<{ city: string; category: string; count: number }[]> => {
+    const [categories, groups] = await Promise.all([
+      prisma.category.findMany({ select: { id: true, slug: true } }),
+      prisma.providerProfile.groupBy({ by: ["city", "categoryId"], where: { status: "APPROVED", user: { isActive: true } }, _count: { _all: true } }),
+    ]);
+    const slugOf = new Map(categories.map((c) => [c.id, c.slug]));
+    return groups.flatMap((g) => {
+      const category = slugOf.get(g.categoryId);
+      return category ? [{ city: g.city, category, count: g._count._all }] : [];
+    });
+  },
+  ["public-landings-v1"],
+  { revalidate: 3600, tags: [TAG] },
+);
+
 /** The best-rated creators, in card shape, for the home page feed. */
 export const getFeaturedProviders = unstable_cache(
   () => featuredProviders(FEATURED_COUNT),
@@ -37,22 +58,19 @@ export const getFeaturedProviders = unstable_cache(
   { revalidate: 60, tags: [TAG] },
 );
 
-/** What sitemap.xml needs. `updatedAt` is an ISO string because a cached value passes through JSON. */
+/** What sitemap.xml needs. `updatedAt` is an ISO string because a cached value passes through JSON. (Landing views come from `getLandingCombos`.) */
 export const getSitemapSource = unstable_cache(
   async () => {
-    const [categories, creators] = await Promise.all([
-      prisma.category.findMany({ orderBy: { name: "asc" }, select: { slug: true } }),
-      // The same rule as the public list: approved profiles of active accounts only.
-      prisma.providerProfile.findMany({
-        where: { status: "APPROVED", user: { isActive: true } },
-        orderBy: { updatedAt: "desc" },
-        take: 5000,
-        select: { slug: true, updatedAt: true },
-      }),
-    ]);
-    return { categories, creators: creators.map((c) => ({ slug: c.slug, updatedAt: c.updatedAt.toISOString() })) };
+    // The same rule as the public list: approved profiles of active accounts only.
+    const creators = await prisma.providerProfile.findMany({
+      where: { status: "APPROVED", user: { isActive: true } },
+      orderBy: { updatedAt: "desc" },
+      take: 5000,
+      select: { slug: true, updatedAt: true },
+    });
+    return { creators: creators.map((c) => ({ slug: c.slug, updatedAt: c.updatedAt.toISOString() })) };
   },
-  ["public-sitemap-v1"],
+  ["public-sitemap-v2"],
   { revalidate: 3600, tags: [TAG] },
 );
 

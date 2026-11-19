@@ -4,7 +4,8 @@ import { apiAs } from "./helpers";
 
 // Search and AI visibility: what crawlers are told (robots.txt, sitemap, llms.txt, response headers), what each public
 // page says about itself (canonical, Open Graph, JSON-LD), and that no page promises anything about payments.
-// Needs the seeded demo data: jasur-karimov, madina-yusupova, bobur-tursunov and dilshod-rahimov are APPROVED.
+// Needs the seeded demo data: jasur-karimov, madina-yusupova, bobur-tursunov and dilshod-rahimov are APPROVED, all of them
+// in mobile-videography, in Andijon (three) and Toshkent (one). No creator works in Termiz or in photography.
 // The demo creator sevara-aliyeva starts PENDING_REVIEW but admin.spec.ts approves her earlier in the same run, so
 // the "not approved" cases use a throwaway profile this file creates and removes itself.
 
@@ -71,7 +72,7 @@ test.describe("robots.txt and sitemap.xml list only public pages", () => {
     expect(text).toMatch(/^Sitemap: https?:\/\/\S+\/sitemap\.xml$/m);
   });
 
-  test("sitemap.xml has the home page, the search, the categories and the approved creators, and nothing private", async ({ request }) => {
+  test("sitemap.xml has the home page, the search, the views that have creators and the approved creators, and nothing private", async ({ request }) => {
     const res = await request.get("/sitemap.xml");
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toContain("xml");
@@ -81,18 +82,39 @@ test.describe("robots.txt and sitemap.xml list only public pages", () => {
     const paths = locs.map((u) => u.pathname + u.search);
     expect(paths).toContain("/");
     expect(paths).toContain("/search");
-    expect(paths).toContain("/search?category=photography");
+    expect(paths).toContain("/search?category=mobile-videography");
+    expect(paths).toContain("/search?city=Andijon");
+    expect(paths).toContain("/search?city=Toshkent");
+    expect(paths).toContain("/search?category=mobile-videography&city=Andijon");
+    // Nobody works in photography, so an empty page is not offered to search engines.
+    expect(paths).not.toContain("/search?category=photography");
     for (const slug of APPROVED) expect(paths).toContain(`/providers/${slug}`);
     // A profile waiting for review is not public, so it is not listed.
     expect(xml).not.toContain(PENDING);
 
-    // Only the home page, the search (with a category) and creator pages.
+    // Only the home page, the search (with a category and/or a city) and creator pages.
     for (const u of locs) {
-      const ok = u.pathname === "/" || (u.pathname === "/search" && (u.search === "" || /^\?category=[a-z0-9-]+$/.test(u.search))) || /^\/providers\/[a-z0-9-]+$/.test(u.pathname);
+      const ok = u.pathname === "/" || (u.pathname === "/search" && (u.search === "" || /^\?(category=[a-z0-9-]+(&city=[^&]+)?|city=[^&]+)$/.test(u.search))) || /^\/providers\/[a-z0-9-]+$/.test(u.pathname);
       expect(ok, u.href).toBe(true);
     }
     // Every address uses one host, the site's own address.
     expect(new Set(locs.map((u) => u.origin)).size).toBe(1);
+  });
+
+  test("every search view the sitemap lists is really indexable, as a crawler that runs no JavaScript reads it: creators in the HTML, no noindex, its own canonical", async ({ request }) => {
+    const xml = await (await request.get("/sitemap.xml")).text();
+    const views = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]!.replace(/&amp;/g, "&"))).filter((u) => u.pathname === "/search" && u.search !== "");
+    expect(views.length).toBeGreaterThan(2);
+    for (const u of views) {
+      const res = await request.get(u.pathname + u.search);
+      expect(res.status(), u.href).toBe(200);
+      const html = await res.text();
+      expect(html, u.href).not.toMatch(/<meta name="robots"/);
+      const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+      expect(new URL(canonical!.replace(/&amp;/g, "&")).search, u.href).toBe(u.search);
+      // The creators are in the page the server sends, not added later by a script.
+      expect([...html.matchAll(/href="\/providers\/[a-z0-9-]+"/g)].length, u.href).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -104,7 +126,9 @@ test.describe("public pages say who they are", () => {
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
     expect(canonical).toMatch(/^https?:\/\/[^/]+\/providers\/jasur-karimov$/);
     const meta = (property: string) => page.locator(`meta[property="${property}"]`).first().getAttribute("content");
-    expect(await meta("og:title")).toBe("Jasur Karimov");
+    // The title says who, what and where (and carries the site's name once); Open Graph repeats it without the site's name.
+    await expect(page).toHaveTitle("Jasur Karimov: Mobilografiya, Andijon · Tarmoq.uz");
+    expect(await meta("og:title")).toBe("Jasur Karimov: Mobilografiya, Andijon");
     expect(await meta("og:description")).toBeTruthy();
     expect(await meta("og:url")).toBe(canonical);
     expect(await meta("og:site_name")).toBe("Tarmoq.uz");
@@ -159,7 +183,7 @@ test.describe("public pages say who they are", () => {
     }
   });
 
-  test("only /search and a real category are indexable; every other filter is noindex and points at /search", async ({ page }) => {
+  test("/search and a real category or city with creators are indexable; every other cut is noindex and points at /search", async ({ page }) => {
     const robots = () => page.locator('meta[name="robots"]').getAttribute("content");
     const canonical = () => page.locator('link[rel="canonical"]').getAttribute("href");
 
@@ -168,15 +192,61 @@ test.describe("public pages say who they are", () => {
     expect(await page.locator('meta[name="robots"]').count()).toBe(0);
     expect(nodes(await jsonLdBlocks(page)).map((n) => n["@type"]).sort()).toEqual(["BreadcrumbList", "ItemList"]);
 
-    await page.goto("/search?category=photography");
-    expect(await canonical()).toMatch(/\/search\?category=photography$/);
-    expect(await page.locator('meta[name="robots"]').count()).toBe(0);
+    for (const url of ["/search?category=mobile-videography", "/search?city=Andijon", "/search?category=mobile-videography&city=Andijon"]) {
+      await page.goto(url);
+      expect(await canonical(), url).toMatch(new RegExp(`${url.replace(/[?]/g, "\\?")}$`));
+      expect(await page.locator('meta[name="robots"]').count(), url).toBe(0);
+    }
+    // The same view written the other way round is the same page.
+    await page.goto("/search?city=Andijon&category=mobile-videography");
+    expect(await canonical()).toMatch(/\/search\?category=mobile-videography&city=Andijon$/);
 
-    for (const url of ["/search?q=reel", "/search?city=Andijon", "/search?sort=newest", "/search?category=photography&city=Andijon", "/search?category=no-such-category"]) {
+    for (const url of [
+      "/search?q=reel", "/search?sort=newest", "/search?city=Andijon&minPrice=100000", "/search?category=mobile-videography&page=2",
+      "/search?category=no-such-category", "/search?city=Atlantis",
+      // Real, but nobody works there: an empty page is not worth a place in a search result.
+      "/search?category=photography", "/search?city=Termiz", "/search?category=mobile-videography&city=Termiz",
+    ]) {
       await page.goto(url);
       expect(await robots(), url).toBe("noindex, follow");
       expect(await canonical(), url).toMatch(/\/search$/);
     }
+  });
+
+  test("a city page, a category page and both together each say what they are, with the real number of creators", async ({ page }) => {
+    await page.goto("/search?city=Andijon");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Andijondagi videograf, fotograf va montajchilar");
+    await expect(page).toHaveTitle("Andijon: videograf, fotograf va montajchilar · Tarmoq.uz");
+    expect(await page.locator('meta[name="description"]').getAttribute("content")).toMatch(/^Andijondagi mobilograf, videograf, fotograf va montajchilar: \d+ ta ijodkor/);
+
+    await page.goto("/search?category=mobile-videography&city=Toshkent");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mobilografiya: Toshkentdagi ijodkorlar");
+    await expect(page).toHaveTitle("Mobilografiya, Toshkent: ijodkorlarni toping · Tarmoq.uz");
+    expect(await page.locator('meta[name="description"]').getAttribute("content")).toMatch(/^Toshkentdagi mobilografiya yoʻnalishidagi ijodkorlar: 1 ta ijodkor/);
+    // The breadcrumb trail names the category and the city.
+    const crumbs = nodes(await jsonLdBlocks(page)).find((n) => n["@type"] === "BreadcrumbList")!;
+    expect(crumbs.itemListElement.map((c: { name: string }) => c.name)).toEqual(["Bosh sahifa", "Ijodkorlarni toping", "Mobilografiya", "Toshkent"]);
+
+    // The plain search page and an empty view keep the usual heading.
+    for (const url of ["/search", "/search?city=Termiz"]) {
+      await page.goto(url);
+      await expect(page.getByRole("heading", { level: 1 }), url).toHaveText("Ijodkorlarni toping");
+    }
+  });
+
+  test("the search page links to a page for each city that has creators, and the home page links to the cities and categories", async ({ page }) => {
+    await page.goto("/search");
+    const cities = page.getByRole("navigation", { name: "Barcha shaharlar" });
+    await expect(cities.getByRole("link", { name: "Andijon" })).toHaveAttribute("href", "/search?city=Andijon");
+    await expect(cities.getByRole("link", { name: "Toshkent" })).toBeVisible();
+    // Nobody works in Termiz: no chip that leads to an empty page.
+    await expect(cities.getByRole("link", { name: "Termiz" })).toHaveCount(0);
+
+    await page.goto("/");
+    const section = page.getByRole("heading", { level: 2, name: "Shahar va yoʻnalish boʻyicha" }).locator("xpath=..");
+    await expect(section.getByRole("link", { name: "Andijon" })).toHaveAttribute("href", "/search?city=Andijon");
+    await expect(section.getByRole("link", { name: "Mobilografiya" })).toHaveAttribute("href", "/search?category=mobile-videography");
+    await expect(section.getByRole("link", { name: "Fotografiya" })).toHaveCount(0);
   });
 });
 
@@ -238,7 +308,7 @@ test.describe("unknown addresses", () => {
 
 test.describe("no payment promise where search engines and AI crawlers read", () => {
   test("the head of the home page, the search and a creator page, and all JSON-LD, are free of payment words", async ({ page }) => {
-    for (const path of ["/", "/search", "/search?category=photography", "/providers/jasur-karimov"]) {
+    for (const path of ["/", "/search", "/search?category=mobile-videography", "/search?city=Andijon", "/search?category=mobile-videography&city=Andijon", "/providers/jasur-karimov"]) {
       await page.goto(path);
       const texts = [...(await headText(page)), ...(await page.locator('script[type="application/ld+json"]').allTextContents())];
       expect(texts.length, path).toBeGreaterThan(3);
@@ -268,7 +338,8 @@ test.describe("llms.txt", () => {
     const text = await res.text();
     expect(text.startsWith("# Tarmoq.uz")).toBe(true);
     expect(text).toMatch(/\]\(https?:\/\/\S+\/search\)/);
-    expect(text).toMatch(/\]\(https?:\/\/\S+\/search\?category=photography\)/);
+    expect(text).toMatch(/\]\(https?:\/\/\S+\/search\?category=mobile-videography\)/);
+    expect(text).toMatch(/\]\(https?:\/\/\S+\/search\?city=Andijon\)/);
     for (const slug of APPROVED) expect(text).toContain(`/providers/${slug}`);
     expect(text).not.toContain(PENDING);
     expect(bannedIn(text)).toEqual([]);

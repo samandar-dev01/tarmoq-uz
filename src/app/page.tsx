@@ -5,8 +5,8 @@ import { tk, translator } from "@/i18n/dictionary";
 import { localHref } from "@/i18n/paths";
 import { getLocale } from "@/i18n/server";
 import { categoryName, CITIES, labelFor } from "@/lib/constants";
-import { getCategories, getFeaturedProviders } from "@/lib/publicCache";
-import { buildFaq, faqJsonLd, homeDescription, homeTitle, ogDefaults, organizationJsonLd, pageAlternates, websiteJsonLd } from "@/lib/seo";
+import { getCategories, getFeaturedProviders, getLandingCombos } from "@/lib/publicCache";
+import { buildFaq, faqJsonLd, homeDescription, homeTitle, landingPath, landingViews, ogDefaults, organizationJsonLd, pageAlternates, websiteJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ProviderCard } from "@/components/ProviderCard";
 import { Button } from "@/components/ui/Button";
@@ -61,7 +61,11 @@ export default async function HomePage() {
   const locale = await getLocale();
   const t = translator(locale);
   // The same for every visitor, so it comes from the short-lived data cache (src/lib/publicCache.ts), not from the database each time.
-  const [pool, categories] = await Promise.all([getFeaturedProviders(), getCategories()]);
+  const [pool, categories, combos] = await Promise.all([getFeaturedProviders(), getCategories(), getLandingCombos()]);
+  // The cities and categories that have creators: each is a link to a page of its own (and a way for search engines to find them).
+  const views = landingViews(combos);
+  const cityLinks = views.flatMap((v) => (v.city && !v.category ? [v.city] : []));
+  const categoryLinks = categories.filter((c) => views.some((v) => v.category === c.slug && !v.city));
   const evens = pool.filter((_, i) => i % 2 === 0);
   const odds = pool.filter((_, i) => i % 2 === 1);
   // At least two posters per column, so the loop never shows the same creator twice in a row (unless there is only one).
@@ -141,6 +145,32 @@ export default async function HomePage() {
           </div>
         )}
       </Container>
+
+      {(cityLinks.length > 0 || categoryLinks.length > 0) && (
+        <Container pad="section">
+          <h2>{t("Shahar va yoʻnalish boʻyicha")}</h2>
+          {cityLinks.length > 0 && (
+            <>
+              <h3 className="mt-4 text-xl">{t("Shaharlar")}</h3>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {cityLinks.map((city) => (
+                  <li key={city}><ButtonLink href={localHref(locale, landingPath(undefined, city))} variant="chip">{labelFor(locale, city)}</ButtonLink></li>
+                ))}
+              </ul>
+            </>
+          )}
+          {categoryLinks.length > 0 && (
+            <>
+              <h3 className="mt-4 text-xl">{t("Yoʻnalishlar")}</h3>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {categoryLinks.map((c) => (
+                  <li key={c.slug}><ButtonLink href={localHref(locale, landingPath(c.slug))} variant="chip">{categoryName(locale, c)}</ButtonLink></li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Container>
+      )}
 
       <section className="border-y border-line bg-surface">
         <Container pad="section">

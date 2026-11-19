@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { russianLive } from "@/i18n/config";
 import { hreflang, localHref } from "@/i18n/paths";
-import { getSitemapSource } from "@/lib/publicCache";
+import { getLandingCombos, getSitemapSource } from "@/lib/publicCache";
+import { landingPath, landingViews } from "@/lib/seo";
 import { absoluteUrl, siteUrl } from "@/lib/site";
 
 // Reads the database, so it is built per request and never at build time (the build has no database).
@@ -14,15 +15,15 @@ type Page = { path: string; lastModified?: Date; changeFrequency: "daily" | "wee
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
-  const source = await getSitemapSource();
-  const categories = source.categories;
+  const [source, combos] = await Promise.all([getSitemapSource(), getLandingCombos()]);
   // The cache hands dates back as text.
   const creators = source.creators.map((c) => ({ slug: c.slug, updatedAt: new Date(c.updatedAt) }));
   const newest = creators[0]?.updatedAt;
   const pages: Page[] = [
     { path: "/", lastModified: newest, changeFrequency: "daily", priority: 1 },
     { path: "/search", lastModified: newest, changeFrequency: "daily", priority: 0.9 },
-    ...categories.map((c) => ({ path: `/search?category=${encodeURIComponent(c.slug)}`, changeFrequency: "daily" as const, priority: 0.7 })),
+    // Only the views that list at least one creator (an empty page would not be indexed): each category, each city, each category in each city.
+    ...landingViews(combos).map((v) => ({ path: landingPath(v.category, v.city), changeFrequency: "daily" as const, priority: v.category && v.city ? 0.6 : 0.7 })),
     ...creators.map((p) => ({ path: `/providers/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "weekly" as const, priority: 0.8 })),
   ];
 

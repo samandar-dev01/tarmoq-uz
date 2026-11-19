@@ -16,12 +16,16 @@ import {
   buildRobots,
   creatorJsonLd,
   creatorListJsonLd,
+  creatorMeta,
   faqJsonLd,
   HOME_DESCRIPTION,
   HOME_TITLE,
   homeDescription,
   homeTitle,
   jsonLdString,
+  landingPath,
+  landingRequest,
+  landingViews,
   LLMS_MAX_CREATORS,
   ogDefaults,
   organizationJsonLd,
@@ -32,6 +36,7 @@ import {
   searchMeta,
   websiteJsonLd,
   type CreatorSeo,
+  type Landing,
 } from "@/lib/seo";
 
 const BASE = "https://tarmoq.example";
@@ -134,30 +139,175 @@ describe("jsonLdString", () => {
 });
 
 describe("which search pages are indexed", () => {
+  const found = { categoryExists: true, hasResults: true };
+  const nothing = { categoryExists: false, hasResults: false };
+
   it("indexes /search with no filters, whatever empty fields the form sent", () => {
-    expect(searchIndexing({}, false)).toEqual({ canonical: "/search", index: true });
-    expect(searchIndexing({ q: "", city: "", category: "" }, false)).toEqual({ canonical: "/search", index: true });
+    expect(searchIndexing({}, nothing)).toEqual({ canonical: "/search", index: true });
+    expect(searchIndexing({ q: "", city: "", category: "" }, nothing)).toEqual({ canonical: "/search", index: true });
   });
 
-  it("gives a real category its own indexed address", () => {
-    expect(searchIndexing({ category: "photography" }, true)).toEqual({ canonical: "/search?category=photography", index: true });
-    expect(searchIndexing({ category: "photography", q: "" }, true)).toEqual({ canonical: "/search?category=photography", index: true });
+  it("gives a real category with creators its own indexed address", () => {
+    expect(searchIndexing({ category: "photography" }, found)).toEqual({ canonical: "/search?category=photography", index: true });
+    expect(searchIndexing({ category: "photography", q: "" }, found)).toEqual({ canonical: "/search?category=photography", index: true });
   });
 
-  it("does not index an unknown category", () => {
-    expect(searchIndexing({ category: "no-such" }, false)).toEqual({ canonical: "/search", index: false });
+  it("gives a real city with creators its own indexed address", () => {
+    expect(searchIndexing({ city: "Toshkent" }, { categoryExists: false, hasResults: true })).toEqual({ canonical: "/search?city=Toshkent", index: true });
+    // The apostrophe letters of Fargʻona and Qoʻqon are written as the browser sends them.
+    expect(searchIndexing({ city: "Fargʻona" }, { categoryExists: false, hasResults: true }).canonical).toBe("/search?city=Farg%CA%BBona");
+  });
+
+  it("gives a category in a city one address, whatever order the parameters came in", () => {
+    const both = { canonical: "/search?category=photography&city=Andijon", index: true };
+    expect(searchIndexing({ category: "photography", city: "Andijon" }, found)).toEqual(both);
+    expect(searchIndexing({ city: "Andijon", category: "photography" }, found)).toEqual(both);
+  });
+
+  it("treats the default order as no order at all: the same page, at the clean address", () => {
+    expect(searchIndexing({ sort: "rating" }, nothing)).toEqual({ canonical: "/search", index: true });
+    expect(searchIndexing({ sort: "rating", city: "Andijon" }, found)).toEqual({ canonical: "/search?city=Andijon", index: true });
+    expect(searchIndexing({ sort: "rating", category: "photography", city: "Andijon" }, found)).toEqual({ canonical: "/search?category=photography&city=Andijon", index: true });
+    expect(searchIndexing({ sort: "newest", city: "Andijon" }, found)).toEqual({ canonical: "/search", index: false });
+  });
+
+  it("does not index a view that lists nobody, even a real category or city", () => {
+    const off = { canonical: "/search", index: false };
+    expect(searchIndexing({ category: "drone" }, { categoryExists: true, hasResults: false })).toEqual(off);
+    expect(searchIndexing({ city: "Termiz" }, { categoryExists: false, hasResults: false })).toEqual(off);
+  });
+
+  it("does not index an unknown category or an unknown city", () => {
+    const off = { canonical: "/search", index: false };
+    expect(searchIndexing({ category: "no-such" }, { categoryExists: false, hasResults: true })).toEqual(off);
+    expect(searchIndexing({ city: "Atlantis" }, { categoryExists: false, hasResults: true })).toEqual(off);
+    expect(searchIndexing({ category: "photography", city: "Atlantis" }, found)).toEqual(off);
   });
 
   it("does not index any other combination, and points it at /search", () => {
     const off = { canonical: "/search", index: false };
-    expect(searchIndexing({ q: "toy" }, false)).toEqual(off);
-    expect(searchIndexing({ city: "Andijon" }, false)).toEqual(off);
-    expect(searchIndexing({ sort: "price_asc" }, false)).toEqual(off);
-    expect(searchIndexing({ page: "2" }, false)).toEqual(off);
-    expect(searchIndexing({ category: "photography", city: "Andijon" }, true)).toEqual(off);
-    expect(searchIndexing({ category: "photography", page: "2" }, true)).toEqual(off);
-    expect(searchIndexing({ utm_source: "x" }, false)).toEqual(off);
-    expect(searchIndexing({ category: ["photography", "drone"] }, true)).toEqual(off);
+    expect(searchIndexing({ q: "toy" }, found)).toEqual(off);
+    expect(searchIndexing({ sort: "price_asc" }, found)).toEqual(off);
+    expect(searchIndexing({ page: "2" }, found)).toEqual(off);
+    expect(searchIndexing({ category: "photography", page: "2" }, found)).toEqual(off);
+    expect(searchIndexing({ city: "Andijon", minPrice: "100000" }, found)).toEqual(off);
+    expect(searchIndexing({ category: "photography", city: "Andijon", sort: "newest" }, found)).toEqual(off);
+    expect(searchIndexing({ utm_source: "x" }, found)).toEqual(off);
+    expect(searchIndexing({ category: ["photography", "drone"] }, found)).toEqual(off);
+    expect(searchIndexing({ city: ["Andijon", "Toshkent"] }, found)).toEqual(off);
+  });
+});
+
+describe("landing views", () => {
+  it("builds one address per view, category first", () => {
+    expect(landingPath()).toBe("/search");
+    expect(landingPath("drone")).toBe("/search?category=drone");
+    expect(landingPath(undefined, "Qoʻqon")).toBe("/search?city=Qo%CA%BBqon");
+    expect(landingPath("drone", "Nukus")).toBe("/search?category=drone&city=Nukus");
+  });
+
+  it("reads only a category and/or a city out of an address, and nothing else", () => {
+    expect(landingRequest({})).toBeNull();
+    expect(landingRequest({ q: "", city: "" })).toBeNull();
+    expect(landingRequest({ category: "drone" })).toEqual({ category: "drone" });
+    expect(landingRequest({ city: "Nukus", category: "drone", q: "" })).toEqual({ city: "Nukus", category: "drone" });
+    expect(landingRequest({ sort: "rating", city: "Nukus" })).toEqual({ city: "Nukus" });
+    expect(landingRequest({ sort: "newest", city: "Nukus" })).toBeNull();
+    expect(landingRequest({ category: "drone", q: "reel" })).toBeNull();
+    expect(landingRequest({ category: "drone", page: "2" })).toBeNull();
+    expect(landingRequest({ category: ["a", "b"] })).toBeNull();
+  });
+
+  it("lists every view that has creators, once, in a stable order, and leaves out empty and unknown ones", () => {
+    const views = landingViews([
+      { city: "Toshkent", category: "photography", count: 2 },
+      { city: "Andijon", category: "photography", count: 1 },
+      { city: "Andijon", category: "drone", count: 3 },
+      { city: "Samarqand", category: "drone", count: 0 },
+      { city: "Atlantis", category: "drone", count: 4 },
+    ]);
+    expect(views).toEqual([
+      { category: "drone" },
+      { category: "photography" },
+      { city: "Andijon" },
+      { city: "Toshkent" },
+      { category: "drone", city: "Andijon" },
+      { category: "photography", city: "Andijon" },
+      { category: "photography", city: "Toshkent" },
+    ]);
+    expect(landingViews([])).toEqual([]);
+  });
+});
+
+describe("landing page words", () => {
+  const both: Landing = { category: "Mobilografiya", city: "Andijon", count: 4, fromPrice: 450_000 };
+  const city: Landing = { category: null, city: "Toshkent", count: 1, fromPrice: null };
+  const category: Landing = { category: "Fotografiya", city: null, count: 12, fromPrice: 300_000 };
+
+  it("says what the page is, in the page's own title, heading and description, with the real numbers", () => {
+    expect(searchMeta("uz", both)).toEqual({
+      title: "Mobilografiya, Andijon: ijodkorlarni toping",
+      heading: "Mobilografiya: Andijondagi ijodkorlar",
+      description: "Andijondagi mobilografiya yoʻnalishidagi ijodkorlar: 4 ta ijodkor, narxi 450\u00a0000\u00a0soʻmdan. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring.",
+    });
+    expect(searchMeta("uz", city)).toEqual({
+      title: "Toshkent: videograf, fotograf va montajchilar",
+      heading: "Toshkentdagi videograf, fotograf va montajchilar",
+      description: "Toshkentdagi mobilograf, videograf, fotograf va montajchilar: 1 ta ijodkor. Paketlari, portfoliosi va mijozlar sharhlarini solishtiring.",
+    });
+    expect(searchMeta("uz", category)).toEqual({
+      title: "Fotografiya: ijodkorlarni toping",
+      heading: "Fotografiya: ijodkorlarni toping",
+      description: "Oʻzbekistondagi fotografiya yoʻnalishidagi ijodkorlar: 12 ta ijodkor, narxi 300\u00a0000\u00a0soʻmdan. Shahar va narx boʻyicha saralang.",
+    });
+  });
+
+  it("gives every view different words (no two views share a title or a description)", () => {
+    const metas = [both, city, category, { ...both, city: "Samarqand" }, { ...city, city: "Buxoro" }].map((l) => searchMeta("uz", l));
+    expect(new Set(metas.map((m) => m.title)).size).toBe(metas.length);
+    expect(new Set(metas.map((m) => m.description)).size).toBe(metas.length);
+  });
+
+  it("keeps the plain search page as it was: no heading of its own", () => {
+    expect(searchMeta("uz", null)).toEqual({ title: SEARCH_TITLE, heading: null, description: SEARCH_DESCRIPTION });
+  });
+
+  it("is in Russian in Russian, with the Russian city and no Uzbek apostrophe letters", () => {
+    const m = searchMeta("ru", { category: "Мобильная съёмка", city: "Andijon", count: 4, fromPrice: 450_000 });
+    expect(m.title).toBe("Мобильная съёмка, Андижан: найдите креаторов");
+    expect(m.description).toBe("Креаторы в городе Андижан, направление «мобильная съёмка»: 4 креатора, цена от 450\u00a0000\u00a0сум. Сравнивайте пакеты, портфолио и отзывы заказчиков.");
+    for (const text of Object.values(m)) expect(text).not.toMatch(/[ʻʼ]/);
+  });
+
+  it("promises nothing about money", () => {
+    for (const l of [both, city, category]) for (const text of Object.values(searchMeta("uz", l))) expect(bannedIn(text ?? ""), String(text)).toEqual([]);
+  });
+});
+
+describe("a creator's title and description", () => {
+  it("name who they are, what they do and where", () => {
+    expect(creatorMeta({ name: "Jasur Karimov", headline: "Kafe va restoranlar uchun reels.", category: "Mobilografiya", city: "Andijon" })).toEqual({
+      title: "Jasur Karimov: Mobilografiya, Andijon",
+      description: "Kafe va restoranlar uchun reels · Mobilografiya · Andijon",
+    });
+  });
+
+  it("uses the Russian city and category in Russian and keeps the creator's own words", () => {
+    const m = creatorMeta({ name: "Jasur Karimov", headline: "Reels", category: "Мобильная съёмка", city: "Toshkent" }, "ru");
+    expect(m.title).toBe("Jasur Karimov: Мобильная съёмка, Ташкент");
+    expect(m.description).toBe("Reels · Мобильная съёмка · Ташкент");
+  });
+
+  it("never runs past 160 characters, and never cuts a word in half", () => {
+    const long = "Juda uzun sarlavha ".repeat(30);
+    const m = creatorMeta({ name: "A", headline: long, category: "Mobilografiya", city: "Andijon" });
+    expect(m.description.length).toBeLessThanOrEqual(160);
+    expect(m.description.endsWith("…")).toBe(true);
+    expect(m.description.slice(0, -1)).toMatch(/(sarlavha|uzun|Juda)$/);
+  });
+
+  it("copes with an empty headline", () => {
+    expect(creatorMeta({ name: "A", headline: "  ", category: "Mobilografiya", city: "Andijon" }).description).toBe("Mobilografiya · Andijon");
   });
 });
 
@@ -382,6 +532,14 @@ describe("llms.txt", () => {
     expect(text).toContain("[Jasur Karimov](https://tarmoq.example/providers/jasur-karimov): Reels va reklama (Andijon)");
   });
 
+  it("links the cities that have creators, each to its own page", () => {
+    const withCities = buildLlmsTxt({ categories: CATEGORIES, creators, cities: CITIES, cityPages: ["Andijon", "Qoʻqon"] }, BASE);
+    expect(withCities).toContain("## Cities");
+    expect(withCities).toContain("[Andijon](https://tarmoq.example/search?city=Andijon)");
+    expect(withCities).toContain("[Qoʻqon](https://tarmoq.example/search?city=Qo%CA%BBqon)");
+    expect(text).not.toContain("## Cities");
+  });
+
   it("keeps a creator's name and headline on one line and out of the link syntax", () => {
     expect(text).toContain("[Madina Yusupova Ikkinchi qator](https://tarmoq.example/providers/madina): Foto sessiya (Toshkent)");
   });
@@ -397,11 +555,17 @@ describe("llms.txt", () => {
 describe("the sitemap and the llms.txt route (database mocked)", () => {
   const findCategories = vi.fn();
   const findProfiles = vi.fn();
+  const groupProfiles = vi.fn();
   beforeEach(() => {
     vi.resetModules();
-    findCategories.mockReset().mockResolvedValue([{ slug: "photography", name: "Fotografiya" }, { slug: "drone", name: "Dron" }]);
+    findCategories.mockReset().mockResolvedValue([{ id: "c1", slug: "photography", name: "Fotografiya" }, { id: "c2", slug: "drone", name: "Dron" }]);
     findProfiles.mockReset();
-    vi.doMock("@/lib/db", () => ({ prisma: { category: { findMany: findCategories }, providerProfile: { findMany: findProfiles } } }));
+    // Two creators in photography (one in Andijon, one in Toshkent) and nobody in drone: drone has no page.
+    groupProfiles.mockReset().mockResolvedValue([
+      { city: "Andijon", categoryId: "c1", _count: { _all: 1 } },
+      { city: "Toshkent", categoryId: "c1", _count: { _all: 1 } },
+    ]);
+    vi.doMock("@/lib/db", () => ({ prisma: { category: { findMany: findCategories }, providerProfile: { findMany: findProfiles, groupBy: groupProfiles } } }));
     // The data cache needs Next's runtime, which a unit test does not have: stand in with a pass-through, so what is tested
     // is still this file's own output (src/lib/publicCache.ts is only a thin wrapper around the same queries).
     vi.doMock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn, revalidateTag: vi.fn() }));
@@ -413,7 +577,7 @@ describe("the sitemap and the llms.txt route (database mocked)", () => {
     delete process.env.APP_URL;
   });
 
-  it("lists the home page, /search, every category and every approved creator, newest first, in one capped query", async () => {
+  it("lists the home page, /search, every view that has creators and every approved creator, newest first, in one capped query", async () => {
     const newer = new Date("2026-11-10T00:00:00Z");
     const older = new Date("2026-10-01T00:00:00Z");
     findProfiles.mockResolvedValue([{ slug: "jasur-karimov", updatedAt: newer }, { slug: "bobur-tursunov", updatedAt: older }]);
@@ -423,12 +587,20 @@ describe("the sitemap and the llms.txt route (database mocked)", () => {
       "https://tarmoq.example/",
       "https://tarmoq.example/search",
       "https://tarmoq.example/search?category=photography",
-      "https://tarmoq.example/search?category=drone",
+      "https://tarmoq.example/search?city=Andijon",
+      "https://tarmoq.example/search?city=Toshkent",
+      "https://tarmoq.example/search?category=photography&city=Andijon",
+      "https://tarmoq.example/search?category=photography&city=Toshkent",
       "https://tarmoq.example/providers/jasur-karimov",
       "https://tarmoq.example/providers/bobur-tursunov",
     ]);
     expect(entries.find((e) => e.url.endsWith("jasur-karimov"))!.lastModified).toEqual(newer);
     expect(entries[0]!.lastModified).toEqual(newer);
+
+    // No page for a category nobody works in (an empty page would not be indexed).
+    expect(entries.map((e) => e.url).join(" ")).not.toContain("category=drone");
+    // The views are counted among approved profiles of active accounts only.
+    expect(groupProfiles.mock.calls[0]![0].where).toEqual({ status: "APPROVED", user: { isActive: true } });
 
     // Only approved profiles of active accounts, ordered, capped, and a single query for them.
     expect(findProfiles).toHaveBeenCalledTimes(1);
@@ -440,6 +612,7 @@ describe("the sitemap and the llms.txt route (database mocked)", () => {
 
   it("is still valid with no creators at all", async () => {
     findProfiles.mockResolvedValue([]);
+    groupProfiles.mockResolvedValue([]);
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
     expect(entries.map((e) => e.url).slice(0, 2)).toEqual(["https://tarmoq.example/", "https://tarmoq.example/search"]);
@@ -464,6 +637,7 @@ describe("the sitemap and the llms.txt route (database mocked)", () => {
     expect(res.headers.get("cache-control")).toContain("max-age=3600");
     const body = await res.text();
     expect(body).toContain("https://tarmoq.example/providers/jasur-karimov");
+    expect(body).toContain("[Andijon](https://tarmoq.example/search?city=Andijon)");
     expect(findProfiles.mock.calls[0]![0].where).toEqual({ status: "APPROVED", user: { isActive: true } });
   });
 });
@@ -545,7 +719,9 @@ describe("no payment promise in the Russian text search engines and AI crawlers 
   it("holds for the titles, descriptions, Open Graph, JSON-LD and the FAQ built in Russian", () => {
     const texts: Record<string, string[]> = {
       titles: [homeTitle("ru"), homeDescription("ru"), translate("ru", SEARCH_TITLE), translate("ru", SEARCH_DESCRIPTION)],
-      searchCategory: Object.values(searchMeta("ru", "Мобильная съёмка")),
+      searchCategory: Object.values(searchMeta("ru", { category: "Мобильная съёмка", city: null, count: 3, fromPrice: 450_000 })).filter((v): v is string => v !== null),
+      searchCity: Object.values(searchMeta("ru", { category: null, city: "Toshkent", count: 3, fromPrice: 450_000 })).filter((v): v is string => v !== null),
+      searchBoth: Object.values(searchMeta("ru", { category: "Мобильная съёмка", city: "Toshkent", count: 3, fromPrice: 450_000 })).filter((v): v is string => v !== null),
       creatorTitle: [translate("ru", "Ijodkor profili")],
       layout: [translate("ru", "Tarmoq.uz: ijodkorlar tarmogʻi"), translate("ru", "Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling.")],
       openGraph: allStrings(ogDefaults("ru")),
