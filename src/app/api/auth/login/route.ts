@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { verifyPassword, startSession } from "@/lib/auth";
 import { clientIp, handle, ok, readJson, HttpError } from "@/lib/http";
-import { wrongDoor, type Door } from "@/lib/authRole";
+import { wrongDoor } from "@/lib/authRole";
+import { WRONG_DOOR } from "@/lib/doorMessages";
 import { tk } from "@/i18n/dictionary";
 import { loginSchema } from "@/lib/validators";
 import { LIMITS, isLimited, recordFailure, resetLimit, retryAfterSeconds } from "@/lib/rateLimit";
@@ -17,15 +18,6 @@ const DUMMY_HASH = "$2a$12$jgqqc9siV6AWg6MLBmARHOC/9DTuWpndocE6nuEaMRsuO1Tz1A0UW
 // One message for a wrong password AND for a blocked attempt: the body never says which limit was hit,
 // or that one was. Only the status (429) and Retry-After differ.
 const BAD_LOGIN = tk("Email yoki parol notoʻgʻri.");
-
-// Keyed by the door the account belongs at. Said only after the password was right, so it tells a stranger
-// nothing about an account; a wrong password always gets BAD_LOGIN, at every door.
-// (`tk` only marks these sentences for the translation check; `handle()` puts them into the reader's language.)
-const WRONG_DOOR: Record<Door, string> = {
-  provider: tk("Bu ijodkor hisobi. Ijodkorlar eshigidan kiring."),
-  client: tk("Bu mijoz hisobi. Mijozlar eshigidan kiring."),
-  admin: tk("Bu hisob uchun boshqa kirish sahifasi bor."),
-};
 
 export const POST = handle(async (req) => {
   const input = loginSchema.parse(await readJson(req));

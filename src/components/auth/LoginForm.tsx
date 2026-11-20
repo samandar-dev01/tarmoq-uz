@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -17,13 +18,26 @@ const DOOR_LINK: Record<Door, string> = { client: tk("Mijoz sifatida kirish"), p
 
 // `at` is the door the error was raised at. This form stays mounted when the door changes (only the query does),
 // so that the email typed survives; an error from the previous door must not follow the visitor to the next one.
-type FormError = { at: Door; message: string; door?: Door };
+// `info`: a notice that is not a failure (the person pressed Cancel on Google's screen).
+type FormError = { at: Door; message: string; door?: Door; info?: boolean };
 
-export function LoginForm({ role, next }: { role: Door; next: string | null }) {
+// `notice` is what the page found out before this form was shown: Google sent the person back here with a reason.
+// `googleEnabled` is false until the owner has set the Google keys, so no button shows that could not work.
+export function LoginForm({
+  role,
+  next,
+  googleEnabled = false,
+  notice = null,
+}: {
+  role: Door;
+  next: string | null;
+  googleEnabled?: boolean;
+  notice?: { message: string; door?: Door; info?: boolean } | null;
+}) {
   const router = useRouter();
   const ready = useHydrated();
   const t = useT();
-  const [failure, setFailure] = useState<FormError | null>(null);
+  const [failure, setFailure] = useState<FormError | null>(notice ? { at: role, ...notice } : null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const error = failure?.at === role ? failure : null;
@@ -73,7 +87,7 @@ export function LoginForm({ role, next }: { role: Door; next: string | null }) {
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       {error && (
-        <Alert variant="error">
+        <Alert variant={error.info ? "info" : "error"}>
           {error.message}
           {error.door && (
             <>
@@ -88,6 +102,7 @@ export function LoginForm({ role, next }: { role: Door; next: string | null }) {
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
         {loading ? t("Kirilmoqda…") : t("Kirish")}
       </Button>
+      {googleEnabled && role !== "admin" && <GoogleButton door={role} next={next} />}
       {role !== "admin" && (
         <p className="text-center text-ink-soft">
           {t("Yangimisiz?")} <ButtonLink href={authHref("/register", role, next)} variant="link">{t("Roʻyxatdan oʻting")}</ButtonLink>

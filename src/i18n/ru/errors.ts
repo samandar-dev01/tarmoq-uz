@@ -13,11 +13,8 @@ export const errors: Record<string, string> = {
   "Davom etish uchun tizimga kiring.": "Войдите, чтобы продолжить.",
   "Buning uchun sizda ruxsat yoʻq.": "У вас нет на это прав.",
   "Email yoki parol notoʻgʻri.": "Неверный email или пароль.",
-  "Bu ijodkor hisobi. Ijodkorlar eshigidan kiring.": "Это аккаунт креатора. Войдите через вход для креаторов.",
-  "Bu mijoz hisobi. Mijozlar eshigidan kiring.": "Это аккаунт заказчика. Войдите через вход для заказчиков.",
-  "Bu hisob uchun boshqa kirish sahifasi bor.": "Для этого аккаунта есть другая страница входа.",
-  "Bu hisob faolsizlantirilgan.": "Этот аккаунт отключён.",
-  "Urinishlar juda koʻp. Birozdan keyin qayta urinib koʻring.": "Слишком много попыток. Попробуйте немного позже.",
+  // (The wrong-door sentences, "Bu hisob faolsizlantirilgan." and "Urinishlar juda koʻp. Birozdan keyin…" moved to ru/auth.ts:
+  // the sign-in page now shows them too, so they are page text, and the server still finds them there.)
   "Bu email bilan hisob allaqachon mavjud.": "Аккаунт с таким email уже существует.",
   "Ism-familiyangizni kiriting": "Введите имя и фамилию",
   "Email manzilini toʻgʻri kiriting": "Введите правильный email",

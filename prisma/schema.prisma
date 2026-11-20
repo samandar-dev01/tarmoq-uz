@@ -55,7 +55,10 @@ enum LedgerType {
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
-  passwordHash  String
+  /// Null for an account made through "Continue with Google": it has no password until the person sets one.
+  passwordHash  String?
+  /// Google's stable id for the person (the `sub` of the ID token). Set when they first sign in with Google.
+  googleSub     String?  @unique
   name          String
   phone         String?
   role          Role     @default(CLIENT)

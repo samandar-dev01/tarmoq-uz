@@ -18,6 +18,9 @@ function key() {
   return new TextEncoder().encode(secret);
 }
 
+// The same key signs the short-lived Google sign-in cookie (src/lib/googleAuth.ts), so the 32-character check lives in one place.
+export { key as authKey };
+
 export async function signToken(p: SessionPayload, maxAgeDays = 7): Promise<string> {
   return new SignJWT({ role: p.role, name: p.name })
     .setProtectedHeader({ alg: "HS256" })
