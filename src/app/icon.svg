@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="9" fill="#2A3BEA" stroke="#1B1235" stroke-width="2"/><path d="M9 11.5h14M16 11.5V23" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="9" cy="11.5" r="2.8" fill="#FFC42E" stroke="#1B1235" stroke-width="1.5"/><circle cx="23" cy="11.5" r="2.8" fill="#FFC42E" stroke="#1B1235" stroke-width="1.5"/><circle cx="16" cy="23" r="2.8" fill="#FFC42E" stroke="#1B1235" stroke-width="1.5"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>tarmoq q mark</title>
+  <!-- A white tile, so the navy strokes read on a dark browser tab as well as a light one. -->
+  <rect width="120" height="120" rx="26" fill="#FFFFFF"/>
+  <!-- The q mark (a lowercase q whose tail curls into a link), centred and scaled to fill the tile. -->
+  <g transform="translate(60 60) scale(0.95) translate(-64.4 -50.45)" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 16C67 16 80 29 80 46S67 76 50 76 20 63 20 46 33 16 50 16Z" stroke="#17243A"/>
+    <path d="M72 65C82 74 87 85 98 85 108 85 112 75 106 69 102 65 96 67 94 72" stroke="#22C7A8"/>
+  </g>
+</svg>

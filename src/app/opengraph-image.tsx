@@ -22,7 +22,7 @@ export default function OpengraphImage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center" }}>
-          {/* The Tarmoq mark from icon.svg: three joined nodes. */}
+          {/* The earlier Tarmoq mark: three joined nodes. icon.svg is now the q mark; this card has not been moved to it. */}
           <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 32 32">
             <rect x="1" y="1" width="30" height="30" rx="9" fill={C.cobalt} />
             <path d="M9 11.5h14M16 11.5V23" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
