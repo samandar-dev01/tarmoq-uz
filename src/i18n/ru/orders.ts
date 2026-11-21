@@ -42,13 +42,7 @@ export const orders: Record<string, string> = {
   "Mijozning toʻlovi tekshirilmoqda": "Оплата заказчика проверяется",
   "Buyurtma tavsifi": "Описание заказа",
   "Sana: {date}": "Дата: {date}",
-  "Shartlaringiz mijozga yuborildi": "Ваши условия отправлены заказчику",
-  "Mijoz shartlarni koʻrib chiqib, qabul qilishini kuting. Qabul qilmaguncha shartlarni oʻzgartirishingiz mumkin.":
-    "Дождитесь, пока заказчик изучит условия и примет их. Пока он не принял, вы можете изменить условия.",
-  "Shartlarni oʻzgartirish ({left} ta qoldi)": "Изменить условия (осталось: {left})",
-  "Shartlarni boshqa oʻzgartirib boʻlmaydi (eng koʻpi 3 marta). Kerak boʻlsa, mijoz bilan suhbatda kelishib oling.":
-    "Условия больше изменить нельзя (не более 3 раз). При необходимости договоритесь с заказчиком в чате.",
-  "Toʻliq shartlar matni": "Полный текст условий",
+  "Shartlarni yangilash": "Обновить условия",
   "Yuborganingizda siz shartlarni qabul qilgan hisoblanasiz. Soʻng mijoz toʻlovdan oldin aynan shu shartlarni qabul qilishi kerak.":
     "Отправляя условия, вы их принимаете. После этого заказчик должен принять именно эти условия до оплаты.",
   "Toʻlovingiz tekshirilmoqda.": "Ваша оплата проверяется.",
