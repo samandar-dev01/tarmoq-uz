@@ -157,6 +157,7 @@ test.describe("Russian off (the live site today)", () => {
     // The agreement is the Uzbek text alone.
     const { page, context } = await pageFor(browser, w.client, UZ_BASE, "ru");
     await page.goto(`/orders/${pending}`);
+    await page.getByText("Toʻliq shartlar matni", { exact: true }).click(); // the eleven clauses are folded under the offer
     await expect(page.getByTestId("agreement-uz")).toBeVisible();
     await expect(page.getByTestId("agreement-ru")).toHaveCount(0);
     await context.close();
@@ -261,7 +262,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     const STEPS = ["Заявка", "Условия согласованы", "Оплачено", "Работа сдана", "Завершён"];
     const table: { status: Status; badge: string; client: string; creator: string; clientSees: string[]; creatorSees: string[] }[] = [
       { status: "REQUESTED", badge: "Заявка отправлена", client: "Дождитесь условий от креатора", creator: "Отправьте свои условия", clientSees: ["Отменить заказ"], creatorSees: ["Отправьте свои условия", "Отправить условия заказчику", "Отклонить заявку"] },
-      { status: "AGREEMENT_PENDING", badge: "Ожидается соглашение", client: "Изучите условия и примите их", creator: "Дождитесь, пока заказчик примет условия", clientSees: ["Принять соглашение", "Отменить заказ"], creatorSees: ["Обновить условия", "Отправить обновлённые условия"] },
+      { status: "AGREEMENT_PENDING", badge: "Ожидается соглашение", client: "Изучите условия и примите их", creator: "Дождитесь, пока заказчик примет условия", clientSees: ["Принять соглашение", "Отменить заказ"], creatorSees: ["Ваши условия отправлены заказчику", "Изменить условия (осталось: 2)"] },
       { status: "AWAITING_PAYMENT", badge: "Ожидается оплата", client: "Оплатите заказ, чтобы работа началась", creator: "Дождитесь оплаты от заказчика", clientSees: ["Оплатить (тестовый режим)", "Хотите остановить заказ?"], creatorSees: ["Отменить заказ"] },
       { status: "IN_PROGRESS", badge: "В работе", client: "Креатор работает над вашим видео", creator: "Загрузите готовое видео", clientSees: ["Открыть спор", "Хотите остановить заказ?"], creatorSees: ["Сдача видео", "Сдать работу", "Открыть спор"] },
       { status: "DELIVERED", badge: "Работа сдана", client: "Посмотрите сданную работу и примите её", creator: "Дождитесь, пока заказчик примет работу", clientSees: ["Сданная работа", "Принять работу и перевести оплату", "Запросить правки (осталось: 1)", "Скачать"], creatorSees: ["Сданная работа", "Скачать"] },
@@ -302,6 +303,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
       await expect(page.getByRole("heading", { level: 2, name: "Соглашение (версия 1)" }), name).toBeVisible();
       const ru = page.getByTestId("agreement-ru");
       const uz = page.getByTestId("agreement-uz");
+      await page.getByText("Полный текст условий", { exact: true }).click(); // the eleven clauses are folded under the offer
       await expect(ru, name).toBeVisible();
       await expect(ru.getByText("Информационный перевод. Обязательным является текст на узбекском языке ниже."), name).toBeVisible();
       await expect(ru.getByText("Обязательный текст (на узбекском)"), name).toBeVisible();
@@ -719,6 +721,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await page.goto(`/orders/${id}`);
     await settled(page);
     await expect(statusBadges(page)).toHaveText("Ожидается соглашение");
+    await page.getByText("Полный текст условий", { exact: true }).click(); // the eleven clauses are folded under the offer
     await expect(page.getByTestId("agreement-ru")).toBeVisible();
     await page.locator("header").getByRole("button", { name: /^Сменить язык: / }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "uz");
