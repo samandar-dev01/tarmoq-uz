@@ -187,4 +187,10 @@ export const orders: Record<string, string> = {
     "Чек из банковского приложения: изображение (JPG, PNG, WebP) или PDF, не более {max} МБ.",
   "Chekni yuklamasdan toʻlovni yuborib boʻlmaydi. Pul tushmasa, toʻlov rad etiladi.":
     "Без чека отправить оплату нельзя. Если деньги не поступят, оплата будет отклонена.",
+  // ---- Tap to copy the card number (ManualTransfer)
+  "Karta raqamini nusxalash": "Скопировать номер карты",
+  "Nusxalash": "Копировать",
+  "Nusxalandi": "Скопировано",
+  "Karta raqami nusxalandi": "Номер карты скопирован",
+  "Nusxalab boʻlmadi. Raqamni qoʻlda koʻchiring.": "Не удалось скопировать. Скопируйте номер вручную.",
 };

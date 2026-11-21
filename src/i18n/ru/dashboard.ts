@@ -35,6 +35,7 @@ export const dashboard: Record<string, string> = {
   // ---- The card the creator is paid to
   "Saqlangan karta:": "Сохранённая карта:",
   "Karta saqlandi.": "Карта сохранена.",
+  "{card} ({holder}) kartasi saqlansinmi? Daromadingiz shu kartaga oʻtkaziladi.": "Сохранить карту {card} ({holder})? Ваш доход будет переводиться на эту карту.",
   "ISM FAMILIYA": "IVAN IVANOV",
   "Karta ustida yozilgandek": "Как написано на карте",
   "Serverda shifrlab saqlanadi": "Хранится на сервере в зашифрованном виде",
