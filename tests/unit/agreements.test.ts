@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTermsText, hashTerms } from "@/lib/agreements";
+import { MAX_TERMS_VERSIONS, buildTermsText, hashTerms, termsChangesLeft } from "@/lib/agreements";
 import { formatUZS } from "@/lib/format";
 
 const base = {
@@ -38,5 +38,10 @@ describe("agreements", () => {
     expect(hashTerms({ ...t, version: 2 })).not.toBe(h);
     expect(hashTerms({ ...t, orderId: "order_2" })).not.toBe(h);
     expect(hashTerms({ ...t, termsText: "terms!" })).not.toBe(h);
+  });
+
+  it("allows the first offer and two changes, then none", () => {
+    expect(MAX_TERMS_VERSIONS).toBe(3);
+    expect([0, 1, 2, 3, 4].map(termsChangesLeft)).toEqual([3, 2, 1, 0, 0]);
   });
 });

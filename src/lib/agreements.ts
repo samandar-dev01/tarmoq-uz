@@ -14,6 +14,15 @@ export type TermsInput = {
   notes?: string;
 };
 
+/**
+ * How many times a creator may send terms for one order: the first offer and two changes. More than that is a sign the two
+ * should talk (the chat is for that), and every send puts a message in the client's chat, so it must not go on forever.
+ */
+export const MAX_TERMS_VERSIONS = 3;
+
+/** How many more times the creator may send changed terms, after version `version` (0 = none left). */
+export const termsChangesLeft = (version: number) => Math.max(0, MAX_TERMS_VERSIONS - version);
+
 export function buildTermsText(t: TermsInput): string {
   return [
     `XIZMAT KOʻRSATISH KELISHUVI (${t.version}-versiya)`,
