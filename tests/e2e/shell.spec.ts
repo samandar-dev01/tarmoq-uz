@@ -127,7 +127,7 @@ test.describe("the account menu in the header", () => {
     await expect(box).toContainText("Mijoz");
     await expect(panel(page)).toHaveAttribute("aria-labelledby", /.+/);
     // The note is outside the list of items: the list has only items and the divider.
-    expect(await panel(page).evaluate((el) => [...el.children].map((c) => c.getAttribute("role")))).toEqual(["menuitem", "menuitem", "menuitem", "separator", "menuitem"]);
+    expect(await panel(page).evaluate((el) => [...el.children].map((c) => c.getAttribute("role")))).toEqual(["menuitem", "menuitem", "menuitem", "menuitem", "separator", "menuitem"]); // three destinations, Yordam, divider, Chiqish
     await expect(panel(page).getByText("Demo Mijoz")).toHaveCount(0);
     // No settings item yet: the page for it is a later wave.
     await expect(page.getByRole("menuitem", { name: "Sozlamalar" })).toHaveCount(0);
@@ -140,7 +140,7 @@ test.describe("what each role finds in the menu", () => {
     await page.goto("/");
     await settled(page);
     await openMenu(page);
-    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Ijodkorlar", "Chiqish"]);
+    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Ijodkorlar", "Yordam", "Chiqish"]);
     await expect(item(page, "Kabinet")).toHaveAttribute("href", CLIENT.home);
     await expect(item(page, "Xabarlar")).toHaveAttribute("href", "/messages");
     await expect(item(page, "Ijodkorlar")).toHaveAttribute("href", "/search");
@@ -154,7 +154,7 @@ test.describe("what each role finds in the menu", () => {
     await page.goto("/");
     await settled(page);
     await openMenu(page);
-    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Chiqish"]);
+    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Yordam", "Chiqish"]);
     await expect(item(page, "Kabinet")).toHaveAttribute("href", CREATOR.home);
     await expect(page.getByRole("menuitem", { name: "Ijodkorlar" })).toHaveCount(0);
     await expect(page.locator('header a[href="/search"]')).toHaveCount(0);
@@ -259,13 +259,15 @@ test.describe("opening and closing", () => {
     await page.keyboard.press("ArrowDown");
     await expect(item(page, "Ijodkorlar")).toBeFocused();
     await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Yordam")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
     await expect(item(page, "Chiqish")).toBeFocused();
     await page.keyboard.press("ArrowDown"); // wraps
     await expect(item(page, "Kabinet")).toBeFocused();
     await page.keyboard.press("ArrowUp"); // wraps back
     await expect(item(page, "Chiqish")).toBeFocused();
     await page.keyboard.press("ArrowUp");
-    await expect(item(page, "Ijodkorlar")).toBeFocused();
+    await expect(item(page, "Yordam")).toBeFocused();
     await page.keyboard.press("Home");
     await expect(item(page, "Kabinet")).toBeFocused();
     await page.keyboard.press("End");
@@ -436,24 +438,27 @@ test.describe("the footer fits who is looking", () => {
   };
   const footerHrefs = (page: Page) => page.getByRole("navigation", { name: "Pastki menyu" }).getByRole("link").evaluateAll((els) => els.map((el) => el.getAttribute("href")));
 
-  test("a visitor keeps the three links of before", async ({ page }) => {
+  // Everyone but an admin ends with Yordam, the support team's Telegram (an outside address, so no site prefix).
+  const HELP_HREF = "https://t.me/justuzbe";
+
+  test("a visitor keeps the three links of before, then Yordam", async ({ page }) => {
     await page.goto("/");
-    expect(await footerLinks(page)).toEqual(["Ijodkorlar", "Ijodkor boʻlib qoʻshilish", "Buyurtma bermoqchiman"]);
-    expect(await footerHrefs(page)).toEqual(["/search", "/register?role=provider", "/register?role=client"]);
+    expect(await footerLinks(page)).toEqual(["Ijodkorlar", "Ijodkor boʻlib qoʻshilish", "Buyurtma bermoqchiman", "Yordam"]);
+    expect(await footerHrefs(page)).toEqual(["/search", "/register?role=provider", "/register?role=client", HELP_HREF]);
   });
 
-  test("a client has Ijodkorlar, Kabinet and Xabarlar", async ({ page }) => {
+  test("a client has Ijodkorlar, Kabinet and Xabarlar, then Yordam", async ({ page }) => {
     await login(page, CLIENT.email);
     await page.goto("/");
-    expect(await footerLinks(page)).toEqual(["Ijodkorlar", "Kabinet", "Xabarlar"]);
-    expect(await footerHrefs(page)).toEqual(["/search", CLIENT.home, "/messages"]);
+    expect(await footerLinks(page)).toEqual(["Ijodkorlar", "Kabinet", "Xabarlar", "Yordam"]);
+    expect(await footerHrefs(page)).toEqual(["/search", CLIENT.home, "/messages", HELP_HREF]);
   });
 
-  test("a creator has Kabinet and Xabarlar, never Ijodkorlar", async ({ page }) => {
+  test("a creator has Kabinet and Xabarlar, then Yordam, never Ijodkorlar", async ({ page }) => {
     await login(page, CREATOR.email);
     await page.goto("/");
-    expect(await footerLinks(page)).toEqual(["Kabinet", "Xabarlar"]);
-    expect(await footerHrefs(page)).toEqual([CREATOR.home, "/messages"]);
+    expect(await footerLinks(page)).toEqual(["Kabinet", "Xabarlar", "Yordam"]);
+    expect(await footerHrefs(page)).toEqual([CREATOR.home, "/messages", HELP_HREF]);
   });
 
   test("an admin has Admin only", async ({ page }) => {

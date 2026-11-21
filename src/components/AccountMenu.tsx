@@ -13,7 +13,7 @@ import type { NavEntry } from "@/lib/shellNav";
  * how to sign out. The destinations come from the server (src/lib/shellNav.ts), which knows the role; the header hands
  * them over already in the reader's language.
  */
-export function AccountMenu({ name, roleLabel, links }: { name: string; roleLabel: string; links: NavEntry[] }) {
+export function AccountMenu({ name, roleLabel, links, help }: { name: string; roleLabel: string; links: NavEntry[]; help?: NavEntry }) {
   const pathname = usePathname();
   const { signOut, signingOut } = useSignOut();
   const t = useT();
@@ -35,6 +35,8 @@ export function AccountMenu({ name, roleLabel, links }: { name: string; roleLabe
         </MenuLink>
       ))}
       {/* «Sozlamalar» goes here, after the destinations, when the settings page exists (a later wave). */}
+      {/* Help is Telegram, outside the site: it opens in a new tab. Not given to an admin (see Header). */}
+      {help && <MenuLink href={help.href} external>{help.label}</MenuLink>}
       <MenuSeparator />
       {/* Stays open and says «Chiqilmoqda…» until the page changes to the signed-out home. */}
       <MenuButton onSelect={signOut} closeOnSelect={false} busy={signingOut}>

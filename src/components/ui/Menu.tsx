@@ -136,11 +136,14 @@ export function Menu({ label, trigger, triggerClassName = buttonClasses({ varian
   );
 }
 
-/** An item that goes to a page. `current` marks the page you are on, the way the header's nav links do. Choosing it closes the menu. */
-export function MenuLink({ href, current = false, children }: { href: string; current?: boolean; children: ReactNode }) {
+/**
+ * An item that goes to a page. `current` marks the page you are on, the way the header's nav links do. Choosing it closes the
+ * menu. `external` is for an address outside the site: it opens in a new tab and the new page gets no handle back to this one.
+ */
+export function MenuLink({ href, current = false, external = false, children }: { href: string; current?: boolean; external?: boolean; children: ReactNode }) {
   const menu = useMenu();
   return (
-    <Link href={href} role="menuitem" tabIndex={-1} aria-current={current ? "page" : undefined} onClick={() => menu.close({ returnFocus: true })} className={`${ITEM} ${current ? ITEM_CURRENT : ITEM_IDLE}`}>
+    <Link href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})} role="menuitem" tabIndex={-1} aria-current={current ? "page" : undefined} onClick={() => menu.close({ returnFocus: true })} className={`${ITEM} ${current ? ITEM_CURRENT : ITEM_IDLE}`}>
       {children}
     </Link>
   );

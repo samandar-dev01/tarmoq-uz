@@ -11,7 +11,7 @@ import { localHref } from "@/i18n/paths";
 import { getLocale } from "@/i18n/server";
 import { getCurrentUser } from "@/lib/auth";
 import { paymentsAreTest } from "@/lib/payments/mode";
-import { footerLinks } from "@/lib/shellNav";
+import { footerLinks, HELP } from "@/lib/shellNav";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { getTheme } from "@/lib/theme";
 import { THEME_BROWSER_COLOR } from "@/lib/themePure";
@@ -79,6 +79,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {footerLinks(viewer).map((link) => (
                 <ButtonLink key={link.href} href={localHref(locale, link.href)} variant="link" className="inline-flex min-h-11 items-center">{t(link.label)}</ButtonLink>
               ))}
+              {/* Help: the support team's Telegram, in a new tab. An admin answers from the admin area and is not given it. */}
+              {viewer?.role !== "ADMIN" && (
+                <ButtonLink href={HELP.href} target="_blank" rel="noopener noreferrer" variant="link" className="inline-flex min-h-11 items-center">{t(HELP.label)}</ButtonLink>
+              )}
             </nav>
           </Container>
           <div className="border-t border-line bg-paper">

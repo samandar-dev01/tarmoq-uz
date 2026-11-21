@@ -8,6 +8,7 @@ export const shell: Record<string, string> = {
   "Ijodkorlar": "Креаторы",
   "Xabarlar": "Сообщения",
   "Kabinet": "Кабинет",
+  "Yordam": "Помощь",
   // Account menu
   "Hisob menyusi: {name}": "Меню аккаунта: {name}",
   "Chiqish": "Выйти",
