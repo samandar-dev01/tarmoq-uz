@@ -40,8 +40,6 @@ export const errors: Record<string, string> = {
   "Shartlar hozirgina yangilandi. Sahifani yangilang.": "Условия только что обновились. Обновите страницу.",
   "Qabul qilishingiz kutilayotgan shartlar yoʻq.": "Нет условий, которые ждут вашего принятия.",
   "Mijoz shartlarni allaqachon qabul qilgan.": "Заказчик уже принял условия.",
-  "Bu shartlar allaqachon yuborilgan. Oʻzgartirmasdan qayta yuborib boʻlmaydi.": "Эти условия уже отправлены. Отправить их повторно без изменений нельзя.",
-  "Shartlarni eng koʻpi 3 marta yuborish mumkin. Qolgan masalalarni mijoz bilan suhbatda kelishib oling.": "Условия можно отправить не более 3 раз. Остальные вопросы согласуйте с заказчиком в чате.",
   "Ijodkor hali shartlarni yubormagan.": "Креатор ещё не отправил условия.",
   "Bu shartlar allaqachon qabul qilingan.": "Эти условия уже приняты.",
   "Bu buyurtma shartlarini endi oʻzgartirib boʻlmaydi.": "Условия этого заказа уже нельзя изменить.",

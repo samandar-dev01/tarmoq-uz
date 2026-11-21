@@ -7,39 +7,21 @@ import { useHydrated } from "@/components/ui/useHydrated";
 import { useT } from "@/i18n/client";
 import { useAction } from "./useAction";
 
-/**
- * Provider: send the terms, or change them after they were sent. The first send folds the form away (the page then shows
- * the "sent" state), changing is a deliberate button with the number of changes left, and a send that is already settling
- * cannot be repeated by a second tap. The server holds the same line (src/lib/agreements.ts, MAX_TERMS_VERSIONS).
- */
-export function ProposeTerms({ orderId, defaults, update, changesLeft }: { orderId: string; defaults: { price: number; days: number; revisions: number; notes: string }; update: boolean; changesLeft: number }) {
+/** Provider: send (or update) the terms. */
+export function ProposeTerms({ orderId, defaults, update }: { orderId: string; defaults: { price: number; days: number; revisions: number }; update: boolean }) {
   const { run, loading, error, fe } = useAction();
   const t = useT();
   const ready = useHydrated();
   const [price, setPrice] = useState(String(defaults.price));
   const [days, setDays] = useState(String(defaults.days));
   const [revisions, setRevisions] = useState(String(defaults.revisions));
-  const [notes, setNotes] = useState(defaults.notes);
-  const [open, setOpen] = useState(!update);
-  const [sent, setSent] = useState(false);
+  const [notes, setNotes] = useState("");
 
   const num = (v: string) => (v === "" ? undefined : Number(v));
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (sent) return;
-    const done = await run(`/api/orders/${orderId}/propose`, { json: { price: num(price), deliveryDays: num(days), revisions: num(revisions), notes: notes || undefined } });
-    if (!done) return;
-    setSent(true);
-    if (update) { setOpen(false); setSent(false); }
+    await run(`/api/orders/${orderId}/propose`, { json: { price: num(price), deliveryDays: num(days), revisions: num(revisions), notes: notes || undefined } });
   };
-
-  if (!open) {
-    return changesLeft > 0 ? (
-      <Button variant="secondary" onClick={() => setOpen(true)}>{t("Shartlarni oʻzgartirish ({left} ta qoldi)", { left: changesLeft })}</Button>
-    ) : (
-      <Alert variant="info">{t("Shartlarni boshqa oʻzgartirib boʻlmaydi (eng koʻpi 3 marta). Kerak boʻlsa, mijoz bilan suhbatda kelishib oling.")}</Alert>
-    );
-  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
@@ -50,10 +32,7 @@ export function ProposeTerms({ orderId, defaults, update, changesLeft }: { order
         <Field label={t("Tuzatishlar soni")} type="number" inputMode="numeric" min={0} value={revisions} onChange={(e) => setRevisions(e.target.value)} error={fe("revisions")} />
       </div>
       <Field as="textarea" label={t("Izoh (ixtiyoriy)")} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("Ish hajmi, joylashuv, nimalar kirmasligi…")} />
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" loading={loading} disabled={!ready || sent}>{update ? t("Yangilangan shartlarni yuborish") : t("Shartlarni mijozga yuborish")}</Button>
-        {update && <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("Bekor qilish")}</Button>}
-      </div>
+      <Button type="submit" loading={loading} disabled={!ready}>{update ? t("Yangilangan shartlarni yuborish") : t("Shartlarni mijozga yuborish")}</Button>
     </form>
   );
 }

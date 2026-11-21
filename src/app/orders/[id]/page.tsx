@@ -2,14 +2,13 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
 import { getLocale, getT } from "@/i18n/server";
-import { readTerms, russianReading, termsChangesLeft } from "@/lib/agreements";
+import { russianReading } from "@/lib/agreements";
 import { formatDate, formatMoment, formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
 import { paymentsAreTest } from "@/lib/payments/mode";
 import { Alert } from "@/components/ui/Alert";
-import { buttonClasses } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { Card, tagClasses } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Stars } from "@/components/ui/Stars";
 import { TestModeBadge } from "@/components/ui/TestModeBadge";
@@ -65,8 +64,6 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
   // For a reader of Russian: the agreement's figures in Russian, shown above the Uzbek text that is the binding one.
   // Null when the stored text is not the template (an older text): then only the Uzbek text is shown.
   const agreementRu = agreement && locale === "ru" ? russianReading(agreement.termsText) : null;
-  // The offer's revisions and notes are read back out of the stored text (price and days are columns). Null for an older text.
-  const offer = agreement ? readTerms(agreement.termsText) : null;
 
   return (
     <Container size="lg" className="space-y-6">
@@ -109,19 +106,14 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
 
       {isProvider && (order.status === "REQUESTED" || order.status === "AGREEMENT_PENDING") && (
         <Card as="section">
-          <h2>{order.status === "REQUESTED" ? t("Shartlaringizni yuboring") : t("Shartlaringiz mijozga yuborildi")}</h2>
+          <h2>{order.status === "REQUESTED" ? t("Shartlaringizni yuboring") : t("Shartlarni yangilash")}</h2>
           <p className="mb-5 mt-2 text-ink-soft">
-            {order.status === "REQUESTED"
-              ? t("Yuborganingizda siz shartlarni qabul qilgan hisoblanasiz. Soʻng mijoz toʻlovdan oldin aynan shu shartlarni qabul qilishi kerak.")
-              : t("Mijoz shartlarni koʻrib chiqib, qabul qilishini kuting. Qabul qilmaguncha shartlarni oʻzgartirishingiz mumkin.")}
+            {t("Yuborganingizda siz shartlarni qabul qilgan hisoblanasiz. Soʻng mijoz toʻlovdan oldin aynan shu shartlarni qabul qilishi kerak.")}
           </p>
-          {/* The form is folded away once the terms are sent, and the number of changes is limited: see MAX_TERMS_VERSIONS. */}
           <ProposeTerms
-            key={order.status}
             orderId={order.id}
             update={order.status === "AGREEMENT_PENDING"}
-            changesLeft={agreement ? termsChangesLeft(agreement.version) : 0}
-            defaults={{ price: order.agreedPrice ?? order.service.price, days: order.agreedDays ?? order.service.deliveryDays, revisions: order.revisionsAllowed, notes: offer?.notes ?? "" }}
+            defaults={{ price: order.agreedPrice ?? order.service.price, days: order.agreedDays ?? order.service.deliveryDays, revisions: order.revisionsAllowed }}
           />
         </Card>
       )}
@@ -129,26 +121,16 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
       {agreement && (
         <Card as="section">
           <h2>{t("Kelishuv ({version}-versiya)", { version: agreement.version })}</h2>
-          {/* The offer in a few lines, the way a creator's package is shown. The eleven clauses are one tap away below. */}
-          <p className="mt-3 text-2xl font-extrabold tabular-nums tracking-tight">{formatUZS(agreement.price, locale)}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className={tagClasses("paper")}>{t("{days} kunda topshiriladi", { days: agreement.deliveryDays })}</span>
-            <span className={tagClasses("paper")}>{t("{count} ta tuzatish", { count: offer?.revisions ?? order.revisionsAllowed })}</span>
-          </div>
-          {offer?.notes && <p data-user-content className="mt-3 whitespace-pre-line text-ink-soft">{offer.notes}</p>}
-          <details className="mt-5">
-            <summary className={buttonClasses({ variant: "secondary", size: "sm" })}>{t("Toʻliq shartlar matni")}</summary>
-            {agreementRu && (
-              <div data-testid="agreement-ru" className="mt-4">
-                {/* Information only: never stored, never hashed. The Uzbek text below is what both people accept. */}
-                <p className="text-sm font-semibold text-ink-soft">{t("Axborot uchun tarjima. Majburiy kuchga ega boʻlgan matn quyidagi oʻzbekcha matndir.")}</p>
-                {/* Shown whole, with no scroll box of its own: the binding Uzbek text below keeps its box, and two boxes to scroll one after the other are hard to read on a phone. */}
-                <pre className="mt-2 whitespace-pre-wrap rounded-ctl border border-line bg-paper-deep p-4 font-sans text-sm leading-6">{agreementRu}</pre>
-                <p className="mt-5 text-sm font-semibold text-ink-soft">{t("Majburiy matn (oʻzbekcha)")}</p>
-              </div>
-            )}
-            <pre data-testid="agreement-uz" lang="uz" className={`${agreementRu ? "mt-2" : "mt-4"} max-h-72 overflow-auto whitespace-pre-wrap rounded-ctl border border-line-strong bg-paper p-4 font-sans text-sm leading-6`}>{agreement.termsText}</pre>
-          </details>
+          {agreementRu && (
+            <div data-testid="agreement-ru" className="mt-4">
+              {/* Information only: never stored, never hashed. The Uzbek text below is what both people accept. */}
+              <p className="text-sm font-semibold text-ink-soft">{t("Axborot uchun tarjima. Majburiy kuchga ega boʻlgan matn quyidagi oʻzbekcha matndir.")}</p>
+              {/* Shown whole, with no scroll box of its own: the binding Uzbek text below keeps its box, and two boxes to scroll one after the other are hard to read on a phone. */}
+              <pre className="mt-2 whitespace-pre-wrap rounded-ctl border border-line bg-paper-deep p-4 font-sans text-sm leading-6">{agreementRu}</pre>
+              <p className="mt-5 text-sm font-semibold text-ink-soft">{t("Majburiy matn (oʻzbekcha)")}</p>
+            </div>
+          )}
+          <pre data-testid="agreement-uz" lang="uz" className={`${agreementRu ? "mt-2" : "mt-4"} max-h-72 overflow-auto whitespace-pre-wrap rounded-ctl border border-line-strong bg-paper p-4 font-sans text-sm leading-6`}>{agreement.termsText}</pre>
           <ul className="mt-4 space-y-1">
             <li>{t("Ijodkor qabul qildi: {when}", { when: agreement.providerAcceptedAt ? formatMoment(agreement.providerAcceptedAt, locale) : t("kutilmoqda") })}</li>
             <li>{t("Mijoz qabul qildi: {when}", { when: agreement.clientAcceptedAt ? formatMoment(agreement.clientAcceptedAt, locale) : t("kutilmoqda") })}</li>

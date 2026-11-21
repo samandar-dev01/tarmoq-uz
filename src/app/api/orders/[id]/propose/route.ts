@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { HttpError, clientIp, handle, ok, readJson } from "@/lib/http";
 import { assertTransition } from "@/lib/orderMachine";
-import { MAX_TERMS_VERSIONS, buildTermsText, hashTerms } from "@/lib/agreements";
+import { buildTermsText, hashTerms } from "@/lib/agreements";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
 
@@ -39,20 +39,12 @@ export const POST = handle(async (req, ctx: Ctx) => {
       const latest = await tx.agreement.findFirst({ where: { orderId: order.id }, orderBy: { version: "desc" } });
       if (latest?.clientAcceptedAt) throw new HttpError(409, "Mijoz shartlarni allaqachon qabul qilgan.");
       const version = (latest?.version ?? 0) + 1;
-      const figures = {
-        orderId: order.id, serviceTitle: order.service.title,
+      const termsText = buildTermsText({
+        orderId: order.id, version, serviceTitle: order.service.title,
         clientName: order.client.name, providerName: order.provider.name,
         price: input.price, deliveryDays: input.deliveryDays, revisions: input.revisions,
         notes: input.notes,
-      };
-      // The same terms again would only make a new version and a new chat message for nothing (a double tap, a second tab).
-      if (latest && buildTermsText({ ...figures, version: latest.version }) === latest.termsText) {
-        throw new HttpError(409, "Bu shartlar allaqachon yuborilgan. Oʻzgartirmasdan qayta yuborib boʻlmaydi.");
-      }
-      if (version > MAX_TERMS_VERSIONS) {
-        throw new HttpError(409, "Shartlarni eng koʻpi 3 marta yuborish mumkin. Qolgan masalalarni mijoz bilan suhbatda kelishib oling.");
-      }
-      const termsText = buildTermsText({ ...figures, version });
+      });
       const created = await tx.agreement.create({
         data: {
           orderId: order.id, version, termsText, price: input.price, deliveryDays: input.deliveryDays,
