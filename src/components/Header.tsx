@@ -10,7 +10,7 @@ import { russianLive } from "@/i18n/config";
 import { translator } from "@/i18n/dictionary";
 import { localHref } from "@/i18n/paths";
 import { getLocale } from "@/i18n/server";
-import { accountMenuLinks, headerLinks, ROLE_LABEL } from "@/lib/shellNav";
+import { accountMenuLinks, HELP, headerLinks, ROLE_LABEL } from "@/lib/shellNav";
 import { getTheme } from "@/lib/theme";
 
 export async function Header() {
@@ -31,6 +31,8 @@ export async function Header() {
       ))}
       {!user && (
         <>
+          {/* A visitor has no account menu to hold Help, so it is a link here (and in the footer): Telegram, in a new tab. */}
+          <NavLink href={HELP.href} target="_blank" rel="noopener noreferrer">{t(HELP.label)}</NavLink>
           {/* Two ways in, never one: a client and a creator each get their own button. */}
           <NavLink href="/login?role=client" variant="plain" className={buttonClasses({ variant: "secondary", size: "sm" })}>{t("Mijoz sifatida kirish")}</NavLink>
           <NavLink href="/login?role=provider" variant="plain" className={buttonClasses({ size: "sm" })}>{t("Ijodkor sifatida kirish")}</NavLink>
@@ -61,7 +63,7 @@ export async function Header() {
           {/* The one language button, beside it at every width. Not drawn at all while Russian is off (src/i18n/config.ts). */}
           {live && <LangToggle initial={locale} />}
           {user ? (
-            <AccountMenu name={user.name} roleLabel={t(ROLE_LABEL[user.role])} links={accountMenuLinks(user).map(entry)} />
+            <AccountMenu name={user.name} roleLabel={t(ROLE_LABEL[user.role])} links={accountMenuLinks(user).map(entry)} help={user.role === "ADMIN" ? undefined : { href: HELP.href, label: t(HELP.label) }} />
           ) : (
             <details className="relative md:hidden">
               <summary className={buttonClasses({ variant: "secondary", size: "sm" })}>{t("Menyu")}</summary>

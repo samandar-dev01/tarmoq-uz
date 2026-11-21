@@ -12,6 +12,13 @@ type Viewer = { role: AppRole } | null;
 /** The role in words, as the sign-in tabs already say it. */
 export const ROLE_LABEL: Record<AppRole, string> = { CLIENT: tk("Mijoz"), PROVIDER: tk("Ijodkor"), ADMIN: tk("Admin") };
 
+/**
+ * Help is the support team's Telegram: one press opens it in a new tab. Not a `NavEntry`: it is an outside address with no
+ * language prefix, so whoever draws it writes `t(HELP.label)` and opens `HELP.href` with `target="_blank" rel="noopener noreferrer"`.
+ * It sits in the header (visitors), the account menu (everyone signed in but an admin) and the footer.
+ */
+export const HELP = { href: "https://t.me/justuzbe", label: tk("Yordam") } as const;
+
 const CREATORS: NavEntry = { href: "/search", label: tk("Ijodkorlar") };
 const MESSAGES: NavEntry = { href: "/messages", label: tk("Xabarlar") };
 const cabinet = (role: AppRole): NavEntry => ({ href: ROLE_HOME[role], label: role === "ADMIN" ? tk("Admin") : tk("Kabinet") });
