@@ -202,6 +202,24 @@ See `.env.example`. The important ones:
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Optional. When both are set, a Telegram message (creator name and city, plus a link to `/admin/providers`) is sent to the admin each time a creator submits a profile for review. Create the bot with @BotFather, message it once, and use your chat id. Both empty = off. A Telegram failure never affects the creator's submit. The link uses `APP_URL`, or Render's `RENDER_EXTERNAL_URL` if that is unset. |
 | `APP_URL` | The site's public address, no trailing slash (live: `https://tarmoq-uz.onrender.com`). Canonical links, the sitemap, `robots.txt`, Open Graph and `llms.txt` are built from it; falls back to Render's `RENDER_EXTERNAL_URL`, then `http://localhost:3000`. See section 14. |
 | `GOOGLE_SITE_VERIFICATION`, `YANDEX_VERIFICATION` | Optional. The verification codes from Google Search Console and Yandex Webmaster; when set, the matching `<meta>` tag is added to every page. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Switch on "Continue with Google" (see "Sign in with Google" below). Both must be set, or no Google button is shown. |
+
+### Sign in with Google
+
+"Continue with Google" sits under the email and password form on the client and creator sign-in and sign-up pages (never on the admin door). How it behaves:
+
+- **Only verified Google emails.** Google's ID token is checked (signature, issuer, this app as audience, expiry, the nonce of this very sign-in) and the person is refused unless Google marks the email address as verified.
+- **They choose their own account.** The request carries `prompt=select_account`, so Google shows its account chooser every time.
+- **Who is signed in.** A person already known by their Google id signs in. Otherwise, a client or creator account with the same (verified) email is linked to their Google id and signed in. Otherwise a new account is made for the door they came through (client or creator, with no password and no phone). An admin account is never opened, made or linked through Google. The same door rule as the password form applies.
+- Code: `src/lib/googleAuth.ts`, `src/app/api/auth/google/{start,callback}/route.ts`, `src/components/auth/GoogleButton.tsx`.
+
+**One-time setup (Google Cloud, in the owner's Google account):**
+
+1. Open <https://console.cloud.google.com/>, create a project (for example "Tarmoq").
+2. Google Auth Platform (older name: APIs & Services, OAuth consent screen): app name, support email, audience **External**, and only the basic scopes `openid`, `email`, `profile`.
+3. **Publish the app** ("In production"). With only those basic scopes Google does not need to review it; left in "Testing", only listed test users can sign in.
+4. Credentials, Create credentials, OAuth client ID, type **Web application**. Authorized redirect URIs, exactly: `http://localhost:3000/api/auth/google/callback` and `https://tarmoq-uz.onrender.com/api/auth/google/callback` (with a real domain later: that domain, same path).
+5. Copy the Client ID and Client secret into `.env` (local) and into the Render service's Environment as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 ## 10. Production deployment
 

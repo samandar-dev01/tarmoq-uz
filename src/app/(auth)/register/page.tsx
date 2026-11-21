@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getT } from "@/i18n/server";
 import { parseEntryRole } from "@/lib/authRole";
+import { googleEnabled } from "@/lib/googleAuth";
 import { safeNext } from "@/lib/safeNext";
 
 export async function generateMetadata() {
@@ -22,7 +23,7 @@ export default async function RegisterPage(props: Props) {
       <p className="mt-2 text-ink-soft">{t("Bir daqiqa ichida tayyor boʻladi. Bank kartasi shart emas.")}</p>
       <Card padding="lg" className="mt-6">
         {/* key: following a header link to the other role re-selects it; the choice stays changeable in the form. */}
-        <RegisterForm key={role} initialRole={role} next={next} />
+        <RegisterForm key={role} initialRole={role} next={next} googleEnabled={googleEnabled()} />
       </Card>
     </Container>
   );

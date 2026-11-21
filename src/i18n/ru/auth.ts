@@ -14,6 +14,18 @@ export const auth: Record<string, string> = {
   "Kirib boʻlmadi.": "Не удалось войти.",
   "Yangimisiz?": "Впервые здесь?",
   "Roʻyxatdan oʻting": "Зарегистрируйтесь",
+  // Continue with Google ("yoki" is in dashboard.ts). The next five are also said by the password login, so the page and
+  // the server share one entry: the wrong-door sentences, a deactivated account, too many attempts.
+  "Bu ijodkor hisobi. Ijodkorlar eshigidan kiring.": "Это аккаунт креатора. Войдите через вход для креаторов.",
+  "Bu mijoz hisobi. Mijozlar eshigidan kiring.": "Это аккаунт заказчика. Войдите через вход для заказчиков.",
+  "Bu hisob uchun boshqa kirish sahifasi bor.": "Для этого аккаунта есть другая страница входа.",
+  "Bu hisob faolsizlantirilgan.": "Этот аккаунт отключён.",
+  "Urinishlar juda koʻp. Birozdan keyin qayta urinib koʻring.": "Слишком много попыток. Попробуйте немного позже.",
+  "Google orqali davom etish": "Продолжить через Google",
+  "Google orqali kirish bekor qilindi.": "Вход через Google отменён.",
+  "Google hisobingizdagi email tasdiqlanmagan. Emailni tasdiqlab, qayta urinib koʻring.": "Email в вашем аккаунте Google не подтверждён. Подтвердите email и попробуйте снова.",
+  "Admin hisobi Google orqali kirmaydi. Email va parol bilan kiring.": "Аккаунт администратора не входит через Google. Войдите по email и паролю.",
+  "Google orqali kirib boʻlmadi. Qayta urinib koʻring.": "Не удалось войти через Google. Попробуйте ещё раз.",
   // Sign-up
   "Roʻyxatdan oʻtish": "Зарегистрироваться",
   "Hisob yarating": "Создайте аккаунт",

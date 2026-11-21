@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/Alert";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Field } from "@/components/ui/Field";
@@ -17,7 +18,8 @@ const ROLES: { value: Role; title: string; hint: string }[] = [
   { value: "PROVIDER", title: tk("Ijodkorman"), hint: tk("Xizmatlarimni taklif qilaman") },
 ];
 
-export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; next: string | null }) {
+// `googleEnabled` is false until the owner has set the Google keys, so no button shows that could not work.
+export function RegisterForm({ initialRole, next, googleEnabled = false }: { initialRole: EntryRole; next: string | null; googleEnabled?: boolean }) {
   const router = useRouter();
   const ready = useHydrated();
   const t = useT();
@@ -90,6 +92,8 @@ export function RegisterForm({ initialRole, next }: { initialRole: EntryRole; ne
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
         {loading ? t("Yaratilmoqda…") : t("Roʻyxatdan oʻtish")}
       </Button>
+      {/* The account type chosen above decides which kind of account Google makes. */}
+      {googleEnabled && <GoogleButton door={role === "PROVIDER" ? "provider" : "client"} next={next} />}
       <p className="text-center text-ink-soft">
         {t("Hisobingiz bormi?")} <ButtonLink href={authHref("/login", role === "PROVIDER" ? "provider" : "client", next)} variant="link">{t("Kiring")}</ButtonLink>
       </p>
