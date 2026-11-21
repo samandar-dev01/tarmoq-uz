@@ -118,3 +118,14 @@ test.describe("when Google sends the person back", () => {
     await expect(page.locator("form").getByRole("status")).toHaveCount(0);
   });
 });
+
+test.describe("the privacy page", () => {
+  // Google asks for a public privacy-policy link before a sign-in app can go live; this is the page it points at.
+  test("is public, needs no sign-in and says how Google data is used", async ({ page }) => {
+    const res = await page.goto("/maxfiylik");
+    expect(res?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: "Maxfiylik siyosati" })).toBeVisible();
+    await expect(page.getByText("Google orqali olingan maʼlumotlar faqat tizimga kirish")).toBeVisible();
+    await expect(page.getByText("Maʼlumotlaringizni sotmaymiz")).toBeVisible();
+  });
+});
