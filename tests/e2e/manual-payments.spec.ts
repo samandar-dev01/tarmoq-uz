@@ -176,6 +176,12 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   await settled(page);
   await expect(page.getByText(CARD)).toBeVisible();
   await expect(page.getByText(HOLDER)).toBeVisible();
+  // One tap on the card number copies it (as bare digits) and says so.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {}); // only Chromium has these
+  await page.getByRole("button", { name: /Karta raqamini nusxalash/ }).click();
+  await expect(page.getByText("Nusxalandi", { exact: true })).toBeVisible();
+  const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
+  if (copied !== null) expect(copied).toBe(CARD.replace(/\D/g, ""));
   await expect(page.getByText(/300\D000\Dso.m/).first()).toBeVisible();
   await expect(page.getByText("Izoh kodi (oʻtkazma izohiga yozing)")).toBeVisible();
   // Real money moves in this mode, so no page may claim that payments are a test.
@@ -237,7 +243,16 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   await provider.getByRole("button", { name: /Kartani (saqlash|yangilash)/ }).click();
   await expect(provider.getByText("Karta raqamini toʻgʻri kiriting (16 ta raqam)")).toBeVisible();
   await shot(provider, "6-provider-card-error");
+  // A good number is asked about first: "No" saves nothing, "Yes" saves it and says so.
   await provider.getByLabel("Karta raqami").fill("5555 5555 5555 4444");
+  const questions: string[] = [];
+  provider.once("dialog", (d) => { questions.push(d.message()); void d.dismiss(); });
+  await provider.getByRole("button", { name: /Kartani (saqlash|yangilash)/ }).click();
+  await expect.poll(() => questions.length).toBe(1);
+  expect(questions[0]).toContain("5555 5555 5555 4444");
+  expect(questions[0]).toContain("JASUR KARIMOV");
+  await expect(provider.getByText("Karta saqlandi.")).toHaveCount(0);
+  provider.once("dialog", (d) => void d.accept());
   await provider.getByRole("button", { name: /Kartani (saqlash|yangilash)/ }).click();
   await expect(provider.getByText("Karta saqlandi.")).toBeVisible();
   await expect(provider.getByText("•••• •••• •••• 4444")).toBeVisible();
