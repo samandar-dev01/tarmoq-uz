@@ -3,6 +3,7 @@
 import { auth } from "./auth";
 import { common } from "./common";
 import { dashboard } from "./dashboard";
+import { help } from "./help";
 import { labels } from "./labels";
 import { messages } from "./messages";
 import { orders } from "./orders";
@@ -10,6 +11,6 @@ import { publicPages } from "./public";
 import { shell } from "./shell";
 
 /** The fragments the pages use, by name (the completeness test checks them one by one). */
-export const UI_FRAGMENTS: Record<string, Record<string, string>> = { common, shell, auth, labels, public: publicPages, orders, dashboard, messages };
+export const UI_FRAGMENTS: Record<string, Record<string, string>> = { common, shell, auth, labels, public: publicPages, orders, dashboard, messages, help };
 
 export const RU: Record<string, string> = Object.assign({}, ...Object.values(UI_FRAGMENTS));

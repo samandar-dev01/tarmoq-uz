@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
+import { HelpButton } from "@/components/help/HelpButton";
+import { HelpProvider } from "@/components/help/HelpProvider";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { LocaleProvider } from "@/i18n/client";
@@ -65,6 +67,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </defs>
         </svg>
         <LocaleProvider locale={locale}>
+        {/* One Help sheet for the whole site; the account menu, the visitor's header and the footer open it. */}
+        <HelpProvider role={viewer?.role ?? null}>
         <Header />
         <main className="flex-1">{children}</main>
         <footer className="mt-24 border-t border-line bg-surface">
@@ -79,6 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {footerLinks(viewer).map((link) => (
                 <ButtonLink key={link.href} href={localHref(locale, link.href)} variant="link" className="inline-flex min-h-11 items-center">{t(link.label)}</ButtonLink>
               ))}
+              {viewer?.role !== "ADMIN" && <HelpButton variant="footer" />}
             </nav>
           </Container>
           <div className="border-t border-line bg-paper">
@@ -87,6 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Container>
           </div>
         </footer>
+        </HelpProvider>
         </LocaleProvider>
       </body>
     </html>

@@ -217,7 +217,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
 
     const menu = page.locator("header").getByRole("button", { name: "Меню аккаунта: Demo Mijoz" });
     await menu.click();
-    await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText(["Кабинет", "Сообщения", "Креаторы", "Выйти"]);
+    await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText(["Кабинет", "Сообщения", "Креаторы", "Помощь", "Выйти"]);
     await expect(page.getByRole("menu").locator("..").getByText("Заказчик", { exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator("footer").getByRole("navigation", { name: "Нижнее меню" }).getByRole("link")).toHaveText(["Креаторы", "Кабинет", "Сообщения"]);

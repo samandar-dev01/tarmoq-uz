@@ -79,3 +79,20 @@ export function paymentClaimedMessage(p: { amount: number; reference: string }):
 
 export const notifyPaymentClaimed = (p: { amount: number; reference: string }) =>
   sendTelegram(paymentClaimedMessage(p));
+
+/**
+ * Who wrote to the support team and where to answer. Never the message itself: it stays on the site, where only the
+ * person and the admins can read it (a Telegram chat keeps what it is sent). A name is enough to know who is waiting.
+ */
+export function supportMessageMessage(p: { name: string; role: string; threadId: string }): string {
+  const base = baseUrl();
+  const who = oneLine(p.name) || "(no name)";
+  const id = encodeURIComponent(p.threadId);
+  return [
+    `Support: ${who} (${oneLine(p.role, 12)}) wrote to the support team.`,
+    base ? `Answer: ${base}/admin/support/${id}` : `Answer at /admin/support/${id}`,
+  ].join("\n");
+}
+
+export const notifySupportMessage = (p: { name: string; role: string; threadId: string }) =>
+  sendTelegram(supportMessageMessage(p));

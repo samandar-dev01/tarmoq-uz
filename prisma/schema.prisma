@@ -72,6 +72,8 @@ model User {
   auditLogs       AuditLog[]
   conversationsA  Conversation[]   @relation("ConvA")
   conversationsB  Conversation[]   @relation("ConvB")
+  supportThread   SupportThread?
+  supportMessages SupportMessage[]
 }
 
 model Category {
@@ -285,6 +287,38 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+/// One thread per person with the support team (the Help button). Staff answer in /admin/support.
+model SupportThread {
+  id            String           @id @default(cuid())
+  userId        String           @unique
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  lastMessageAt DateTime         @default(now())
+  /// When the owner was last pinged on Telegram about this thread (one ping per 10 minutes at most).
+  lastAlertAt   DateTime?
+  /// When the person last opened their thread: staff messages after this are unread for them.
+  userReadAt    DateTime?
+  /// When an admin last opened the thread: a person's messages after this still need an answer.
+  staffReadAt   DateTime?
+  messages      SupportMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  /// The person who wrote it: the user for their own messages, the admin for answers.
+  senderId  String
+  sender    User          @relation(fields: [senderId], references: [id])
+  fromStaff Boolean       @default(false)
+  body      String
+  createdAt DateTime      @default(now())
+
+  @@index([threadId, createdAt])
 }
 
 model Review {
