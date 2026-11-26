@@ -170,3 +170,20 @@ with **one real (non-developer) user** — that outranks every item below.
   re-order accordingly.
 - Verify Uzbek wording with a native speaker; verify the whole flow with one real user. Both outrank
   my guesses.
+
+## Verification log (2026-11-26, tasks 1.3 / 2.1 / 2.2)
+
+What was run, and what it does and does not prove:
+
+- `tsc --noEmit` clean; all 469 unit tests pass (includes the Russian-translation completeness check for the new word).
+- Production-style e2e (real build, real browser, throwaway database), sandbox payments: client journey, language app,
+  login doors, shell, Google-off sign-in: **77 passed, 0 failed**.
+- Same rig with made-up Google keys (`E2E_GOOGLE_KEYS=1`): Google-sign-in + login-doors: **25 passed, 0 failed**. This is
+  the real test of task 1.3 (the button shows on both sign-in doors and both sign-up pages, follows the account type,
+  and is absent on the admin door).
+- **Not verified:** `manual-payments.spec.ts` cannot run in the container I used. Its upload step
+  (`POST /api/payments/manual/submit`) fails with `ECONNRESET`, and it fails identically on the code from before these
+  changes, so it is not caused by them. That spec holds the only test that matches the "Keyingi qadam: …" sentence, so
+  task 2.1's card restyle was NOT exercised by a test. The sentence is unchanged and still in one `<p>`, so a match
+  should still work, but run that spec somewhere it works before relying on it.
+- **Not looked at:** nobody has viewed the changed order page or the "Tafsilotlar" toggle in a browser (no screenshot).
