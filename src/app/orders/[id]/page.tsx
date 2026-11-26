@@ -7,6 +7,7 @@ import { formatDate, formatMoment, formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
 import { paymentsAreTest } from "@/lib/payments/mode";
 import { Alert } from "@/components/ui/Alert";
+import { buttonClasses } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -86,9 +87,10 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
           </div>
         </div>
         <div className="mt-6"><OrderTimeline status={order.status} /></div>
+        {/* The one thing to do now: the loudest text on the page, still one sentence in one element. */}
         {!isAdmin && (
-          <Card tone="saffron" padding="sm" className="mt-6">
-            <p className="font-bold">
+          <Card tone="saffron" padding="md" className="mt-6">
+            <p className="text-lg font-bold sm:text-xl">
               {t("Keyingi qadam:")}{" "}
               {awaitingConfirmation
                 ? isClient ? t("Administrator toʻlovni tasdiqlashini kuting") : t("Mijozning toʻlovi tekshirilmoqda")
@@ -227,7 +229,6 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
               <dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov usuli")}</dt>
               <dd>{paid.provider === "manual" ? t("Karta orqali oʻtkazma (administrator tasdiqlagan)") : t("Sinov kartasi {card}", { card: `${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}` })}</dd>
             </div>
-            <div><dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov ID")}</dt><dd className="break-all font-mono text-xs">{paid.id}</dd></div>
             {(isProvider || isAdmin) && payout && fee && (
               <>
                 <div><dt className="text-sm font-semibold text-ink-soft">{t("Platforma komissiyasi")}</dt><dd>{formatUZS(fee.amount, locale)}</dd></div>
@@ -243,6 +244,13 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
             )}
           </dl>
           {paid.provider === "sandbox" && <p className="mt-4 text-sm text-ink-soft">{t("Sinov toʻlovi: haqiqiy pul yechilmadi.")}</p>}
+          {/* The payment's technical id (what support asks for) is one tap away, not in the way. Outside the <dl>: a <details> is not allowed inside one. */}
+          <details className="mt-2">
+            <summary className={buttonClasses({ variant: "link", className: "inline-flex min-h-11 items-center" })}>{t("Tafsilotlar")}</summary>
+            <dl className="mt-2">
+              <div><dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov ID")}</dt><dd className="break-all font-mono text-xs">{paid.id}</dd></div>
+            </dl>
+          </details>
         </Card>
       )}
 

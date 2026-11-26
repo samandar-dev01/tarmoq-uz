@@ -97,12 +97,13 @@ export function LoginForm({
           )}
         </Alert>
       )}
+      {/* Google first (one tap, no password), then "or" and the email form. The admin door has no Google. */}
+      {googleEnabled && role !== "admin" && <GoogleButton door={role} next={next} />}
       <Field label={t("Email")} name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
       <Field label={t("Parol")} name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
         {loading ? t("Kirilmoqda…") : t("Kirish")}
       </Button>
-      {googleEnabled && role !== "admin" && <GoogleButton door={role} next={next} />}
       {role !== "admin" && (
         <p className="text-center text-ink-soft">
           {t("Yangimisiz?")} <ButtonLink href={authHref("/register", role, next)} variant="link">{t("Roʻyxatdan oʻting")}</ButtonLink>

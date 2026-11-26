@@ -13,8 +13,9 @@ const GOOGLE_G = [
 ] as const;
 
 /**
- * "or" and the "Continue with Google" button, for the end of the sign-in and sign-up forms (put it as the form's last
- * fields; the form spaces its children). `door` is the account the person is making or opening: a client or a creator.
+ * The "Continue with Google" button and the "or" under it, for the START of the sign-in and sign-up forms (put it before
+ * the fields; the form spaces its children). One tap, no password to invent, so it is offered first. `door` is the account
+ * the person is making or opening: a client or a creator.
  *
  * A plain link, not a Link and not a form: it leaves the site for Google's account chooser, and the site's
  * Content-Security-Policy only lets a form post to the site itself. It works without JavaScript.
@@ -25,11 +26,6 @@ export function GoogleButton({ door, next }: { door: EntryRole; next: string | n
   if (next) query.set("next", next);
   return (
     <>
-      <div className="flex items-center gap-3 text-sm text-ink-soft">
-        <span aria-hidden="true" className="flex-1 border-t border-line" />
-        {t("yoki")}
-        <span aria-hidden="true" className="flex-1 border-t border-line" />
-      </div>
       <a href={`/api/auth/google/start?${query}`} className={buttonClasses({ variant: "secondary", size: "lg", className: "w-full" })}>
         <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
           {GOOGLE_G.map(([fill, d]) => (
@@ -38,6 +34,11 @@ export function GoogleButton({ door, next }: { door: EntryRole; next: string | n
         </svg>
         {t("Google orqali davom etish")}
       </a>
+      <div className="flex items-center gap-3 text-sm text-ink-soft">
+        <span aria-hidden="true" className="flex-1 border-t border-line" />
+        {t("yoki")}
+        <span aria-hidden="true" className="flex-1 border-t border-line" />
+      </div>
     </>
   );
 }

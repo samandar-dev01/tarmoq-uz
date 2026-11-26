@@ -49,7 +49,10 @@ with **one real (non-developer) user** — that outranks every item below.
   - Done when: the "Continue with Google" button appears and a full round-trip sign-in works for both
     client and creator doors.
 
-- [ ] **1.3 Move Google above the email form.**
+- [x] **1.3 Move Google above the email form.**
+  - **Status (2026-11-26): done.** `GoogleButton` now draws the button first and the "yoki" divider under it; both
+    forms place it before the fields (sign-up keeps it under the account-type cards, because the chosen type decides
+    which account Google makes). Invisible until task 1.2 turns Google on.
   - Files: `src/components/auth/RegisterForm.tsx`, `src/components/auth/LoginForm.tsx`,
     `src/components/auth/GoogleButton.tsx`.
   - Do: render the Google button **first**, then an "yoki" (or) divider, then the email/password fields.
@@ -63,6 +66,9 @@ with **one real (non-developer) user** — that outranks every item below.
   - Done when: the forced sign-in moment explains the reason and that no card is needed.
 
 - [ ] **1.5 Add a show/hide toggle on the password field.** (Small friction cut.)
+  - **Status: HELD, needs a decision.** The project has no such control yet, and the UI process says to ask before
+    creating a new shared control. Open question: put it inside the shared `Field` (every password field gets it) or
+    in a new `PasswordField` used by the two auth forms?
   - Files: `src/components/auth/RegisterForm.tsx`, `src/components/auth/LoginForm.tsx`,
     possibly `src/components/ui/Field.tsx`.
   - Done when: users can reveal the password they typed.
@@ -73,14 +79,22 @@ with **one real (non-developer) user** — that outranks every item below.
 
 ## Phase 2 — "One obvious next thing" (core clarity, low effort)
 
-- [ ] **2.1 Make the next-step hint the hero of the order page.**
+- [x] **2.1 Make the next-step hint the hero of the order page.**
+  - **Status (2026-11-26): done in a smaller form than planned.** The "Keyingi qadam" card now has larger text and
+    padding; it was NOT moved, and no action button was copied into it. Reason: the action controls live in the
+    sections they belong to (agreement, payment, delivery), and a duplicate pay link would clash with the existing one.
+    Moving the card's action in is a bigger redesign: decide separately.
   - Files: `src/app/orders/[id]/page.tsx` (the saffron "Keyingi qadam" card), uses `nextAction()` from
     `src/lib/orderUi.ts`.
   - Do: promote the next-step message + its single action button to the **top, large**; demote the rest
     of the cards below it.
   - Done when: on any order, the first thing you see is what to do now and the one button to do it.
 
-- [ ] **2.2 Hide developer noise behind a "Tafsilotlar" (Details) disclosure.**
+- [x] **2.2 Hide developer noise behind a "Tafsilotlar" (Details) disclosure.**
+  - **Status (2026-11-26): done for the Payment ID only.** It now sits behind a "Tafsilotlar" toggle. Deliberately
+    NOT done: hiding "Kelishuv (N-versiya)" (3 e2e specs pin it, and the version matters when terms are updated and
+    the client accepts "the exact version shown") and the commission/income rows (useful to creators). New Uzbek word
+    "Tafsilotlar" (Russian: «Подробности») still needs a native speaker's check.
   - Files: `src/app/orders/[id]/page.tsx`.
   - Do: collapse **Toʻlov ID** (mono payment id), raw ledger rows, and the agreement
     **"(N-versiya)"** number (hide from client-facing heading; keep internally) into an optional
@@ -88,6 +102,8 @@ with **one real (non-developer) user** — that outranks every item below.
   - Done when: a first-time client sees no monospace IDs or version numbers unless they open Details.
 
 - [ ] **2.3 Audit one primary button per screen.**
+  - **Status (2026-11-26): order page audited, no change needed; other screens NOT audited.** Reading the order page
+    state by state, only one primary action is shown at a time. The remaining screens still need the same check.
   - Files: all `src/app/**/page.tsx` + order panels; worst offender is `orders/[id]/page.tsx`.
   - Do: exactly one visually-primary action per screen; everything else secondary/link.
   - Done when: no screen shows two equally-weighted primary buttons competing.

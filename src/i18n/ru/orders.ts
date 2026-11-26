@@ -70,6 +70,7 @@ export const orders: Record<string, string> = {
   "Karta orqali oʻtkazma (administrator tasdiqlagan)": "Перевод на карту (подтверждён администратором)",
   "Sinov kartasi {card}": "Тестовая карта {card}",
   "Toʻlov ID": "ID оплаты",
+  "Tafsilotlar": "Подробности",
   "Platforma komissiyasi": "Комиссия платформы",
   "Ijodkor daromadi": "Доход креатора",
   "Ijodkorga toʻlov": "Выплата креатору",

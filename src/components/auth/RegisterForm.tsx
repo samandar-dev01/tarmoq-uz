@@ -85,6 +85,8 @@ export function RegisterForm({ initialRole, next, googleEnabled = false }: { ini
           );
         })}
       </div>
+      {/* Google first, under the account type (which decides what kind of account Google makes), then "or" and the email form. */}
+      {googleEnabled && <GoogleButton door={role === "PROVIDER" ? "provider" : "client"} next={next} />}
       <Field label={t("Ism-familiya")} name="name" autoComplete="name" required error={fieldErrors.name?.[0]} />
       <Field label={t("Email")} name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
       <Field label={t("Telefon (ixtiyoriy)")} name="phone" type="tel" autoComplete="tel" placeholder="+998 90 123 45 67" error={fieldErrors.phone?.[0]} />
@@ -92,8 +94,6 @@ export function RegisterForm({ initialRole, next, googleEnabled = false }: { ini
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
         {loading ? t("Yaratilmoqda…") : t("Roʻyxatdan oʻtish")}
       </Button>
-      {/* The account type chosen above decides which kind of account Google makes. */}
-      {googleEnabled && <GoogleButton door={role === "PROVIDER" ? "provider" : "client"} next={next} />}
       <p className="text-center text-ink-soft">
         {t("Hisobingiz bormi?")} <ButtonLink href={authHref("/login", role === "PROVIDER" ? "provider" : "client", next)} variant="link">{t("Kiring")}</ButtonLink>
       </p>
