@@ -9,7 +9,7 @@ import { Container } from "@/components/ui/Container";
 export const metadata = { title: "Maxfiylik siyosati", description: "Tarmoq.uz qanday maʼlumotlarni yigʻadi, nima uchun va kimga koʻrsatadi." };
 
 const CONTACT_EMAIL = "theaccofsamandar@gmail.com";
-const UPDATED = "2026-yil 21-noyabr";
+const UPDATED = "2026-yil 28-noyabr";
 
 type Section = { title: string; text?: string[]; items?: string[]; after?: string[] };
 
@@ -59,7 +59,7 @@ const SECTIONS: Section[] = [
       "Hamma: ijodkorning ochiq profili (ismi, sarlavhasi, tavsifi, shahari, narxi, portfoliosi va sharhlari).",
       "Buyurtma ishtirokchilari: shu buyurtma doirasidagi xabarlar va fayllarni mijoz va ijodkor koʻradi.",
       "Sayt maʼmuriyati: buyurtmalar, toʻlovlar va pul oʻtkazish uchun zarur maʼlumotlarni, shu jumladan ijodkorning karta maʼlumotlarini koʻradi.",
-      "Xizmat koʻrsatuvchilar: sayt Render xostingida ishlaydi, maʼlumotlar bazasi va fayllar Supabase xizmatida saqlanadi, Google orqali kirish uchun Google, maʼmuriyat xabarnomalari uchun Telegram ishlatiladi. Email xatlari yoqilgan boʻlsa, ular Resend xizmati orqali yuboriladi.",
+      "Xizmat koʻrsatuvchilar: sayt Render xostingida ishlaydi, maʼlumotlar bazasi va fayllar Supabase xizmatida saqlanadi, Google orqali kirish uchun Google, maʼmuriyat xabarnomalari uchun Telegram ishlatiladi. Email xatlari yoqilgan boʻlsa, ular Resend xizmati orqali yuboriladi. Onlayn karta toʻlovi yoqilgan boʻlsa, toʻlov Whop xizmati sahifasida amalga oshiriladi: karta maʼlumotlari Whop’ga kiritiladi va bizga yetib kelmaydi, biz Whop’ga summa hamda buyurtmaning ichki raqamlarini yuboramiz.",
     ],
     after: ["Maʼlumotlaringizni sotmaymiz va reklama uchun uchinchi tomonlarga bermaymiz."],
   },

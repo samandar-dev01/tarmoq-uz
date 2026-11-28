@@ -296,7 +296,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
             </div>
             <div>
               <dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov usuli")}</dt>
-              <dd>{paid.provider === "manual" ? t("Karta orqali oʻtkazma (administrator tasdiqlagan)") : `${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}`}</dd>
+              <dd>{paid.provider === "whop" ? t("Onlayn karta toʻlovi") : paid.provider === "manual" ? t("Karta orqali oʻtkazma (administrator tasdiqlagan)") : `${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}`}</dd>
             </div>
             <div><dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov ID")}</dt><dd className="break-all font-mono text-xs">{paid.id}</dd></div>
             {(isProvider || isAdmin) && payout && fee && (

@@ -80,6 +80,18 @@ export function paymentClaimedMessage(p: { amount: number; reference: string }):
 export const notifyPaymentClaimed = (p: { amount: number; reference: string }) =>
   sendTelegram(paymentClaimedMessage(p));
 
+/** Whop took money that did not start an order: the admin gives it back. The order code only. */
+export function paymentNeedsRefundMessage(p: { reference: string }): string {
+  const base = baseUrl();
+  return [
+    `An online payment arrived but did not start its order (order code ${oneLine(p.reference, 12)}).`,
+    "Check it in the Whop dashboard and refund it.",
+    base ? `Open: ${base}/admin/payments` : "Open /admin/payments",
+  ].join("\n");
+}
+
+export const notifyPaymentNeedsRefund = (p: { reference: string }) => sendTelegram(paymentNeedsRefundMessage(p));
+
 /** Both sides agreed to cancel a paid order: the admin sends the money back. The order code only. */
 export function cancelAgreedMessage(p: { reference: string }): string {
   const base = baseUrl();

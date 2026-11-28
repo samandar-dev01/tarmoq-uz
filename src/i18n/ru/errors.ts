@@ -180,4 +180,9 @@ export const errors: Record<string, string> = {
   "Havola eskirgan yoki ishlatilgan. Yangisini soʻrang.": "Ссылка устарела или уже использована. Запросите новую.",
   "Paket shartlari oʻzgargan. Sahifani yangilab, yangi shartlarni koʻrib chiqing.": "Условия пакета изменились. Обновите страницу и посмотрите новые условия.",
   "Ikkala tomon bekor qilishga rozi boʻlgan: pulni faqat mijozga qaytarish mumkin.": "Обе стороны согласились на отмену: деньги можно только вернуть заказчику.",
+  // Online payment (src/lib/payments/whop.ts)
+  "Toʻlov xizmati bilan bogʻlanib boʻlmadi. Birozdan keyin qayta urinib koʻring.": "Не удалось связаться с платёжным сервисом. Повторите чуть позже.",
+  "Toʻlov tekshirilmoqda. Qayta toʻlamang.": "Оплата проверяется. Не платите повторно.",
+  "Toʻlovingiz administrator tekshiruvida. Qayta toʻlamang.": "Ваш платёж проверяет администратор. Не платите повторно.",
+  "Imzo notoʻgʻri.": "Неверная подпись.",
 };

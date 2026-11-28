@@ -34,7 +34,8 @@ export async function submitManualPayment(orderId: string, clientId: string, rec
         status: "AWAITING_CONFIRMATION" as const, provider: "manual", amount: order.agreedPrice,
         receiptKey: receipt.key, receiptName: receipt.name, receiptType: receipt.type,
       };
-      const open = await tx.payment.findFirst({ where: { orderId, status: "REQUIRES_PAYMENT" } });
+      // Never a Whop row: its payment page may still be paid, and that money is matched to the row.
+      const open = await tx.payment.findFirst({ where: { orderId, status: "REQUIRES_PAYMENT", provider: { not: "whop" } } });
       const payment = open
         ? await tx.payment.update({ where: { id: open.id }, data })
         : await tx.payment.create({ data: { orderId, ...data } });
