@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/auth/login/route";
 import { seal } from "@/lib/secretBox";
@@ -11,15 +12,22 @@ const { findUnique, startSession, RIGHT, HASH } = vi.hoisted(() => ({
   HASH: "stand-in-hash",
 }));
 vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique } } }));
+// Real bcrypt takes a good part of a second per comparison, so each pair of text and hash is worked out only once.
+const compared = new Map<string, Promise<boolean>>();
+const realCompare = (plain: string, hash: string) => {
+  const key = `${plain}\n${hash}`;
+  if (!compared.has(key)) compared.set(key, bcrypt.compare(plain, hash));
+  return compared.get(key)!;
+};
 vi.mock("@/lib/auth", () => ({
-  // Only the one stand-in hash is "right", and only with the one stand-in password. The route's dummy hash never is.
-  verifyPassword: async (plain: string, hash: string) => plain === RIGHT && hash === HASH,
+  // The stand-in hash is "right" only with the stand-in password. Any other hash (the route's dummy one) gets real bcrypt.
+  verifyPassword: async (plain: string, hash: string) => (hash === HASH ? plain === RIGHT : realCompare(plain, hash)),
   startSession,
 }));
 
 const BAD_LOGIN = "Email yoki parol notoʻgʻri.";
 
-const accounts: Record<string, { id: string; name: string; role: "CLIENT" | "PROVIDER" | "ADMIN"; isActive: boolean; passwordHash: string }> = {
+const accounts: Record<string, { id: string; name: string; role: "CLIENT" | "PROVIDER" | "ADMIN"; isActive: boolean; passwordHash: string | null }> = {
   "creator@t.test": { id: "u1", name: "Creator", role: "PROVIDER", isActive: true, passwordHash: HASH },
   "client@t.test": { id: "u2", name: "Client", role: "CLIENT", isActive: true, passwordHash: HASH },
   "admin@t.test": { id: "u3", name: "Admin", role: "ADMIN", isActive: true, passwordHash: HASH },
@@ -63,6 +71,22 @@ describe("POST /api/auth/login with a door", () => {
     expect(answers).toHaveLength(16);
     for (const a of answers) expect(a).toEqual({ status: 401, body: { error: BAD_LOGIN } });
     expect(startSession).not.toHaveBeenCalled();
+  });
+
+  it("never signs in to an account that has no password (made or taken back through Google), whatever is typed", async () => {
+    const ip = freshIp();
+    accounts["google@t.test"] = { id: "u6", name: "Google", role: "CLIENT", isActive: true, passwordHash: null };
+    try {
+      // The first is the text the route's dummy hash was made from, so the comparison itself succeeds.
+      for (const password of ["not-a-real-password", "wrong-password"]) {
+        const res = await signIn(ip, "google@t.test", password, "client");
+        expect(res.status, password).toBe(401);
+        expect(await res.json()).toEqual({ error: BAD_LOGIN });
+      }
+      expect(startSession).not.toHaveBeenCalled();
+    } finally {
+      delete accounts["google@t.test"];
+    }
   });
 
   it("refuses a right password at the wrong door with a 403 and starts no session", async () => {
