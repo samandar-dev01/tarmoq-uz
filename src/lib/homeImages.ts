@@ -20,7 +20,7 @@ const photo = (name: string, source: number, widths: readonly [number, number], 
 /** One picture for each direction, by the category's slug (src/lib/catalog.ts). */
 export const CATEGORY_PHOTOS: Readonly<Record<string, HomePhoto>> = {
   "mobile-videography": photo("cat-mobile-videography", 13835575, [400, 800], "4:5"), // filming with a phone on a stabiliser
-  photography: photo("cat-photography", 13444983, [400, 800], "4:5"), // a photographer shooting a model
+  photography: photo("cat-photography-studio", 8031795, [400, 800], "4:5"), // a photographer at work, the shot on the camera's screen
   "video-editing": photo("cat-video-editing", 8102676, [400, 800], "4:5"), // an editing and colour desk
   drone: photo("cat-drone", 343238, [400, 800], "4:5"), // a camera drone in the air
 };
