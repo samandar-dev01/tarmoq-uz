@@ -146,10 +146,23 @@ export const orders: Record<string, string> = {
   "Siz tayyor videoni qabul qilmaguncha ushlab turiladi.": "Деньги удерживаются, пока вы не примете готовое видео.",
   "Toʻlov rekvizitlari hali sozlanmagan. Administrator bilan bogʻlaning.": "Реквизиты для оплаты ещё не настроены. Свяжитесь с администратором.",
   "Karta bilan onlayn toʻlash": "Оплатить картой онлайн",
-  "Toʻlov sahifasiga oʻtasiz. Toʻlov oʻtgach, buyurtma avtomatik boshlanadi.": "Вы перейдёте на страницу оплаты. После оплаты заказ начнётся автоматически.",
   "Toʻlagan boʻlsangiz, tasdiq bir necha daqiqada keladi. Qayta toʻlamang, sahifani birozdan keyin yangilang.":
     "Если вы оплатили, подтверждение придёт в течение нескольких минут. Не платите повторно, обновите страницу чуть позже.",
-  "Yoki kartaga oʻtkazing": "Или переведите на карту",
+  // ---- The automatic payment, shown first (WhopPay), and the card transfer folded under it (ManualOption)
+  "Avtomatik toʻlov": "Автоматическая оплата",
+  "Toʻlanadigan summa": "Сумма к оплате",
+  "Karta bilan toʻlaysiz": "Вы платите картой",
+  "Toʻlov sahifasiga oʻtasiz.": "Откроется страница оплаты.",
+  "Buyurtma avtomatik boshlanadi": "Заказ начнётся автоматически",
+  "Chek yuklash shart emas.": "Чек загружать не нужно.",
+  "Videoni qabul qilasiz": "Вы принимаете видео",
+  "Shungacha pul ushlab turiladi.": "До этого деньги удерживаются.",
+  "Toʻlov sahifasi ochilmoqda…": "Открываем страницу оплаты…",
+  "Karta maʼlumotlari Whop toʻlov sahifasida kiritiladi, Tarmoqda saqlanmaydi.":
+    "Данные карты вводятся на странице оплаты Whop и не сохраняются в Tarmoq.",
+  "Kartaga oʻtkazma bilan toʻlash": "Оплатить переводом на карту",
+  "Onlayn toʻlov oʻtmasa: chek yuklaysiz, administrator tasdiqlaydi.":
+    "Если онлайн-оплата не проходит: загрузите чек, администратор подтвердит.",
   "Onlayn karta toʻlovi": "Онлайн-оплата картой",
   "Muvaffaqiyatli": "Успешная",
   "Rad etilgan": "Отклонённая",

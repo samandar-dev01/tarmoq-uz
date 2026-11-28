@@ -33,8 +33,9 @@ export function whopConfig(env: Env = process.env): WhopConfig | null {
 }
 
 /**
- * Whether clients are offered the Whop button. It sits beside the card transfer (PAYMENT_PROVIDER=manual) or stands
- * alone (PAYMENT_PROVIDER=whop). The internal test cards and a server with no payment setting never show it.
+ * Whether clients are offered the Whop button. It comes first, with the card transfer folded under it
+ * (PAYMENT_PROVIDER=manual), or stands alone (PAYMENT_PROVIDER=whop). The internal test cards and a server with no
+ * payment setting never show it.
  */
 export const whopOffered = (env: Env = process.env): boolean =>
   (env.PAYMENT_PROVIDER === "whop" || env.PAYMENT_PROVIDER === "manual") && whopConfig(env) !== null;
