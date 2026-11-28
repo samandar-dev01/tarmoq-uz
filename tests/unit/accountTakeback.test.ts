@@ -180,6 +180,23 @@ describe("a request still being worked on when the owner of the address arrives 
   });
 });
 
+describe("a stranger's request that finishes while the account is being linked", () => {
+  it("two-step sign-in switched on in that instant goes too, so the owner is not locked out next time", async () => {
+    const row = account();
+    store.meanwhile = async () => void Object.assign(row, { totpSecretEnc: seal(SECRET, "totp"), totpEnabledAt: new Date() });
+    expect((await ownerArrivesThroughGoogle()).kind).toBe("ok");
+    expect(row).toMatchObject({ passwordHash: null, totpSecretEnc: null, totpEnabledAt: null });
+    expect((await ownerArrivesThroughGoogle()).kind).toBe("ok");
+  });
+
+  it("an email address changed in that instant leaves the account unlinked", async () => {
+    const row = account();
+    store.meanwhile = async () => void (row.email = "stranger@example.com");
+    await expect(ownerArrivesThroughGoogle()).rejects.toThrow();
+    expect(row).toMatchObject({ googleSub: null, emailVerifiedAt: null });
+  });
+});
+
 describe("confirming an email", () => {
   const confirm = (token: string) => post(confirmEmail, { token });
 

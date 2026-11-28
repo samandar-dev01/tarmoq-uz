@@ -229,7 +229,7 @@ describe("resolveGoogleUser: who ends up signed in", () => {
     const result = await resolveGoogleUser(profile, "client", "1.1.1.1");
 
     expect(db.update).toHaveBeenCalledTimes(1);
-    expect(db.update.mock.calls[0]![0].data).toEqual({ googleSub: "g-1", passwordHash: null, tokenVersion: { increment: 1 }, emailVerifiedAt: expect.any(Date) });
+    expect(db.update.mock.calls[0]![0].data).toEqual({ googleSub: "g-1", passwordHash: null, totpEnabledAt: null, totpSecretEnc: null, tokenVersion: { increment: 1 }, emailVerifiedAt: expect.any(Date) });
     expect(account.passwordHash).toBeNull();
     expect(account.emailVerifiedAt).toBeInstanceOf(Date);
     // The new session carries the new version; a session made before (version 3) no longer counts.

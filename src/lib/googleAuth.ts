@@ -220,12 +220,18 @@ export async function resolveGoogleUser(profile: GoogleProfile, door: EntryRole,
     // An unconfirmed address says nothing about who made the account: it may be a stranger who signed up with this
     // person's email and a password of their own. Google has now shown who owns the address, so that password and every
     // session made before this moment end here. One update, so the account is never linked with them still working.
+    // Two-step sign-in goes with them: `admit` refused an account that had it on, so any found now was switched on in this
+    // very moment.
     const takeBack = !byEmail.emailVerifiedAt;
     let linked;
     try {
       linked = await prisma.user.update({
-        where: { id: byEmail.id },
-        data: { googleSub: profile.sub, ...(takeBack && { passwordHash: null, tokenVersion: { increment: 1 }, emailVerifiedAt: new Date() }) },
+        // The address is part of the condition: an account that has left it since it was read above is not linked.
+        where: { id: byEmail.id, email: profile.email },
+        data: {
+          googleSub: profile.sub,
+          ...(takeBack && { passwordHash: null, totpEnabledAt: null, totpSecretEnc: null, tokenVersion: { increment: 1 }, emailVerifiedAt: new Date() }),
+        },
         select: { tokenVersion: true },
       });
     } catch (e) {
