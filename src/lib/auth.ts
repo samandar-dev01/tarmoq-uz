@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -10,6 +11,7 @@ import { sessionIsCurrent, signToken, verifyToken, type AppRole, type SessionPay
 
 export const SESSION_COOKIE = "session";
 const maxAgeDays = () => Number(process.env.SESSION_MAX_AGE_DAYS ?? 7);
+const signInFirst = () => new HttpError(401, "Davom etish uchun tizimga kiring.");
 
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 12);
 export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(plain, hash);
@@ -71,23 +73,41 @@ export const getCurrentUser = cache(async () => {
 });
 
 /**
- * Ends every session of the user except the one making this request: raises `tokenVersion` (so every cookie issued so
- * far stops matching) and writes a fresh cookie with the new number into THIS browser, which stays signed in.
- * Route handlers only (it sets a cookie).
+ * For writes to the signed-in person's own account that must not outlive the session asking for them. The session is
+ * checked when the request arrives, and checking a password takes a moment; meanwhile the session may be ended (password
+ * change or reset, "sign out everywhere", the owner of the address arriving through Google). This holds the account's row
+ * while `write` runs and, when that happened, refuses the request with nothing written. Do slow work (hashing) before.
  */
-export async function endOtherSessions(userId: string): Promise<void> {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { tokenVersion: { increment: 1 } },
-    select: { id: true, role: true, name: true, tokenVersion: true },
+export async function whileSignedIn<T>(write: (tx: Prisma.TransactionClient, userId: string) => Promise<T>): Promise<T> {
+  const session = await getSession();
+  if (!session) throw signInFirst();
+  return prisma.$transaction(async (tx) => {
+    const held = await tx.$queryRaw<unknown[]>`SELECT 1 FROM "User" WHERE "id" = ${session.sub} AND "tokenVersion" = ${session.tv} FOR UPDATE`;
+    if (held.length !== 1) throw signInFirst();
+    return write(tx, session.sub);
   });
+}
+
+/**
+ * Ends every session of the user except the one making this request: raises `tokenVersion` (so every cookie issued so
+ * far stops matching) and writes a fresh cookie with the new number into THIS browser, which stays signed in. `also` is
+ * written in the same step. Refused when this session has itself been ended meanwhile. Route handlers only (it sets a cookie).
+ */
+export async function endOtherSessions(also: Prisma.UserUpdateInput = {}): Promise<void> {
+  const user = await whileSignedIn((tx, userId) =>
+    tx.user.update({
+      where: { id: userId },
+      data: { ...also, tokenVersion: { increment: 1 } },
+      select: { id: true, role: true, name: true, tokenVersion: true },
+    }),
+  );
   await startSession(user);
 }
 
 /** For API route handlers (throws HttpError). */
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) throw new HttpError(401, "Davom etish uchun tizimga kiring.");
+  if (!user) throw signInFirst();
   return user;
 }
 

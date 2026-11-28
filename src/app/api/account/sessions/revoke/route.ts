@@ -7,7 +7,7 @@ import { handle, ok } from "@/lib/http";
 export const POST = handle(async () => {
   const user = await requireUser();
   limitAccountAction("edit", user.id);
-  await endOtherSessions(user.id);
+  await endOtherSessions();
   await logAudit({ actorId: user.id, action: "SESSIONS_REVOKED", entity: "User", entityId: user.id });
   return ok({ success: true });
 });

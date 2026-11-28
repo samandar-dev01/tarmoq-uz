@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser, whileSignedIn } from "@/lib/auth";
 import { emailChangeSchema } from "@/lib/accountSchemas";
 import { requireCurrentPassword } from "@/lib/accountGuard";
 import { logAudit } from "@/lib/audit";
@@ -26,10 +26,10 @@ export const POST = handle(async (req) => {
 
   try {
     // A new address is not confirmed yet.
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: user.id }, data: { email: input.email, emailVerifiedAt: null } }),
-      prisma.authToken.deleteMany({ where: unusedLinks(user.id, "reset", "verify") }),
-    ]);
+    await whileSignedIn(async (tx) => {
+      await tx.user.update({ where: { id: user.id }, data: { email: input.email, emailVerifiedAt: null } });
+      await tx.authToken.deleteMany({ where: unusedLinks(user.id, "reset", "verify") });
+    });
   } catch (e) {
     // Someone took the address between the check above and the save: the database's unique rule is the last word.
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") throw new HttpError(409, TAKEN, { field: "email" });

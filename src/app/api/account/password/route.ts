@@ -16,10 +16,10 @@ export const POST = handle(async (req) => {
   const input = passwordSchema.parse(await readJson(req));
   await requireCurrentPassword(user.id, input.currentPassword);
 
-  await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(input.newPassword) } });
+  // Saved in the same step that ends the other sessions, and only if this one has not been ended meanwhile.
+  await endOtherSessions({ passwordHash: await hashPassword(input.newPassword) });
   // A reset link asked for before this change must not undo it.
   await prisma.authToken.deleteMany({ where: unusedLinks(user.id, "reset") });
-  await endOtherSessions(user.id);
   await logAudit({ actorId: user.id, action: "PASSWORD_CHANGED", entity: "User", entityId: user.id });
   return ok({ success: true });
 });

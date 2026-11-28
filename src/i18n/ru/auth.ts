@@ -54,4 +54,5 @@ export const auth: Record<string, string> = {
   "Parol oʻzgartirildi. Endi yangi parol bilan kiring.": "Пароль изменён. Теперь войдите с новым паролем.",
   "Emailni tasdiqlash": "Подтверждение email",
   "Email tasdiqlandi. Rahmat!": "Email подтверждён. Спасибо!",
+  "Emailni tasdiqlash uchun avval shu hisobga kiring. Bu hisobni siz ochmagan boʻlsangiz, hech narsa qilmang.": "Чтобы подтвердить email, сначала войдите в этот аккаунт. Если вы его не создавали, ничего не делайте.",
 };

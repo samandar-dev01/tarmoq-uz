@@ -178,6 +178,7 @@ export const errors: Record<string, string> = {
   "Autentifikator ilovasidagi kodni kiriting.": "Введите код из приложения-аутентификатора.",
   "Kod notoʻgʻri. Ilovadagi yangi kodni kiriting.": "Неверный код. Введите новый код из приложения.",
   "Havola eskirgan yoki ishlatilgan. Yangisini soʻrang.": "Ссылка устарела или уже использована. Запросите новую.",
+  "Bu havola boshqa hisob uchun. Tizimdan chiqib, oʻsha hisobga kiring.": "Эта ссылка для другого аккаунта. Выйдите и войдите в тот аккаунт.",
   "Paket shartlari oʻzgargan. Sahifani yangilab, yangi shartlarni koʻrib chiqing.": "Условия пакета изменились. Обновите страницу и посмотрите новые условия.",
   "Ikkala tomon bekor qilishga rozi boʻlgan: pulni faqat mijozga qaytarish mumkin.": "Обе стороны согласились на отмену: деньги можно только вернуть заказчику.",
   // Online payment (src/lib/payments/whop.ts)
