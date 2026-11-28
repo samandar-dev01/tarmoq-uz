@@ -9,11 +9,12 @@ import { LIMITS, isLimited, recordFailure, resetLimit, retryAfterSeconds } from 
 import { totpMatches } from "@/lib/totp";
 import { open } from "@/lib/secretBox";
 
-// Compared against when the email is unknown, so response time does not reveal which emails exist: it is a real bcrypt hash
-// at the same cost (12) as every stored password, so an unknown email takes as long as a wrong password.
+// Compared against when the email is unknown or the account has no password, so response time does not reveal which emails
+// exist: it is a real bcrypt hash at the same cost (12) as every stored password, so both take as long as a wrong password.
 // It is a constant on purpose. It used to be computed with `hashSync` when this file was first loaded, which froze the
-// whole server for seconds on the free instance's slow CPU after every restart. It belongs to no account, and no login
-// can succeed with it (`!user` fails first). If the cost of new passwords ever changes (src/lib/auth.ts), make a new one:
+// whole server for seconds on the free instance's slow CPU after every restart. The text it was made from is public (below),
+// so a match against it must never count: the check after the comparison refuses an account with no stored password.
+// If the cost of new passwords ever changes (src/lib/auth.ts), make a new one:
 //   node -e 'console.log(require("bcryptjs").hashSync("not-a-real-password", <cost>))'
 const DUMMY_HASH = "$2a$12$jgqqc9siV6AWg6MLBmARHOC/9DTuWpndocE6nuEaMRsuO1Tz1A0UW";
 
@@ -40,7 +41,7 @@ export const POST = handle(async (req) => {
 
   const user = await prisma.user.findUnique({ where: { email: input.email } });
   const valid = await verifyPassword(input.password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !valid) {
+  if (!user || !user.passwordHash || !valid) {
     recordFailure(pairKey, LIMITS.loginPerPair.windowMs);
     recordFailure(emailKey, LIMITS.loginPerEmail.windowMs);
     recordFailure(ipKey, LIMITS.loginPerIp.windowMs);
