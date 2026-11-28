@@ -33,7 +33,7 @@ export const getCategories = unstable_cache(
 /** The best-rated creators, in card shape, for the home page feed. */
 export const getFeaturedProviders = unstable_cache(
   () => featuredProviders(FEATURED_COUNT),
-  ["public-featured-v3"],
+  ["public-featured-v4"],
   { revalidate: 60, tags: [TAG] },
 );
 

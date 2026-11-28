@@ -55,7 +55,7 @@ const contrast = (a: RGB, b: RGB) => {
 const over = (fg: RGB, bg: RGB, alpha: number): RGB => fg.map((v, i) => v * alpha + bg[i]! * (1 - alpha)) as RGB;
 const hex = ([r, g, b]: RGB) => `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
 
-const GROUNDS = ["paper", "surface", "paper-deep"];
+const GROUNDS = ["paper", "surface", "paper-deep", "warm"];
 const TINTS = ["cobalt-tint", "saffron-tint", "pomegranate-tint", "turquoise-tint", "lilac-tint"];
 
 type Pair = { label: string; fg: RGB; bg: RGB; min: number };

@@ -60,6 +60,8 @@ export const CARD_SELECT = {
   startingPrice: true, ratingAvg: true, ratingCount: true, completedCount: true, languages: true,
   user: { select: { id: true, name: true, avatarUpdatedAt: true, lastSeenAt: true } },
   category: { select: { name: true, nameRu: true } },
+  // The card's preview of the work (up to three pictures are shown; a few more are read for items with no picture).
+  portfolio: { orderBy: { sortOrder: "asc" }, take: 8, select: { imageUrl: true, videoUrl: true } },
 } satisfies Prisma.ProviderProfileSelect;
 
 /** Who may be listed at all: approved profiles of active accounts. */

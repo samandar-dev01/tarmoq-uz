@@ -16,6 +16,7 @@
     --c-paper: 9 13 22; /* page ground #090D16 */
     --c-paper-deep: 30 41 59; /* hover and recessed #1E293B */
     --c-surface: 17 24 39; /* elevated card #111827 */
+    --c-warm: 14 19 31; /* the band behind the home page's top #0E131F */
     --c-line: 255 255 255; /* hairline colour; its strength is the alpha below */
     --c-line-a: 0.09; /* hairline */
     --c-line-strong-a: 0.16; /* a control's edge */
@@ -63,6 +64,7 @@
     --c-paper: 255 255 255; /* page ground, white */
     --c-paper-deep: 241 241 242; /* hover and recessed #F1F1F2 */
     --c-surface: 255 255 255; /* elevated card */
+    --c-warm: 250 247 242; /* the band behind the home page's top, warm off-white #FAF7F2 */
     --c-line: 34 35 37;
     --c-line-a: 0.12;
     --c-line-strong-a: 0.24;
