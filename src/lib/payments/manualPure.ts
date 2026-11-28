@@ -7,6 +7,9 @@
  */
 export const orderReference = (orderId: string) => orderId.slice(-6).toUpperCase();
 
+/** `/checkout/<order>?usul=otkazma` opens the card transfer where it is folded under the online payment. */
+export const TRANSFER_QUERY = { name: "usul", value: "otkazma" } as const;
+
 export type ManualInstructions = { card: string; holder: string; bank: string | null };
 
 /** Where clients send the money. Null while the card is not configured, so the page can say so instead of guessing. */

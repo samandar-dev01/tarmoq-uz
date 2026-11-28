@@ -12,6 +12,14 @@ const PATHS = {
   moon: ["M20 14.2A8 8 0 0 1 9.8 4 8 8 0 1 0 20 14.2Z"],
   // A camera: the body with its hump, and the lens.
   camera: ["M4 8h3l1.8-2.5h6.4L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z", "M12 9.8a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Z"],
+  // A lightning bolt: it happens on its own.
+  bolt: ["M13 2.5 4.5 13.5H11l-.5 8 9-11.5H13Z"],
+  // A closed padlock.
+  lock: ["M6.5 10.5h11a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19v-7a1.5 1.5 0 0 1 1.5-1.5Z", "M8 10.5V7.5a4 4 0 0 1 8 0v3"],
+  // Two arrows passing each other: money sent from one card to another.
+  transfer: ["M4 8.5h15M15.5 5 19 8.5 15.5 12", "M20 15.5H5M8.5 12 5 15.5 8.5 19"],
+  // A downward chevron: something folds open here.
+  chevron: ["m6 9 6 6 6-6"],
 } as const;
 
 export type IconName = keyof typeof PATHS;

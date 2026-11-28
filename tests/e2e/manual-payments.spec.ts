@@ -7,6 +7,8 @@ import { apiAs, registerApi, jasurServiceId, goodBrief, login, settled, tinyMp4 
  * Manual card-transfer mode (real money moved by hand). Runs only against a server started with
  *   PAYMENT_PROVIDER=manual MANUAL_PAY_CARD="8600 1234 5678 9012" MANUAL_PAY_HOLDER="TEST OWNER"
  * and is skipped otherwise, so the default `npm run test:e2e` (sandbox mode) is unaffected.
+ * With made-up WHOP_API_KEY, WHOP_ACCOUNT_ID and WHOP_WEBHOOK_SECRET as well, checkout shows the online payment first
+ * and the same tests open the transfer under it. Whop itself is never called: the browser's requests are answered here.
  * Set E2E_SHOTS=/some/dir to also save screenshots of the pages at desktop and phone width.
  */
 test.skip(process.env.PAYMENT_PROVIDER !== "manual", "Manual mode is off: start the server with PAYMENT_PROVIDER=manual, MANUAL_PAY_CARD and MANUAL_PAY_HOLDER.");
@@ -18,6 +20,7 @@ test.afterAll(async () => {
 
 const CARD = process.env.MANUAL_PAY_CARD ?? "8600 1234 5678 9012";
 const HOLDER = process.env.MANUAL_PAY_HOLDER ?? "TEST OWNER";
+const ONLINE = Boolean(process.env.WHOP_API_KEY && process.env.WHOP_ACCOUNT_ID && process.env.WHOP_WEBHOOK_SECRET);
 const CLIENT_PASSWORD = "Passw0rd!x"; // what registerApi() uses
 // The smallest valid PNG (one pixel).
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
@@ -174,6 +177,7 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   // Checkout: the transfer details, and the button is off until a receipt is chosen.
   await page.goto(`/checkout/${orderId}`);
   await settled(page);
+  if (ONLINE) await onlineFirst(page, orderId);
   await expect(page.getByText(CARD)).toBeVisible();
   await expect(page.getByText(HOLDER)).toBeVisible();
   // One tap on the card number copies it (as bare digits) and says so.
@@ -202,6 +206,8 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   await pay.click();
   await expect(page.getByText("Toʻlovingiz tekshirilmoqda.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Men toʻladim" })).toHaveCount(0);
+  // A transfer that is being checked must not be paid a second time online.
+  await expect(page.getByRole("button", { name: "Karta bilan onlayn toʻlash" })).toHaveCount(0);
   await shot(page, "3-checkout-waiting");
 
   // The order page tells the client the same thing and offers no second payment button.
@@ -286,6 +292,53 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   await client.ctx.dispose();
   await jasur.dispose();
 });
+
+/**
+ * The automatic payment is what checkout shows; the card transfer is one button under it. Leaves the transfer open.
+ */
+async function onlineFirst(page: Page, orderId: string) {
+  const online = page.getByRole("button", { name: "Karta bilan onlayn toʻlash" });
+  const toggle = page.locator("summary", { hasText: "Kartaga oʻtkazma bilan toʻlash" });
+  await expect(online).toBeVisible();
+  await expect(toggle).toBeVisible();
+  await expect(page.getByText(CARD)).toBeHidden();
+  await expect(page.getByRole("button", { name: "Men toʻladim" })).toBeHidden();
+  await shot(page, "0-checkout-online-first");
+
+  // A payment service that does not answer: the reason is shown and the button works again.
+  await page.route("**/api/payments/whop/start", (route) => route.fulfill({ status: 502, json: { error: "Sinov xatosi." } }));
+  await online.click();
+  await expect(page.getByText("Sinov xatosi.")).toBeVisible();
+  await expect(online).toBeEnabled();
+  await page.unroute("**/api/payments/whop/start");
+
+  // The transfer opens, stays open through a reload, and closes again.
+  await toggle.click();
+  await expect(page.getByText(CARD)).toBeVisible();
+  await expect(page).toHaveURL(/\?usul=otkazma$/);
+  await page.reload();
+  await settled(page);
+  await expect(page.getByText(CARD)).toBeVisible();
+  await toggle.click();
+  await expect(page.getByText(CARD)).toBeHidden();
+  await expect(page).toHaveURL(new RegExp(`/checkout/${orderId}$`));
+
+  // The button takes the client to the address the site answers with (a stand-in page here), and works again after Back.
+  const body: unknown[] = [];
+  await page.route("**/api/payments/whop/start", (route) => {
+    body.push(route.request().postDataJSON());
+    return route.fulfill({ json: { url: "https://whop.com/checkout/stand-in", paid: false } });
+  });
+  await page.route("https://whop.com/**", (route) => route.fulfill({ contentType: "text/html", body: "<h1>stand-in payment page</h1>" }));
+  await online.click();
+  await expect(page).toHaveURL("https://whop.com/checkout/stand-in");
+  expect(body).toEqual([{ orderId }]);
+  await page.goBack();
+  await settled(page);
+  await expect(online).toBeEnabled();
+  await page.unroute("**/api/payments/whop/start");
+  await toggle.click();
+}
 
 // Last in this file on purpose: it leaves receipts waiting for the admin.
 test("a receipt and a change of terms sent at the same moment never both go through", async () => {
