@@ -184,7 +184,7 @@ export type Resolved =
   | { kind: "limited"; retryAfter: number };
 
 type Existing = { id: string; name: string; role: AppRole; isActive: boolean; googleSub: string | null; tokenVersion: number; totpEnabledAt?: Date | null };
-const existingSelect = { id: true, name: true, role: true, isActive: true, googleSub: true, tokenVersion: true, totpEnabledAt: true } as const;
+const existingSelect = { id: true, name: true, role: true, isActive: true, googleSub: true, tokenVersion: true, totpEnabledAt: true, emailVerifiedAt: true } as const;
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
@@ -203,7 +203,8 @@ function admit(user: Existing, door: EntryRole): Resolved {
 /**
  * 1. Already known by their Google id -> sign in.
  * 2. Not known by Google id, but a client or creator account has this (Google-verified) email -> link that account to
- *    this Google id and sign in. (The owner chose this over turning the person away.)
+ *    this Google id and sign in. (The owner chose this over turning the person away.) If the site never confirmed that
+ *    account's email, its password and older sessions end as it is linked.
  * 3. Otherwise make a new account for the door they came through: a client or a creator, never an admin.
  */
 export async function resolveGoogleUser(profile: GoogleProfile, door: EntryRole, ip: string): Promise<Resolved> {
@@ -216,14 +217,24 @@ export async function resolveGoogleUser(profile: GoogleProfile, door: EntryRole,
     if (byEmail.googleSub && byEmail.googleSub !== profile.sub) return { kind: "conflict" };
     const verdict = admit(byEmail, door);
     if (verdict.kind !== "ok") return verdict;
+    // An unconfirmed address says nothing about who made the account: it may be a stranger who signed up with this
+    // person's email and a password of their own. Google has now shown who owns the address, so that password and every
+    // session made before this moment end here. One update, so the account is never linked with them still working.
+    const takeBack = !byEmail.emailVerifiedAt;
+    let linked;
     try {
-      await prisma.user.update({ where: { id: byEmail.id }, data: { googleSub: profile.sub } });
+      linked = await prisma.user.update({
+        where: { id: byEmail.id },
+        data: { googleSub: profile.sub, ...(takeBack && { passwordHash: null, tokenVersion: { increment: 1 }, emailVerifiedAt: new Date() }) },
+        select: { tokenVersion: true },
+      });
     } catch (e) {
       if (isUniqueViolation(e)) return { kind: "conflict" };
       throw e;
     }
     await logAudit({ actorId: byEmail.id, action: "USER_GOOGLE_LINKED", entity: "User", entityId: byEmail.id });
-    return verdict;
+    // The new session must carry the version as it is now, or it would be over before it began.
+    return { ...verdict, user: { ...verdict.user, tokenVersion: linked.tokenVersion } };
   }
 
   // Making an account counts against the same hourly limit as registering, but in its own bucket.

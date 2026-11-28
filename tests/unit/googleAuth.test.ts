@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { SignJWT, generateKeyPair, type KeyLike } from "jose";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAllLimits } from "@/lib/rateLimit";
-import { signToken } from "@/lib/token";
+import { sessionIsCurrent, signToken } from "@/lib/token";
 
 // The database and the audit log are stood in for: what is tested is which account the person ends up in.
 const db = vi.hoisted(() => ({ findUnique: vi.fn(), update: vi.fn(), create: vi.fn(), audit: vi.fn() }));
@@ -184,31 +184,73 @@ describe("the sealed flow cookie", () => {
 
 describe("resolveGoogleUser: who ends up signed in", () => {
   const profile: GoogleProfile = { sub: "g-1", email: "ali@example.com", name: "Ali Valiyev" };
-  type Row = { id: string; name: string; role: "CLIENT" | "PROVIDER" | "ADMIN"; isActive: boolean; googleSub: string | null; email: string };
-  const row = (over: Partial<Row> = {}): Row => ({ id: "u1", name: "Ali", role: "CLIENT", isActive: true, googleSub: null, email: "ali@example.com", ...over });
-  /** The database holds these rows; a lookup by googleSub or by email finds the first match. */
-  const holds = (...rows: Row[]) =>
+  type Row = { id: string; name: string; role: "CLIENT" | "PROVIDER" | "ADMIN"; isActive: boolean; googleSub: string | null; email: string; passwordHash: string | null; tokenVersion: number; emailVerifiedAt: Date | null };
+  /** By default what the register form leaves behind: a password, and an email nobody has confirmed. */
+  const row = (over: Partial<Row> = {}): Row => ({ id: "u1", name: "Ali", role: "CLIENT", isActive: true, googleSub: null, email: "ali@example.com", passwordHash: "a-password-hash", tokenVersion: 3, emailVerifiedAt: null, ...over });
+  /** The database holds these rows; a lookup by googleSub or by email finds the first match, and an update changes the row. */
+  const holds = (...rows: Row[]) => {
     db.findUnique.mockImplementation(async ({ where }: { where: { googleSub?: string; email?: string } }) =>
       rows.find((r) => (where.googleSub !== undefined ? r.googleSub === where.googleSub : r.email === where.email)) ?? null,
     );
+    db.update.mockImplementation(async ({ where, data }: { where: { id: string }; data: Partial<Omit<Row, "tokenVersion">> & { tokenVersion?: { increment: number } } }) => {
+      const found = rows.find((r) => r.id === where.id)!;
+      const { tokenVersion, ...fields } = data;
+      Object.assign(found, fields);
+      if (tokenVersion) found.tokenVersion += tokenVersion.increment;
+      return { ...found };
+    });
+  };
 
   it("signs in a person already known by their Google id", async () => {
     holds(row({ googleSub: "g-1" }));
-    expect(await resolveGoogleUser(profile, "client", "1.1.1.1")).toEqual({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT" }, created: false });
+    expect(await resolveGoogleUser(profile, "client", "1.1.1.1")).toEqual({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT", tokenVersion: 3 }, created: false });
     expect(db.update).not.toHaveBeenCalled();
     expect(db.create).not.toHaveBeenCalled();
   });
 
   it("LINKS a client or creator account that has the same verified email, and signs in", async () => {
-    holds(row());
-    expect(await resolveGoogleUser(profile, "client", "1.1.1.1")).toEqual({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT" }, created: false });
-    expect(db.update).toHaveBeenCalledWith({ where: { id: "u1" }, data: { googleSub: "g-1" } });
+    const client = row();
+    holds(client);
+    expect(await resolveGoogleUser(profile, "client", "1.1.1.1")).toMatchObject({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT" }, created: false });
+    expect(client.googleSub).toBe("g-1");
     expect(db.audit).toHaveBeenCalledWith(expect.objectContaining({ action: "USER_GOOGLE_LINKED", entityId: "u1" }));
     expect(db.create).not.toHaveBeenCalled();
 
-    holds(row({ id: "u2", role: "PROVIDER" }));
+    const creator = row({ id: "u2", role: "PROVIDER" });
+    holds(creator);
     expect((await resolveGoogleUser(profile, "provider", "1.1.1.1")).kind).toBe("ok");
-    expect(db.update).toHaveBeenLastCalledWith({ where: { id: "u2" }, data: { googleSub: "g-1" } });
+    expect(creator.googleSub).toBe("g-1");
+  });
+
+  it("on linking an account whose email was never confirmed, ends the old password and older sessions in the same update", async () => {
+    // Someone may have signed up with this person's email and a password of their own.
+    const account = row({ passwordHash: "the-strangers-hash", tokenVersion: 3 });
+    holds(account);
+    const result = await resolveGoogleUser(profile, "client", "1.1.1.1");
+
+    expect(db.update).toHaveBeenCalledTimes(1);
+    expect(db.update.mock.calls[0]![0].data).toEqual({ googleSub: "g-1", passwordHash: null, tokenVersion: { increment: 1 }, emailVerifiedAt: expect.any(Date) });
+    expect(account.passwordHash).toBeNull();
+    expect(account.emailVerifiedAt).toBeInstanceOf(Date);
+    // The new session carries the new version; a session made before (version 3) no longer counts.
+    expect(result).toEqual({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT", tokenVersion: 4 }, created: false });
+    expect(sessionIsCurrent(4, account.tokenVersion)).toBe(true);
+    expect(sessionIsCurrent(3, account.tokenVersion)).toBe(false);
+
+    // Only once: the next Google sign-in finds the account by its Google id and changes nothing.
+    expect(await resolveGoogleUser(profile, "client", "1.1.1.1")).toEqual(result);
+    expect(db.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the password and sessions of an account whose email was already confirmed", async () => {
+    const confirmedAt = new Date("2026-11-01T00:00:00Z");
+    const account = row({ passwordHash: "own-hash", tokenVersion: 3, emailVerifiedAt: confirmedAt });
+    holds(account);
+    const result = await resolveGoogleUser(profile, "client", "1.1.1.1");
+
+    expect(db.update.mock.calls[0]![0].data).toEqual({ googleSub: "g-1" });
+    expect(account).toMatchObject({ googleSub: "g-1", passwordHash: "own-hash", tokenVersion: 3, emailVerifiedAt: confirmedAt });
+    expect(result).toEqual({ kind: "ok", user: { id: "u1", name: "Ali", role: "CLIENT", tokenVersion: 3 }, created: false });
   });
 
   it("never opens, makes or links an ADMIN through Google", async () => {

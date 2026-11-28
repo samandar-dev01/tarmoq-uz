@@ -222,7 +222,7 @@ The client presses "Karta bilan onlayn toʻlash", pays on Whop's page, and the o
 
 - **Only verified Google emails.** Google's ID token is checked (signature, issuer, this app as audience, expiry, the nonce of this very sign-in) and the person is refused unless Google marks the email address as verified.
 - **They choose their own account.** The request carries `prompt=select_account`, so Google shows its account chooser every time.
-- **Who is signed in.** A person already known by their Google id signs in. Otherwise, a client or creator account with the same (verified) email is linked to their Google id and signed in. Otherwise a new account is made for the door they came through (client or creator, with no password and no phone). An admin account is never opened, made or linked through Google. The same door rule as the password form applies.
+- **Who is signed in.** A person already known by their Google id signs in. Otherwise, a client or creator account with the same (verified) email is linked to their Google id and signed in; if the site never confirmed that account's email, linking also removes its password and signs out its older sessions, because someone else may have made it. That account is then Google-only: the reset link and the password settings are not offered to accounts with no password. Otherwise a new account is made for the door they came through (client or creator, with no password and no phone). An admin account is never opened, made or linked through Google. The same door rule as the password form applies.
 - Code: `src/lib/googleAuth.ts`, `src/app/api/auth/google/{start,callback}/route.ts`, `src/components/auth/GoogleButton.tsx`.
 
 **One-time setup (Google Cloud, in the owner's Google account):**
