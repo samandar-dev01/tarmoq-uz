@@ -17,7 +17,10 @@ export default async function AdminOrders() {
   const orders = await prisma.order.findMany({
     orderBy: { updatedAt: "desc" },
     take: 200,
-    include: { service: { select: { title: true } }, client: { select: { name: true } }, provider: { select: { name: true } } },
+    include: {
+      service: { select: { title: true } }, client: { select: { name: true } }, provider: { select: { name: true } },
+      payments: { where: { status: "HELD" }, select: { provider: true } },
+    },
   });
   orders.sort((a, b) => Number(b.status === "DISPUTED") - Number(a.status === "DISPUTED"));
 
@@ -61,7 +64,11 @@ export default async function AdminOrders() {
                   ) : (
                     <p><strong>Nizo sababi:</strong> {reason.get(o.id) || "Koʻrsatilmagan"}</p>
                   )}
-                  {manual && <Alert variant="warning">Qoʻlda toʻlov: <strong>Mijozga qaytarish</strong> tugmasini bosishdan oldin pulni mijozning kartasiga oʻzingiz yuboring.</Alert>}
+                  {o.payments[0]?.provider === "whop" ? (
+                    <Alert variant="warning">Onlayn toʻlov (Whop): <strong>Mijozga qaytarish</strong> tugmasini bosishdan oldin pulni Whop panelida qaytaring.</Alert>
+                  ) : (
+                    manual && <Alert variant="warning">Qoʻlda toʻlov: <strong>Mijozga qaytarish</strong> tugmasini bosishdan oldin pulni mijozning kartasiga oʻzingiz yuboring.</Alert>
+                  )}
                   <ResolveDispute orderId={o.id} refundOnly={agreed.has(o.id)} />
                 </Card>
               )}

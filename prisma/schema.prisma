@@ -242,6 +242,11 @@ model Payment {
   receiptKey  String?
   receiptName String?
   receiptType String?
+  // Online payment through a gateway (Whop): the gateway's checkout id and address, and the id of the payment that
+  // brought money in. Each id can belong to one row only, so the same money is never counted twice.
+  providerRef       String? @unique
+  providerPaymentId String? @unique
+  checkoutUrl       String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

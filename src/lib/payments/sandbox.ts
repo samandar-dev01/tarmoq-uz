@@ -13,7 +13,7 @@ export async function getOrCreateIntent(orderId: string, clientId: string) {
   if (order.status !== "AWAITING_PAYMENT") throw new HttpError(409, "Bu buyurtma hozir toʻlov kutmayapti.");
   if (!order.agreedPrice) throw new HttpError(409, "Bu buyurtma uchun hali narx kelishilmagan.");
 
-  const existing = await prisma.payment.findFirst({ where: { orderId, status: "REQUIRES_PAYMENT" } });
+  const existing = await prisma.payment.findFirst({ where: { orderId, status: "REQUIRES_PAYMENT", provider: { not: "whop" } } });
   if (existing) {
     if (existing.amount === order.agreedPrice) return existing;
     return prisma.payment.update({ where: { id: existing.id }, data: { amount: order.agreedPrice } });

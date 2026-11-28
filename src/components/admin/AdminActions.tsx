@@ -57,6 +57,21 @@ export function ConfirmPayment({ paymentId, amount }: { paymentId: string; amoun
   );
 }
 
+export function MarkRefunded({ paymentId, amount }: { paymentId: string; amount: string }) {
+  const { run, loading, error } = useAction();
+  return (
+    <div className="space-y-3">
+      {error && <Alert variant="error">{error}</Alert>}
+      <Button
+        loading={loading}
+        onClick={() => { if (window.confirm(`${amount} Whop panelida mijozga qaytarildimi?`)) void run(`/api/admin/payments/${paymentId}`, { method: "PATCH", json: { action: "refunded" } }); }}
+      >
+        Qaytardim
+      </Button>
+    </div>
+  );
+}
+
 export function MarkPayoutPaid({ payoutId, amount }: { payoutId: string; amount: string }) {
   const { run, loading, error } = useAction();
   return (

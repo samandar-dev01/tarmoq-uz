@@ -145,6 +145,12 @@ export const orders: Record<string, string> = {
   "Buyurtmaga qaytish": "Вернуться к заказу",
   "Siz tayyor videoni qabul qilmaguncha ushlab turiladi.": "Деньги удерживаются, пока вы не примете готовое видео.",
   "Toʻlov rekvizitlari hali sozlanmagan. Administrator bilan bogʻlaning.": "Реквизиты для оплаты ещё не настроены. Свяжитесь с администратором.",
+  "Karta bilan onlayn toʻlash": "Оплатить картой онлайн",
+  "Toʻlov sahifasiga oʻtasiz. Toʻlov oʻtgach, buyurtma avtomatik boshlanadi.": "Вы перейдёте на страницу оплаты. После оплаты заказ начнётся автоматически.",
+  "Toʻlagan boʻlsangiz, tasdiq bir necha daqiqada keladi. Qayta toʻlamang, sahifani birozdan keyin yangilang.":
+    "Если вы оплатили, подтверждение придёт в течение нескольких минут. Не платите повторно, обновите страницу чуть позже.",
+  "Yoki kartaga oʻtkazing": "Или переведите на карту",
+  "Onlayn karta toʻlovi": "Онлайн-оплата картой",
   "Muvaffaqiyatli": "Успешная",
   "Rad etilgan": "Отклонённая",
   "Mablagʻ yetarli emas": "Недостаточно средств",

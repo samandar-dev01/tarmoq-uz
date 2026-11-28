@@ -51,6 +51,16 @@ services:
       # "sandbox" = test cards, no real money. "manual" = clients send money to the card below and an admin confirms it by hand.
       - key: PAYMENT_PROVIDER
         value: manual
+      # Optional: online card payment through Whop (README "Online payment through Whop"). Empty = no Whop button.
+      # Set these in the Render dashboard, never in git.
+      - key: WHOP_API_KEY
+        sync: false
+      - key: WHOP_ACCOUNT_ID
+        sync: false
+      - key: WHOP_WEBHOOK_SECRET
+        sync: false
+      - key: WHOP_PRODUCT_ID
+        sync: false
       # Only used when PAYMENT_PROVIDER is "manual": where clients send the money. Set these in the Render dashboard, never in git.
       - key: MANUAL_PAY_CARD
         sync: false

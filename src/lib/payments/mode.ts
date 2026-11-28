@@ -12,3 +12,5 @@ export const paymentsAreTest = (): boolean =>
  * (PAYMENT_PROVIDER=manual). The money is real, so `paymentsAreTest()` is false and the test cards stay off.
  */
 export const manualPaymentsOn = (): boolean => process.env.PAYMENT_PROVIDER === "manual";
+
+// Online payment through Whop is switched on by its keys: see `whopOffered` in whopPure.ts.

@@ -206,6 +206,16 @@ See `.env.example`. The important ones:
 | `S3_AVATARS_BUCKET` | Profile photos have their own private bucket (JPG, PNG, WebP, 2 MB). Create it before photos are used on the live site. |
 | `RESEND_API_KEY`, `MAIL_FROM` | Optional. Email through resend.com: password reset ("Parolni unutdingizmi?") and address confirmation appear only when both are set. `MAIL_DRIVER=log` writes mail to the server log in development only. |
 
+### Online payment through Whop
+
+The client presses "Karta bilan onlayn toʻlash", pays on Whop's page, and the order starts on its own. Creators are still paid by hand (`/admin/payouts`), and refunds are sent by hand in the Whop dashboard.
+
+- **Switching it on.** Set `WHOP_API_KEY`, `WHOP_ACCOUNT_ID` (`biz_...`) and `WHOP_WEBHOOK_SECRET` (`ws_...`). With `PAYMENT_PROVIDER=manual` the button sits above the card transfer; with `whop` it is the only way to pay. Removing the keys removes the button (a payment already on its way is then no longer counted).
+- **Webhook.** In the Whop dashboard add `<site>/api/payments/whop/webhook` for `payment.succeeded`. The site also asks Whop itself when the client comes back, so a late message does not leave an order waiting.
+- **What is checked.** The webhook signature; then the payment is read from Whop's API and must be paid, belong to a payment page this site made, and be at least the agreed price in soʻm. Money of the wrong amount, or arriving for a cancelled, changed or already paid order, is listed on `/admin/payments` to be refunded, and a Telegram alert is sent.
+- **Testing.** On a development machine only, `WHOP_SANDBOX=true` with sandbox keys (sandbox.whop.com). A production server ignores it. Whop accepts only an https way back, so on a local `http` site open `/checkout/<order>?qaytdi=1` yourself after paying. The key needs permission to create checkouts with a price and to read payments.
+- **Not covered.** A refund or dispute made on Whop's side does not change the order here: resolve it in `/admin/orders` as well.
+
 ### Sign in with Google
 
 "Continue with Google" sits under the email and password form on the client and creator sign-in and sign-up pages (never on the admin door). How it behaves:
