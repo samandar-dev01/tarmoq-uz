@@ -9,6 +9,8 @@ Render service: `srv-dbpg81gm7kps73argm80`. Supabase project: `gkigkiqzcdjfbysym
 
 ## Where things stand right now
 
+- **NEWEST, 2026-11-28: see the section "STATUS ON 2026-11-28" at the END of this file** (done and to do). Where it differs
+  from anything above it, trust it.
 - **Google sign-in, the privacy page and the other login options (2026-11-21): see the section "GOOGLE SIGN-IN AND LOGIN OPTIONS" at the END of this file.**
   Pull request #17 is open, NOT merged, and safe to merge with no Google keys (the button stays hidden). The goal is the MVP as soon as possible, so Google is optional for launch.
 - **Speed work (2026-11-17): see the section "SPEED WORK" at the END of this file.** Three branches are pushed and verified, NOT merged
@@ -499,3 +501,54 @@ Owner goal stated on 2026-11-21: **release the MVP as soon as possible.** Google
 7. Optional hardening later: rerun the three old browser specs on a fresh server; email verification (closes the auto-link risk); a footer link to the privacy page.
 
 Run-notes: after `prisma generate` or a schema change, restart any running `next dev` (an old one answered 500 on correct-password logins). Embedded Postgres needs `node node_modules/@embedded-postgres/darwin-x64/scripts/hydrate-symlinks.js` run by hand once after `npm install`.
+
+---
+
+# STATUS ON 2026-11-28 (newest)
+
+`main` = `3739b63` (pull request #25). Checked that evening: the live site answers and the Whop payment button is switched on.
+
+## Done and live
+- [x] **Marketplace update (PR #23):** white theme, new menu and footer, package search and filters, buying a package directly, settings and profile photos, notifications, custom offers, resolution centre, two-step sign-in.
+- [x] Supabase bucket `avatars` created and `S3_AVATARS_BUCKET` added in Render.
+- [x] **Online card payment through Whop (PR #24):** a button on the payment page; the order starts by itself after a confirmed payment. Card transfer stays as the backup. Creator payouts and refunds are still by hand.
+  - A test payment in Whop's sandbox passed on a local copy and started its order.
+  - Live API key, account ID and webhook secret are in Render. The live Whop page opened with the correct so'm price.
+- [x] **Google sign-in:** switched on and confirmed working by the owner. A safety fix is merged and deployed (PR #25).
+- [x] The three speed branches (`perf-db-and-cache`, `perf-indexes`, `perf-fast-boot`) are in `main`.
+
+## To do, in this order
+
+### 1. Finish Whop (clients can already see the button)
+- [ ] **One successful real payment** on a small order. Check three things: you are brought back to the site, the order shows `Jarayonda`, and Whop's webhook delivery shows 200. The first attempt did not complete.
+  - If this has to wait: delete `WHOP_API_KEY` in Render and choose "Save and deploy". That hides the button.
+- [ ] Find out whether **Uzcard and Humo** work (not tested yet).
+- [ ] Turn off "Pay with Crypto" on the Whop page (waiting for the owner's yes).
+- [ ] Tidy up the Whop settings after the first successful payment.
+- [ ] Ask Whop in writing whether holding a client's money until the work is approved is allowed.
+- [ ] Change how the payment looks (owner's note; which screen is still to be said).
+
+How to handle a Whop refund: refund it in Whop, then also on the site (the client opens `Nizo ochish`, the admin presses `Mijozga qaytarish`). Money that arrives for a cancelled or changed order is listed on `/admin/payments`.
+
+### 2. Waiting to be merged or confirmed
+- [ ] New home page: branch `homepage-visual-refresh` is pushed and tested, no pull request yet.
+- [ ] Google sign-in: follow-up from 11-28 to confirm (see Claude's notes).
+- [ ] `seo-landing-pages` is not merged. `fix-order-note-for-non-clients` stays unmerged by the owner's earlier decision.
+
+### 3. Check on the live site
+- [ ] Upload a profile photo.
+- [ ] Confirm the card number shown for card transfers is the right one (on 11-21 a new number failed the check and was not set).
+
+### 4. Not built yet
+- [ ] A client's receipt is refused if the creator changes the terms during the transfer. Suggested fix: the agreed terms stay payable until the change is accepted.
+- [ ] Password reset and email confirmation: need an email service (`RESEND_API_KEY`, `MAIL_FROM`).
+- [ ] Tips (item 28) and the buyer fee + creator commission (item 30): need the owner's numbers.
+- [ ] Item "13" was typed twice in the list of picked items: was 12 or 14 meant?
+- [ ] Terms of service page (the privacy page exists).
+- [ ] A native speaker's check of the new Uzbek and Russian text.
+- [ ] Alerts when the site is closed (Telegram or browser push).
+- [ ] Click or Payme payments: not started. Payme needs an individual entrepreneur or a company; whether Click allows a self-employed person to connect a website is not known.
+
+Not re-checked on 11-28: the older lists above (gap audit, dashboard checks from the speed work).
+
+On this Mac: delete the local Whop test settings when they are no longer needed.
