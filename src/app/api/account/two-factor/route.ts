@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser, whileSignedIn } from "@/lib/auth";
 import { requireCurrentPassword } from "@/lib/accountGuard";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { newSecret, otpauthUrl, totpMatches } from "@/lib/totp";
@@ -29,16 +29,18 @@ export const POST = handle(async (req) => {
     await requireCurrentPassword(user.id, input.currentPassword);
     if (row.totpEnabledAt) throw new HttpError(409, "Ikki bosqichli kirish allaqachon yoqilgan.");
     const secret = newSecret();
-    await prisma.user.update({ where: { id: user.id }, data: { totpSecretEnc: seal(secret, "totp") } });
+    await whileSignedIn((tx) => tx.user.update({ where: { id: user.id }, data: { totpSecretEnc: seal(secret, "totp") } }));
     return ok({ secret, url: otpauthUrl(secret, user.email) });
   }
   if (!row.totpSecretEnc) throw new HttpError(409, "Avval sozlashni boshlang.");
   if (input.action === "disable") await requireCurrentPassword(user.id, input.currentPassword);
   if (!totpMatches(open(row.totpSecretEnc, "totp"), input.code)) throw new HttpError(400, WRONG, { field: "code" });
-  await prisma.user.update({
-    where: { id: user.id },
-    data: input.action === "enable" ? { totpEnabledAt: new Date() } : { totpEnabledAt: null, totpSecretEnc: null },
-  });
+  await whileSignedIn((tx) =>
+    tx.user.update({
+      where: { id: user.id },
+      data: input.action === "enable" ? { totpEnabledAt: new Date() } : { totpEnabledAt: null, totpSecretEnc: null },
+    }),
+  );
   await logAudit({ actorId: user.id, action: input.action === "enable" ? "TWO_FACTOR_ON" : "TWO_FACTOR_OFF", entity: "User", entityId: user.id });
   return ok({ enabled: input.action === "enable" });
 });

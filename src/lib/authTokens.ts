@@ -10,12 +10,22 @@ export type TokenKind = "reset" | "verify";
 const HOURS: Record<TokenKind, number> = { reset: 1, verify: 48 };
 export const hashToken = (raw: string): string => createHash("sha256").update(raw).digest("hex");
 
-export async function createToken(userId: string, kind: TokenKind): Promise<string> {
+/**
+ * A new link for `email`, the address it is about to be sent to. Null when the account no longer has that address (it was
+ * changed while the link was being asked for): a link must never reach an address the account has left.
+ */
+export async function createToken(userId: string, kind: TokenKind, email: string): Promise<string | null> {
   const raw = randomBytes(32).toString("base64url");
-  // A new link replaces the older ones of its kind.
-  await prisma.authToken.deleteMany({ where: { userId, kind, usedAt: null } });
-  await prisma.authToken.create({ data: { userId, kind, tokenHash: hashToken(raw), expiresAt: new Date(Date.now() + HOURS[kind] * 3_600_000) } });
-  return raw;
+  return prisma.$transaction(async (tx) => {
+    // Keeps the address from changing until the link is saved. A change made before this finds no row here; one made
+    // after it deletes this link.
+    const same = await tx.$queryRaw<unknown[]>`SELECT 1 FROM "User" WHERE "id" = ${userId} AND "email" = ${email} FOR KEY SHARE`;
+    if (same.length !== 1) return null;
+    // A new link replaces the older ones of its kind.
+    await tx.authToken.deleteMany({ where: { userId, kind, usedAt: null } });
+    await tx.authToken.create({ data: { userId, kind, tokenHash: hashToken(raw), expiresAt: new Date(Date.now() + HOURS[kind] * 3_600_000) } });
+    return raw;
+  });
 }
 
 /** Uses a token up: the user it belongs to, or null when it is unknown, used or out of date. */
@@ -30,11 +40,13 @@ export async function consumeToken(raw: string, kind: TokenKind, db: Prisma.Tran
 export const unusedLinks = (userId: string, ...kinds: TokenKind[]) => ({ userId, usedAt: null, kind: { in: kinds } });
 
 export async function sendVerifyLink(user: { id: string; email: string }): Promise<boolean> {
-  const raw = await createToken(user.id, "verify");
+  const raw = await createToken(user.id, "verify", user.email);
+  if (!raw) return false;
   return sendMail(user.email, "Tarmoq.uz: emailni tasdiqlang", `Emailingizni tasdiqlash uchun havolani oching (48 soat amal qiladi):\n${siteUrl()}/verify?token=${raw}`);
 }
 
 export async function sendResetLink(user: { id: string; email: string }): Promise<boolean> {
-  const raw = await createToken(user.id, "reset");
+  const raw = await createToken(user.id, "reset", user.email);
+  if (!raw) return false;
   return sendMail(user.email, "Tarmoq.uz: parolni tiklash", `Yangi parol oʻrnatish uchun havolani oching (1 soat amal qiladi):\n${siteUrl()}/reset?token=${raw}\n\nAgar buni siz soʻramagan boʻlsangiz, hech narsa qilmang.`);
 }
