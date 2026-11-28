@@ -141,7 +141,7 @@ export default async function HomePage() {
         </Container>
       )}
 
-      <section className="border-y border-line bg-warm">
+      <section className="border-y border-line">
         <Container pad="section">
           <h2>{t("Buyurtma qanday ishlaydi")}</h2>
           <ol className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
@@ -188,7 +188,7 @@ export default async function HomePage() {
       </Container>
 
       <Container pad="none" className="pb-4">
-        <div className="grid overflow-hidden rounded-hero border border-line bg-warm md:grid-cols-2">
+        <div className="grid overflow-hidden rounded-hero border border-line bg-surface md:grid-cols-2">
           <div className="flex flex-col items-start justify-center p-6 sm:p-10 lg:p-14">
             <h2>{t("Ijodkormisiz? Buyurtmalar sizni kutmoqda.")}</h2>
             <p className="mt-3 max-w-md text-ink-soft">{t("Profil yarating, paketlaringizni joylang va mijozlardan buyurtma oling.")}</p>

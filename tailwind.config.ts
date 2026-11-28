@@ -17,8 +17,6 @@ export default {
         ink: { DEFAULT: c("ink"), soft: c("ink-soft"), mute: c("ink-mute") },
         paper: { DEFAULT: c("paper"), deep: c("paper-deep") },
         surface: c("surface"),
-        // A warm off-white band (a shade above the ground in the dark scheme), behind the home page's top.
-        warm: c("warm"),
         // These do not change with the scheme: `night` is the dark text that sits on the bright saffron and turquoise fills,
         // `on-accent` the white text on the cobalt and pomegranate fills, `media` the black behind a video, and `cover-ink` /
         // `cover-night` the strokes of the logo mark and the generated creator art.
