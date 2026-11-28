@@ -50,7 +50,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
       const d = await tx.delivery.create({
         data: { orderId: order.id, fileKey: key, fileName: file.name.slice(0, 200), fileSize: file.size, mimeType: contentType, note },
       });
-      await postOrderMessage(order.id, user.id, `Ishni topshirdim: ${file.name}${note ? `\n${note}` : ""}`, tx);
+      await postOrderMessage(order.id, user.id, `Ishni topshirdim: ${file.name}${note ? `\n${note}` : ""}`, tx, "delivery");
       return d;
     });
     await logAudit({ actorId: user.id, action: "DELIVERY_UPLOADED", entity: "Delivery", entityId: delivery.id, meta: { size: file.size } });

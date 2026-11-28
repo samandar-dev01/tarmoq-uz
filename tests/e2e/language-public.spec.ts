@@ -421,8 +421,9 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
       text = text.split("Сменить язык: Oʻzbekcha").join(" ");
       const apostrophes = text.match(/.{0,40}[ʻʼ].{0,40}/g) ?? [];
       expect(apostrophes, `${path}: Uzbek apostrophe letters left`).toEqual([]);
-      // A leftover Latin word is an untranslated Uzbek sentence (the brand name is the one allowed word).
-      const latin = (text.match(/[A-Za-z]{3,}/g) ?? []).filter((w) => w.toLowerCase() !== "tarmoq");
+      // A leftover Latin word is an untranslated Uzbek sentence. Allowed: the brand name, and the platforms' own names,
+      // which Russian writes in Latin letters too.
+      const latin = (text.match(/[A-Za-z]{3,}/g) ?? []).filter((w) => !["tarmoq", "reels", "tiktok", "youtube"].includes(w.toLowerCase()));
       expect(latin, `${path}: Latin words left (Uzbek that nobody translated?)`).toEqual([]);
       expect(CYRILLIC.test(text), path).toBe(true);
     }
@@ -449,7 +450,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     const problems = watchConsole(page);
     await page.goto("/ru/search");
     await settled(page);
-    await expect(page.getByText(/^Найдено: \d+ креатор(а|ов)?$/)).toBeVisible();
+    await expect(page.getByText(/^Найдено: \d+ услуг(а|и)?$/)).toBeVisible();
     const panel = page.locator("form[action='/ru/search']");
     await expect(panel.getByLabel("Город").locator("option")).toHaveText(["Все города", "Андижан", "Ташкент", "Самарканд", "Бухара", "Наманган", "Фергана", "Коканд", "Нукус", "Карши", "Термез"]);
     expect(await panel.getByLabel("Город").locator("option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value))).toContain("Andijon"); // the stored value is unchanged
@@ -460,8 +461,10 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await panel.getByLabel("Город").selectOption({ label: "Андижан" });
     await panel.getByRole("button", { name: "Применить фильтры" }).click();
     await expect(page).toHaveURL(/\/ru\/search\?q=Jasur\+Karimov&city=Andijon/);
-    await expect(page.getByText("Найдено: 1 креатор")).toBeVisible();
-    await expect(page.locator("main a[href='/ru/providers/jasur-karimov']")).toHaveCount(1);
+    // The search lists packages: every one found here is this creator's.
+    await expect(page.getByText(/^Найдено: \d+ услуг(а|и)?$/)).toBeVisible();
+    await expect(page.locator("main a[href='/ru/providers/jasur-karimov']").first()).toBeVisible();
+    await expect(page.locator("main a[href^='/ru/providers/']:not([href='/ru/providers/jasur-karimov'])")).toHaveCount(0);
     await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 
     // A category pill keeps the language, marks itself as current, and a card opens the creator's Russian page.
@@ -482,7 +485,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await page.goto("/ru/search?q=zzzz-nothing-matches");
     await settled(page);
     await expect(page.getByText("По этим фильтрам креаторов не найдено")).toBeVisible();
-    await expect(page.getByText("Найдено: 0 креаторов")).toBeVisible();
+    await expect(page.getByText("Найдено: 0 услуг")).toBeVisible();
     await page.getByRole("link", { name: "Сбросить фильтры" }).click();
     await expect(page).toHaveURL(/\/ru\/search$/);
     expect(problems).toEqual([]);
@@ -514,7 +517,8 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
           const out = await page.evaluate(
             (w) =>
               [...document.querySelectorAll("main a, main button, main h1, main h2, main h3, main p, main select, main input, main dd")]
-                .filter((el) => !el.closest("[aria-hidden='true']") && el.getBoundingClientRect().right > w + 1)
+                // A row that slides sideways (data-rail) holds more than fits on purpose; the page itself must still not scroll.
+                .filter((el) => !el.closest("[aria-hidden='true'], [data-rail]") && el.getBoundingClientRect().right > w + 1)
                 .map((el) => `${el.tagName} ${(el.textContent ?? "").slice(0, 40)}`)
                 .slice(0, 5),
             width,

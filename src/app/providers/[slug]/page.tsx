@@ -11,6 +11,13 @@ import { PROFILE_STATUS_LABEL } from "@/lib/orderUi";
 import { formatPriceFrom } from "@/lib/publicFormat";
 import { breadcrumbJsonLd, creatorJsonLd, ogDefaults, pageAlternates } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { PackageCompare } from "@/components/PackageCompare";
+import { avatarUrl } from "@/lib/avatar";
+import { RememberCreator } from "@/components/RememberCreator";
+import { ReviewReply } from "@/components/ReviewReply";
+import { LEVEL_LABEL, sellerLevel } from "@/lib/levels";
+import { isOnline, usualResponseHours } from "@/lib/presence";
+import { readQa } from "@/lib/serviceDetails";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar, coverArt } from "@/components/ui/Avatar";
 import { buttonClasses } from "@/components/ui/Button";
@@ -19,7 +26,6 @@ import { Card, cardClasses, tagClasses } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Stars } from "@/components/ui/Stars";
-import { TestModeBadge } from "@/components/ui/TestModeBadge";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -31,7 +37,7 @@ const getProfile = cache((slug: string) =>
   prisma.providerProfile.findUnique({
     where: { slug },
     include: {
-      user: { select: { id: true, name: true, isActive: true, createdAt: true } },
+      user: { select: { id: true, name: true, isActive: true, createdAt: true, avatarUpdatedAt: true, lastSeenAt: true } },
       category: { select: { name: true, nameRu: true } },
       services: { where: { isActive: true }, orderBy: { price: "asc" } },
       portfolio: { orderBy: { sortOrder: "asc" } },
@@ -80,12 +86,27 @@ export default async function ProviderPage(props: Props) {
   // Only approved profiles are public; owner and admins may preview others.
   if (profile.status !== "APPROVED" && !isOwner && !isAdmin) notFound();
 
-  const reviews = await prisma.review.findMany({
-    where: { providerUserId: profile.userId, isHidden: false },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    include: { author: { select: { name: true } } },
-  });
+  const shownReviews = { providerUserId: profile.userId, isHidden: false };
+  const [reviews, stars, talks, lastDelivery] = await Promise.all([
+    prisma.review.findMany({ where: shownReviews, orderBy: { createdAt: "desc" }, take: 10, include: { author: { select: { name: true } } } }),
+    prisma.review.groupBy({ by: ["rating"], where: shownReviews, _count: { _all: true } }),
+    // For the usual answering time: the first messages of the latest conversations (never their text).
+    prisma.conversation.findMany({
+      where: { OR: [{ userAId: profile.userId }, { userBId: profile.userId }] },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { messages: { orderBy: { createdAt: "asc" }, take: 10, select: { senderId: true, createdAt: true } } },
+    }),
+    prisma.delivery.findFirst({ where: { order: { providerId: profile.userId } }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+  ]);
+  const responseHours = usualResponseHours(talks.map((c) => c.messages), profile.userId);
+  const level = sellerLevel(profile);
+  const starTotal = stars.reduce((n, s) => n + s._count._all, 0);
+  // A visit by someone else is counted for the creator's statistics. A raw write, so the profile's "updated" date (which
+  // the sitemap shows) does not move; not awaited and never allowed to break the page.
+  if (profile.status === "APPROVED" && viewer?.id !== profile.userId && viewer?.role !== "ADMIN") {
+    void prisma.$executeRaw`UPDATE "ProviderProfile" SET "viewCount" = "viewCount" + 1 WHERE id = ${profile.id}`.catch(() => {});
+  }
 
   const orderHref = (serviceId: string) => {
     const target = `/orders/new?service=${serviceId}`;
@@ -102,6 +123,8 @@ export default async function ProviderPage(props: Props) {
 
   return (
     <Container size="xl">
+      {/* Remembered for the home page's "seen lately" row (public profiles only, not one's own). */}
+      {approved && !isOwner && <RememberCreator slug={profile.slug} />}
       {/* Only a public (approved) profile carries structured data. The rating is included only when real reviews are shown below. */}
       {approved && (
         <>
@@ -143,7 +166,7 @@ export default async function ProviderPage(props: Props) {
         </div>
         <div className="px-5 pb-7 sm:px-8">
           <div className="flex items-start justify-between gap-4">
-            <Avatar name={profile.user.name} size="xl" className="-mt-12 ring-4 ring-surface" />
+            <Avatar name={profile.user.name} src={avatarUrl(profile.user)} size="xl" className="-mt-12 ring-4 ring-surface" />
             <div className="flex gap-2 pt-4">
               {isOwner ? (
                 <ButtonLink href="/dashboard/provider/profile/wizard" variant="secondary">{t("Profilni tahrirlash")}</ButtonLink>
@@ -165,17 +188,28 @@ export default async function ProviderPage(props: Props) {
               {profile.district ? `, ${profile.district}` : ""}
             </span>
             <span className={tagClasses("cobalt")}>{category}</span>
+            {level > 0 && <span className={tagClasses("saffron")}>{t(LEVEL_LABEL[level as 1 | 2 | 3])}</span>}
             {profile.ratingCount > 0 ? (
               <Stars value={profile.ratingAvg} count={profile.ratingCount} className="ml-1" />
             ) : (
               <span className={tagClasses("saffron")}>{t("Yangi ijodkor")}</span>
             )}
           </div>
+          {/* How active the creator is. */}
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">
+            <li className="flex items-center gap-1.5">
+              <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${isOnline(profile.user.lastSeenAt) ? "bg-turquoise" : "bg-ink-mute/40"}`} />
+              {isOnline(profile.user.lastSeenAt) ? t("Onlayn") : profile.user.lastSeenAt ? t("Oxirgi faollik: {when}", { when: formatDay(profile.user.lastSeenAt, locale) }) : t("Oflayn")}
+            </li>
+            {responseHours !== null && <li>{t("Odatda {hours} soat ichida javob beradi", { hours: responseHours })}</li>}
+            {lastDelivery && <li>{t("Oxirgi topshiriq: {when}", { when: formatDay(lastDelivery.createdAt, locale) })}</li>}
+            {profile.completedCount > 0 && <li>{t("{count} ta buyurtma bajarilgan", { count: profile.completedCount })}</li>}
+          </ul>
         </div>
       </Card>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_19rem] lg:items-start">
-        <div className="space-y-12">
+        <div className="min-w-0 space-y-12">
           <section>
             <h2>{t("Ijodkor haqida")}</h2>
             <p className="mt-3 max-w-2xl whitespace-pre-line text-[1.0625rem] leading-7 text-ink-soft">{profile.bio}</p>
@@ -206,6 +240,29 @@ export default async function ProviderPage(props: Props) {
               </ul>
             )}
           </section>
+
+          <PackageCompare packages={profile.services} orderHref={canOrder && approved ? orderHref : undefined} />
+
+          {profile.services.some((s) => readQa(s.faq).length > 0) && (
+            <section>
+              <h2>{t("Koʻp beriladigan savollar")}</h2>
+              {profile.services.filter((s) => readQa(s.faq).length > 0).map((s) => (
+                <div key={s.id} className="mt-4">
+                  <h3 data-user-content>{s.title}</h3>
+                  <ul className="mt-2 space-y-2">
+                    {readQa(s.faq).map((f, i) => (
+                      <li key={i}>
+                        <details className={cardClasses({ padding: "none" })}>
+                          <summary data-user-content className="min-h-11 px-4 py-3 font-semibold">{f.question}</summary>
+                          <p data-user-content className="whitespace-pre-line border-t border-line px-4 py-3 text-ink-soft">{f.answer}</p>
+                        </details>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          )}
 
           <section>
             <h2>{t("Portfolio")}</h2>
@@ -242,6 +299,22 @@ export default async function ProviderPage(props: Props) {
             {reviews.length === 0 ? (
               <div className="mt-4"><EmptyState title={t("Hali sharhlar yoʻq")} description={t("Sharhlar buyurtma yakunlangandan keyin shu yerda paydo boʻladi.")} /></div>
             ) : (
+              <>
+              {/* How the shown reviews spread over the five marks. */}
+              <ul className="mt-4 max-w-sm space-y-1" aria-label={t("Baholar taqsimoti")}>
+                {[5, 4, 3, 2, 1].map((mark) => {
+                  const n = stars.find((s) => s.rating === mark)?._count._all ?? 0;
+                  return (
+                    <li key={mark} className="flex items-center gap-3 text-sm">
+                      <span className="w-16 shrink-0 text-ink-soft">{t("{n} yulduz", { n: mark })}</span>
+                      <span aria-hidden="true" className="h-2 flex-1 overflow-hidden rounded-full bg-paper-deep">
+                        <span className="block h-full rounded-full bg-star" style={{ width: `${starTotal ? (n / starTotal) * 100 : 0}%` }} />
+                      </span>
+                      <span className="w-8 shrink-0 text-right tabular-nums">{n}</span>
+                    </li>
+                  );
+                })}
+              </ul>
               <ul className="mt-4 space-y-4">
                 {reviews.map((r) => (
                   <li key={r.id} className={cardClasses({ padding: "md" })}>
@@ -251,9 +324,18 @@ export default async function ProviderPage(props: Props) {
                     </div>
                     <p className="mt-2 text-ink-soft">{r.comment}</p>
                     <p className="mt-2 text-sm text-ink-mute">{formatDay(r.createdAt, locale)}</p>
+                    {r.reply ? (
+                      <div className="mt-3 border-l-2 border-line-strong pl-3">
+                        <p className="text-sm font-bold">{t("Ijodkor javobi")}</p>
+                        <p data-user-content className="mt-1 whitespace-pre-line text-ink-soft">{r.reply}</p>
+                      </div>
+                    ) : (
+                      isOwner && <ReviewReply reviewId={r.id} />
+                    )}
                   </li>
                 ))}
               </ul>
+              </>
             )}
           </section>
         </div>
@@ -282,7 +364,7 @@ export default async function ProviderPage(props: Props) {
           </Card>
           <Card tone="turquoise">
             <h2 className="font-sans text-base tracking-normal">{t("Himoyalangan buyurtma")}</h2>
-            <p className="mt-2 text-[0.9375rem]">{t("Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi.")} <TestModeBadge /></p>
+            <p className="mt-2 text-[0.9375rem]">{t("Shartlar yozma kelishiladi. Toʻlov siz ishni qabul qilmaguncha ushlab turiladi.")}</p>
           </Card>
         </aside>
       </div>

@@ -19,6 +19,9 @@ export const POST = handle(async (req, ctx: Ctx) => {
   if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   const target = resolution === "release" ? "COMPLETED" : "CANCELLED";
   assertTransition(order.status, target, "admin");
+  if (resolution === "release" && (await prisma.orderRequest.count({ where: { orderId: order.id, type: "CANCEL", status: "ACCEPTED" } })) > 0) {
+    throw new HttpError(409, "Ikkala tomon bekor qilishga rozi boʻlgan: pulni faqat mijozga qaytarish mumkin.");
+  }
 
   const money = await prisma.$transaction(async (tx) => {
     const moved = await tx.order.updateMany({
@@ -27,6 +30,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
     });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     const result = resolution === "release" ? await releaseEscrow(tx, order.id) : await refundEscrow(tx, order.id);
+    if (resolution === "release") await tx.providerProfile.updateMany({ where: { userId: order.providerId }, data: { completedCount: { increment: 1 } } });
     await postOrderMessage(
       order.id, admin.id,
       resolution === "release" ? "Administrator nizoni hal qildi: toʻlov ijodkorga oʻtkazildi." : "Administrator nizoni hal qildi: toʻlov mijozga qaytarildi.",

@@ -66,6 +66,8 @@ export async function GET(req: Request) {
       return back("inactive");
     case "admin":
       return back("admin");
+    case "two_factor":
+      return back("two_factor");
     default:
       return back("failed");
   }

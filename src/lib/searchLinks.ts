@@ -25,9 +25,21 @@ export function searchPageHref(locale: Locale, filters: SearchFilters, page: num
 export function searchCategoryHref(locale: Locale, filters: SearchFilters, slug?: string): string {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(filters)) {
-    if (v !== undefined && v !== "" && k !== "page" && k !== "category") qs.set(k, String(v));
+    // A subdirection belongs to the direction being left, so it goes with it.
+    if (v !== undefined && v !== "" && k !== "page" && k !== "category" && k !== "sub") qs.set(k, String(v));
   }
   if (slug) qs.set("category", slug);
+  const query = qs.toString();
+  return localHref(locale, query ? `/search?${query}` : "/search");
+}
+
+/** A subdirection pill: every filter stays, the subdirection changes (none = all of the direction), page starts over. */
+export function searchSubHref(locale: Locale, filters: SearchFilters, sub?: string): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) {
+    if (v !== undefined && v !== "" && k !== "page" && k !== "sub") qs.set(k, String(v));
+  }
+  if (sub) qs.set("sub", sub);
   const query = qs.toString();
   return localHref(locale, query ? `/search?${query}` : "/search");
 }

@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 import { Spinner } from "./Spinner";
 
-export type ButtonVariant = "primary" | "secondary" | "accent" | "danger" | "ghost" | "chip" | "link";
+export type ButtonVariant = "primary" | "secondary" | "accent" | "danger" | "ghost" | "outline" | "chip" | "link";
 export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const BASE =
@@ -16,6 +16,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   accent: `${BOX} ${PRESS} border-transparent bg-saffron text-night`,
   danger: `${BOX} ${PRESS} border-on-accent/10 bg-pomegranate text-on-accent`,
   ghost: "rounded-ctl text-ink-soft hover:bg-ink/10 hover:text-ink",
+  // The header's way in: a flat, tight-cornered frame that fills on hover.
+  outline: "rounded-md border border-ink bg-transparent text-ink hover:bg-ink hover:text-paper",
   // A pill. When it stands for a choice that is on (aria-current or aria-pressed), it fills with amber.
   chip: "rounded-full border border-line-strong bg-surface text-ink-soft hover:border-ink-mute/50 hover:bg-paper-deep hover:text-ink active:translate-y-px aria-[current=true]:border-transparent aria-[current=true]:bg-saffron aria-[current=true]:text-night aria-pressed:border-transparent aria-pressed:bg-saffron aria-pressed:text-night",
   link: "rounded-sm font-semibold text-cobalt-dark underline decoration-1 underline-offset-4 transition-colors hover:bg-cobalt-tint hover:text-ink",

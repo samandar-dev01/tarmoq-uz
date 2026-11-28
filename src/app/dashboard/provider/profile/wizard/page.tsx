@@ -3,6 +3,7 @@ import { requirePageRole } from "@/lib/auth";
 import { getT } from "@/i18n/server";
 import { Alert } from "@/components/ui/Alert";
 import { Container } from "@/components/ui/Container";
+import { readQa } from "@/lib/serviceDetails";
 import { ProfileWizard, type WizardInitial } from "@/components/wizard/ProfileWizard";
 
 export async function generateMetadata() {
@@ -21,7 +22,7 @@ export default async function WizardPage() {
         portfolio: { orderBy: { sortOrder: "asc" } },
       },
     }),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, nameRu: true } }),
+    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, slug: true, name: true, nameRu: true } }),
   ]);
 
   if (profile?.status === "SUSPENDED") {
@@ -45,6 +46,7 @@ export default async function WizardPage() {
     languages: profile.languages,
     services: profile.services.map((s) => ({
       id: s.id, title: s.title, description: s.description, price: s.price, deliveryDays: s.deliveryDays, revisions: s.revisions,
+      subcategory: s.subcategory, questions: s.questions, faq: readQa(s.faq),
     })),
     portfolio: profile.portfolio.map((i) => ({ title: i.title, videoUrl: i.videoUrl, imageUrl: i.imageUrl })),
   };

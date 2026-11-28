@@ -79,3 +79,15 @@ export function paymentClaimedMessage(p: { amount: number; reference: string }):
 
 export const notifyPaymentClaimed = (p: { amount: number; reference: string }) =>
   sendTelegram(paymentClaimedMessage(p));
+
+/** Both sides agreed to cancel a paid order: the admin sends the money back. The order code only. */
+export function cancelAgreedMessage(p: { reference: string }): string {
+  const base = baseUrl();
+  return [
+    `Both sides agreed to cancel a paid order (order code ${oneLine(p.reference, 12)}).`,
+    "Refund the client, then resolve it as a refund.",
+    base ? `Open: ${base}/admin/orders` : "Open /admin/orders",
+  ].join("\n");
+}
+
+export const notifyCancelAgreed = (p: { reference: string }) => sendTelegram(cancelAgreedMessage(p));

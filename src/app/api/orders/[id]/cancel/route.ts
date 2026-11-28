@@ -6,6 +6,7 @@ import { assertTransition } from "@/lib/orderMachine";
 import { getParticipantOrder } from "@/lib/orders";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
+import { lockOrder } from "@/lib/orderLock";
 
 type Ctx = { params: Promise<{ id: string }> };
 const schema = z.object({ reason: z.string().trim().max(500).optional() });
@@ -19,6 +20,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
   assertTransition(order.status, "CANCELLED", actor);
 
   await prisma.$transaction(async (tx) => {
+    await lockOrder(tx, order.id);
     // A manual transfer an admin has not checked yet may already be real money. Cancelling now would strand it.
     if ((await tx.payment.count({ where: { orderId: order.id, status: "AWAITING_CONFIRMATION" } })) > 0) {
       throw new HttpError(409, "Toʻlov tekshirilmoqda. Hozir buyurtmani bekor qilib boʻlmaydi.");
@@ -26,7 +28,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
     const moved = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: "CANCELLED" } });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     await tx.payment.updateMany({ where: { orderId: order.id, status: "REQUIRES_PAYMENT" }, data: { status: "FAILED", failureCode: "order_cancelled" } });
-    await postOrderMessage(order.id, user.id, `Buyurtma bekor qilindi${reason ? `: ${reason}` : "."}`, tx);
+    await postOrderMessage(order.id, user.id, `Buyurtma bekor qilindi${reason ? `: ${reason}` : "."}`, tx, "cancelled");
   });
   await logAudit({ actorId: user.id, action: "ORDER_CANCELLED", entity: "Order", entityId: order.id, meta: { by: actor, reason } });
   return ok({ status: "CANCELLED" });

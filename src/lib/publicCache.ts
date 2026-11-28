@@ -16,7 +16,7 @@
 // If the SHAPE of a cached value ever changes, bump the `-v1` in its key: cached entries survive a redeploy.
 import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "./db";
-import { featuredProviders } from "./providers";
+import { featuredProviders, SERVICE_SELECT } from "./providers";
 
 const TAG = "public-listing";
 
@@ -33,7 +33,20 @@ export const getCategories = unstable_cache(
 /** The best-rated creators, in card shape, for the home page feed. */
 export const getFeaturedProviders = unstable_cache(
   () => featuredProviders(FEATURED_COUNT),
-  ["public-featured-v1"],
+  ["public-featured-v3"],
+  { revalidate: 60, tags: [TAG] },
+);
+
+/** The home page's row of packages: from the best-rated creators first. */
+export const getFeaturedServices = unstable_cache(
+  () =>
+    prisma.service.findMany({
+      where: { isActive: true, profile: { status: "APPROVED", user: { isActive: true } } },
+      orderBy: [{ profile: { ratingAvg: "desc" } }, { profile: { ratingCount: "desc" } }, { id: "asc" }],
+      take: 12,
+      select: SERVICE_SELECT,
+    }),
+  ["public-services-v2"],
   { revalidate: 60, tags: [TAG] },
 );
 

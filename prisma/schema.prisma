@@ -63,6 +63,19 @@ model User {
   phone         String?
   role          Role     @default(CLIENT)
   isActive      Boolean  @default(true)
+  /// Storage key of the profile photo (avatars/<userId>/<uuid>.<ext>). Server only: the client gets a URL built from the id and avatarUpdatedAt.
+  avatarKey       String?
+  /// When the photo last changed: "has a photo" and the cache-buster (?v=) of its URL. Null together with avatarKey.
+  avatarUpdatedAt DateTime?
+  /// Session version. A session cookie carries the number it was issued with (tv); a password change or "sign out everywhere" raises it and ends every older session.
+  tokenVersion    Int      @default(0)
+  /// When the person last used the site (written at most once a minute): online status and "last active".
+  lastSeenAt      DateTime?
+  /// When the address was confirmed through a link sent to it.
+  emailVerifiedAt DateTime?
+  /// Two-step sign-in: the authenticator secret (encrypted, src/lib/secretBox.ts), on once a code has been confirmed.
+  totpSecretEnc   String?
+  totpEnabledAt   DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -73,6 +86,8 @@ model User {
   messages        Message[]
   reviewsWritten  Review[]         @relation("ReviewAuthor")
   auditLogs       AuditLog[]
+  notifications   Notification[]
+  authTokens      AuthToken[]
   conversationsA  Conversation[]   @relation("ConvA")
   conversationsB  Conversation[]   @relation("ConvB")
 }
@@ -102,6 +117,10 @@ model ProviderProfile {
   startingPrice  Int           // UZS, whole so'm
   ratingAvg      Float         @default(0)
   ratingCount    Int           @default(0)
+  /// Orders completed, kept here so lists can show a level without counting.
+  completedCount Int           @default(0)
+  /// Visits to the public page by others.
+  viewCount      Int           @default(0)
   status         ProfileStatus @default(DRAFT)
   wizardStep     Int           @default(1)
   // Where the platform sends this creator's money. Private: never selected for a public page.
@@ -130,9 +149,17 @@ model Service {
   deliveryDays  Int
   revisions     Int             @default(1)
   isActive      Boolean         @default(true)
+  /// A subdirection's slug (src/lib/catalog.ts); null when the creator chose none.
+  subcategory   String?
+  /// Questions every client answers when ordering this package.
+  questions     String[]        @default([])
+  /// The creator's own questions and answers about the package: [{ question, answer }].
+  faq           Json?
   orders        Order[]
+  offers        Offer[]
 
   @@index([profileId])
+  @@index([subcategory])
 }
 
 model PortfolioItem {
@@ -157,6 +184,8 @@ model Order {
   service       Service     @relation(fields: [serviceId], references: [id])
   brief         String
   eventDate     DateTime?
+  /// The package's questions as asked when the order was made, with the client's answers: [{ question, answer }].
+  answers       Json?
   agreedPrice   Int?        // set when terms proposed; UZS
   agreedDays    Int?
   revisionsAllowed Int      @default(1)
@@ -165,7 +194,10 @@ model Order {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   completedAt   DateTime?
+  /// When the work is due: set once the payment is held, moved by an accepted extension.
+  dueAt         DateTime?
 
+  requests    OrderRequest[]
   agreements  Agreement[]
   payments    Payment[]
   deliveries  Delivery[]
@@ -272,6 +304,7 @@ model Conversation {
   order     Order?    @relation(fields: [orderId], references: [id])
   createdAt DateTime  @default(now())
   messages  Message[]
+  offers    Offer[]
 
   @@unique([userAId, userBId, orderId])
   @@index([userBId])
@@ -300,6 +333,9 @@ model Review {
   rating    Int      // 1..5, enforced in Zod + DB check in migration
   comment   String
   isHidden  Boolean  @default(false) // admin moderation
+  /// The creator's one answer.
+  reply     String?
+  repliedAt DateTime?
   createdAt DateTime @default(now())
 
   @@index([providerUserId, isHidden])
@@ -317,4 +353,91 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([action, entityId])
+}
+
+enum RequestType {
+  EXTEND
+  CANCEL
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+/// One side asks the other to extend the deadline or to cancel the order.
+model OrderRequest {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestedById String
+  type          RequestType
+  extraDays     Int?
+  reason        String
+  status        RequestStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  resolvedAt    DateTime?
+
+  @@index([orderId])
+}
+
+/// A creator's offer of their own terms inside a conversation; accepting it makes an order.
+model Offer {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  providerId     String
+  clientId       String
+  serviceId      String
+  service        Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  description    String
+  price          Int
+  deliveryDays   Int
+  revisions      Int
+  status         OfferStatus  @default(PENDING)
+  orderId        String?
+  createdAt      DateTime     @default(now())
+  resolvedAt     DateTime?
+
+  @@index([conversationId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// What happened; the sentence is built from it in the reader's language (src/lib/notificationsPure.ts).
+  kind      String
+  /// Where pressing it leads.
+  href      String
+  /// A name or title shown in the sentence.
+  subject   String    @default("")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+/// A one-time link sent by email (password reset, address confirmation). Only the token's hash is kept.
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, kind])
 }

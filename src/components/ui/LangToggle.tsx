@@ -34,7 +34,7 @@ export function LangToggle({ initial }: { initial: Locale }) {
         if (there !== here) window.location.assign(there + window.location.search + window.location.hash);
         else router.refresh();
       }}
-      className={buttonClasses({ variant: "secondary", size: "icon", className: "text-sm" })}
+      className={buttonClasses({ variant: "ghost", size: "icon", className: "text-sm" })}
     >
       {LOCALE_CODE[next]}
     </button>

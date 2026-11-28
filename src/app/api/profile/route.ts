@@ -10,6 +10,8 @@ import { slugify } from "@/lib/format";
 import { logAudit } from "@/lib/audit";
 import { notifyProfileSubmitted } from "@/lib/notify";
 import { invalidatePublicListing } from "@/lib/publicCache";
+import { findCategory, findSubcategory } from "@/lib/catalog";
+import { faqSchema, questionsSchema, readQa } from "@/lib/serviceDetails";
 
 const httpsUrl = z
   .string()
@@ -40,6 +42,10 @@ const step3 = z.object({
         price: z.number({ required_error: "Narxni kiriting", invalid_type_error: "Narxni kiriting" }).int().min(20000, "Eng kam narx — 20 000 soʻm").max(50_000_000),
         deliveryDays: z.number({ required_error: "Kunlar sonini kiriting", invalid_type_error: "Kunlar sonini kiriting" }).int().min(1, "Kamida 1 kun").max(60),
         revisions: z.number({ required_error: "Tuzatishlar sonini kiriting", invalid_type_error: "Tuzatishlar sonini kiriting" }).int().min(0).max(10),
+        // Optional extras. A request without them leaves none (the editor always sends them).
+        subcategory: z.preprocess((v) => (v === "" || v == null ? null : v), z.string().max(60).nullable()),
+        questions: questionsSchema.default([]),
+        faq: faqSchema.default([]),
       }),
     )
     .min(1, "Kamida bitta paket qoʻshing")
@@ -79,6 +85,7 @@ async function summary(userId: string) {
     wizardStep: p.wizardStep,
     services: p.services.map((s) => ({
       id: s.id, title: s.title, description: s.description, price: s.price, deliveryDays: s.deliveryDays, revisions: s.revisions,
+      subcategory: s.subcategory, questions: s.questions, faq: readQa(s.faq),
     })),
     portfolio: p.portfolio.map((i) => ({ title: i.title, videoUrl: i.videoUrl, imageUrl: i.imageUrl })),
   };
@@ -96,9 +103,8 @@ export const PUT = handle(async (req) => {
 
   if (step === 1) {
     const input = step1.parse(data);
-    if (!(await prisma.category.findUnique({ where: { id: input.categoryId }, select: { id: true } }))) {
-      throw new HttpError(400, "Bunday yoʻnalish mavjud emas.");
-    }
+    const category = await prisma.category.findUnique({ where: { id: input.categoryId }, select: { slug: true } });
+    if (!category) throw new HttpError(400, "Bunday yoʻnalish mavjud emas.");
     if (!profile) {
       await prisma.providerProfile.create({
         data: {
@@ -107,10 +113,15 @@ export const PUT = handle(async (req) => {
         },
       });
     } else {
-      await prisma.providerProfile.update({
-        where: { id: profile.id },
-        data: { headline: input.headline, bio: input.bio, categoryId: input.categoryId, wizardStep: advance(profile.wizardStep) },
-      });
+      const kept = findCategory(category.slug)?.subcategories.map((s) => s.slug) ?? [];
+      await prisma.$transaction([
+        prisma.providerProfile.update({
+          where: { id: profile.id },
+          data: { headline: input.headline, bio: input.bio, categoryId: input.categoryId, wizardStep: advance(profile.wizardStep) },
+        }),
+        // A package never keeps a subdirection of another direction.
+        prisma.service.updateMany({ where: { profileId: profile.id, subcategory: { notIn: kept } }, data: { subcategory: null } }),
+      ]);
     }
   } else if (step === 2) {
     const input = step2.parse(data);
@@ -124,6 +135,12 @@ export const PUT = handle(async (req) => {
   } else if (step === 3) {
     const input = step3.parse(data);
     const profileId = profile!.id;
+    const category = await prisma.category.findUniqueOrThrow({ where: { id: profile!.categoryId }, select: { slug: true } });
+    for (const s of input.services) {
+      if (s.subcategory && findSubcategory(s.subcategory)?.category.slug !== category.slug) {
+        throw new HttpError(400, "Bu ichki yoʻnalish tanlangan yoʻnalishga tegishli emas.");
+      }
+    }
     await prisma.$transaction(async (tx) => {
       const existing = await tx.service.findMany({
         where: { profileId },
@@ -144,7 +161,10 @@ export const PUT = handle(async (req) => {
         else await tx.service.delete({ where: { id: e.id } });
       }
       for (const s of input.services) {
-        const fields = { title: s.title, description: s.description, price: s.price, deliveryDays: s.deliveryDays, revisions: s.revisions, isActive: true };
+        const fields = {
+          title: s.title, description: s.description, price: s.price, deliveryDays: s.deliveryDays, revisions: s.revisions, isActive: true,
+          subcategory: s.subcategory, questions: s.questions, faq: s.faq,
+        };
         if (s.id) await tx.service.update({ where: { id: s.id }, data: fields });
         else await tx.service.create({ data: { ...fields, profileId } });
       }

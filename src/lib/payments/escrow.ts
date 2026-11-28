@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { HttpError } from "../errors";
 import { assertTransition } from "../orderMachine";
 import { platformFee } from "../fees";
+import { dueDate } from "../deadline";
+import { lockOrder } from "../orderLock";
 
 /**
  * The escrow moves, shared by every way of paying (sandbox cards, manual card transfer, a real gateway later).
@@ -18,6 +20,7 @@ export async function markPaymentHeld(
   args: { orderId: string; paymentId: string; from: "REQUIRES_PAYMENT" | "AWAITING_CONFIRMATION"; data?: Prisma.PaymentUpdateManyMutationInput },
 ) {
   const { orderId, paymentId, from, data } = args;
+  await lockOrder(tx, orderId);
   const order = await tx.order.findUnique({ where: { id: orderId } });
   if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
   if (order.status !== "AWAITING_PAYMENT") throw new HttpError(409, "Bu buyurtma hozir toʻlov kutmayapti.");
@@ -30,7 +33,9 @@ export async function markPaymentHeld(
   if (claimed.count !== 1) throw new HttpError(409, "Bu toʻlov allaqachon bajarilgan.");
 
   assertTransition("AWAITING_PAYMENT", "IN_PROGRESS", "system");
-  const moved = await tx.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT" }, data: { status: "IN_PROGRESS" } });
+  // The delivery clock starts now.
+  const dueAt = order.agreedDays ? dueDate(new Date(), order.agreedDays) : null;
+  const moved = await tx.order.updateMany({ where: { id: orderId, status: "AWAITING_PAYMENT" }, data: { status: "IN_PROGRESS", dueAt } });
   if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
 
   await tx.ledgerEntry.create({ data: { paymentId, type: "ESCROW_HOLD", amount: payment.amount } });

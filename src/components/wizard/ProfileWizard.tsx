@@ -10,12 +10,14 @@ import { useHydrated } from "@/components/ui/useHydrated";
 import { useLocale, useT } from "@/i18n/client";
 import { tk } from "@/i18n/dictionary";
 import { formatUZS } from "@/lib/format";
+import { catalogName, findCategory } from "@/lib/catalog";
+import { MAX_FAQ, type Faq } from "@/lib/serviceDetails";
 
 type Status = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "SUSPENDED";
-type ServiceRow = { id?: string; title: string; description: string; price: string; deliveryDays: string; revisions: string };
+type ServiceRow = { id?: string; title: string; description: string; price: string; deliveryDays: string; revisions: string; subcategory: string; questions: string; faq: Faq[] };
 type ItemRow = { title: string; videoUrl: string; imageUrl: string };
 type Issue = { path: string; message: string };
-type ApiService = { id: string; title: string; description: string; price: number; deliveryDays: number; revisions: number };
+type ApiService = { id: string; title: string; description: string; price: number; deliveryDays: number; revisions: number; subcategory: string | null; questions: string[] | null; faq: Faq[] };
 
 export type WizardInitial = {
   slug: string; status: Status; wizardStep: number;
@@ -26,12 +28,17 @@ export type WizardInitial = {
 } | null;
 
 const STEPS = [tk("Asosiy"), tk("Joylashuv"), tk("Paketlar"), tk("Portfolio"), tk("Tekshirish")];
-const blankService = (): ServiceRow => ({ title: "", description: "", price: "", deliveryDays: "3", revisions: "1" });
+const blankService = (): ServiceRow => ({ title: "", description: "", price: "", deliveryDays: "3", revisions: "1", subcategory: "", questions: "", faq: [] });
+// The questions are written one per line; empty lines are not questions.
+const lines = (text: string) => text.split("\n").map((x) => x.trim()).filter(Boolean);
 const blankItem = (): ItemRow => ({ title: "", videoUrl: "", imageUrl: "" });
 const toRows = (s: ApiService[]): ServiceRow[] =>
-  s.map((x) => ({ id: x.id, title: x.title, description: x.description, price: String(x.price), deliveryDays: String(x.deliveryDays), revisions: String(x.revisions) }));
+  s.map((x) => ({
+    id: x.id, title: x.title, description: x.description, price: String(x.price), deliveryDays: String(x.deliveryDays), revisions: String(x.revisions),
+    subcategory: x.subcategory ?? "", questions: (x.questions ?? []).join("\n"), faq: x.faq,
+  }));
 
-export function ProfileWizard({ initial, categories }: { initial: WizardInitial; categories: { id: string; name: string; nameRu: string | null }[] }) {
+export function ProfileWizard({ initial, categories }: { initial: WizardInitial; categories: { id: string; slug: string; name: string; nameRu: string | null }[] }) {
   const ready = useHydrated();
   const t = useT();
   const locale = useLocale();
@@ -58,6 +65,9 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
   const [issues, setIssues] = useState<Issue[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const fe = (path: string) => issues.find((i) => i.path === path)?.message;
+  // The first complaint about a field or about anything inside it (one question of the list, one answer).
+  const under = (path: string) => issues.find((i) => i.path === path || i.path.startsWith(`${path}.`))?.message;
+  const subcategories = findCategory(categories.find((c) => c.id === categoryId)?.slug)?.subcategories ?? [];
 
   async function save(stepNo: number, data?: unknown): Promise<boolean> {
     setSaving(true); setError(null); setIssues([]); setNotice(null);
@@ -178,11 +188,16 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
                   price: s.price === "" ? undefined : Number(s.price),
                   deliveryDays: s.deliveryDays === "" ? undefined : Number(s.deliveryDays),
                   revisions: s.revisions === "" ? undefined : Number(s.revisions),
+                  // A subdirection of a direction chosen earlier is not sent along with a new one.
+                  subcategory: subcategories.some((x) => x.slug === s.subcategory) ? s.subcategory : "",
+                  questions: lines(s.questions),
+                  faq: s.faq.filter((f) => f.question.trim() || f.answer.trim()),
                 })),
               })
             }
             noValidate
           >
+            <p className="mb-4 text-ink-soft">{t("Paketni eʼlon qilish bilan siz uning shartlarida buyurtma qabul qilishga rozilik bildirasiz. Toʻlovgacha shartlarni oʻzgartirishni taklif qilishingiz mumkin.")}</p>
             {fe("services") && <p className="mb-4 text-sm font-semibold text-pomegranate-deep">{fe("services")}</p>}
             <div className="space-y-5">
               {services.map((s, i) => {
@@ -203,6 +218,27 @@ export function ProfileWizard({ initial, categories }: { initial: WizardInitial;
                         <Field label={t("Muddat (kun)")} type="number" inputMode="numeric" min={1} value={s.deliveryDays} onChange={(e) => set({ deliveryDays: e.target.value })} error={fe(`services.${i}.deliveryDays`)} />
                         <Field label={t("Tuzatishlar")} type="number" inputMode="numeric" min={0} value={s.revisions} onChange={(e) => set({ revisions: e.target.value })} error={fe(`services.${i}.revisions`)} />
                       </div>
+                      <Field as="select" label={t("Ichki yoʻnalish (ixtiyoriy)")} value={s.subcategory} onChange={(e) => set({ subcategory: e.target.value })} error={fe(`services.${i}.subcategory`)}>
+                        <option value="">{t("Tanlang…")}</option>
+                        {subcategories.map((x) => <option key={x.slug} value={x.slug}>{catalogName(locale, x)}</option>)}
+                      </Field>
+                      <Field as="textarea" label={t("Mijozga savollar (ixtiyoriy)")} hint={t("Har bir savolni alohida qatorga yozing, koʻpi bilan 5 ta. Mijoz buyurtma berayotganda javob beradi.")} rows={3} value={s.questions} onChange={(e) => set({ questions: e.target.value })} error={under(`services.${i}.questions`)} />
+                      <fieldset className="space-y-3">
+                        <legend className="mb-1 text-sm font-bold">{t("Koʻp beriladigan savollar (ixtiyoriy)")}</legend>
+                        {s.faq.map((f, k) => {
+                          const setFaq = (patch: Partial<Faq>) => set({ faq: s.faq.map((x, j) => (j === k ? { ...x, ...patch } : x)) });
+                          return (
+                            <div key={k} className="space-y-3 border-l-2 border-line-strong pl-3">
+                              <Field label={t("Savol")} value={f.question} onChange={(e) => setFaq({ question: e.target.value })} error={fe(`services.${i}.faq.${k}.question`)} />
+                              <Field as="textarea" label={t("Javob")} rows={2} value={f.answer} onChange={(e) => setFaq({ answer: e.target.value })} error={fe(`services.${i}.faq.${k}.answer`)} />
+                              <Button type="button" variant="ghost" size="sm" onClick={() => set({ faq: s.faq.filter((_, j) => j !== k) })}>{t("Savolni oʻchirish")}</Button>
+                            </div>
+                          );
+                        })}
+                        {s.faq.length < MAX_FAQ && (
+                          <Button type="button" variant="secondary" size="sm" onClick={() => set({ faq: [...s.faq, { question: "", answer: "" }] })}>{t("+ Savol-javob qoʻshish")}</Button>
+                        )}
+                      </fieldset>
                     </div>
                   </Card>
                 );

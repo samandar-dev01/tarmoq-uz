@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
 import { recomputeRating } from "@/lib/reviews";
+import { notifyOrder } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
 import { invalidatePublicListing } from "@/lib/publicCache";
 
@@ -28,6 +29,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
         data: { orderId: order.id, authorId: user.id, providerUserId: order.providerId, rating: input.rating, comment: input.comment },
       });
       await recomputeRating(tx, order.providerId);
+      await notifyOrder(order.id, user.id, "review", tx);
       return created;
     });
     // The rating decides the order of the public lists.

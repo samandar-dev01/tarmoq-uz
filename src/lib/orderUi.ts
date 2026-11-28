@@ -43,7 +43,12 @@ export const PROFILE_STATUS_STYLE: Record<ProfileStatus, string> = {
   SUSPENDED: "bg-pomegranate-tint text-pomegranate-deep",
 };
 
-export function nextAction(status: OrderStatus, role: "client" | "provider", hasReview = true): string {
+/** How a request in the resolution centre stands, and an offer in a conversation. */
+export const REQUEST_STATUS = { PENDING: tk("Javob kutilmoqda"), ACCEPTED: tk("Qabul qilindi"), DECLINED: tk("Rad etildi"), WITHDRAWN: tk("Qaytarib olindi") } as const;
+
+export function nextAction(status: OrderStatus, role: "client" | "provider", hasReview = true, waitsForCreator = false): string {
+  // The client asked for different terms: now it is the creator's turn.
+  if (status === "AGREEMENT_PENDING" && waitsForCreator) return role === "provider" ? tk("Shartlarni koʻrib chiqing va qabul qiling") : tk("Ijodkor shartlarni qabul qilishini kuting");
   const client: Record<OrderStatus, string> = {
     REQUESTED: tk("Ijodkor shartlarni yuborishini kuting"),
     AGREEMENT_PENDING: tk("Shartlarni koʻrib chiqing va qabul qiling"),

@@ -4,6 +4,7 @@ import { HttpError } from "../errors";
 import { logAudit } from "../audit";
 import { postOrderMessage } from "../messaging";
 import { markPaymentHeld } from "./escrow";
+import { lockOrder } from "../orderLock";
 
 /**
  * Manual card transfer: the client sends the agreed amount to the owner's card and presses "I paid"; an admin checks
@@ -20,6 +21,7 @@ export type StoredReceipt = { key: string; name: string; type: string };
 export async function submitManualPayment(orderId: string, clientId: string, receipt: StoredReceipt) {
   try {
     return await prisma.$transaction(async (tx) => {
+      await lockOrder(tx, orderId);
       const order = await tx.order.findFirst({ where: { id: orderId, clientId } });
       if (!order) throw new HttpError(404, "Buyurtma topilmadi.");
       if (order.status !== "AWAITING_PAYMENT") throw new HttpError(409, "Bu buyurtma hozir toʻlov kutmayapti.");
@@ -55,7 +57,7 @@ export async function confirmManualPayment(paymentId: string, adminId: string) {
 
   await prisma.$transaction(async (tx) => {
     await markPaymentHeld(tx, { orderId: payment.orderId, paymentId, from: "AWAITING_CONFIRMATION" });
-    await postOrderMessage(payment.orderId, adminId, "Administrator toʻlovni tasdiqladi. Ijodkor ishni boshlashi mumkin.", tx);
+    await postOrderMessage(payment.orderId, adminId, "Administrator toʻlovni tasdiqladi. Ijodkor ishni boshlashi mumkin.", tx, "payment");
   });
   await logAudit({ actorId: adminId, action: "PAYMENT_CONFIRMED", entity: "Payment", entityId: paymentId, meta: { orderId: payment.orderId, amount: payment.amount, provider: "manual" } });
 }

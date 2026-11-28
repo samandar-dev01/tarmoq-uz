@@ -180,7 +180,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await expect(page.getByRole("navigation", { name: "Тип аккаунта" }).getByRole("link")).toHaveText(["Заказчик", "Креатор"]);
     await expect(page.getByLabel("Пароль")).toBeVisible();
     await expect(page.getByText("Впервые здесь?")).toBeVisible();
-    await expect(page.locator("header").getByRole("button", { name: "Включить светлую тему" })).toBeVisible();
+    await expect(page.locator("header").getByRole("button", { name: "Включить тёмную тему" })).toBeVisible();
     await expect(page).toHaveTitle("Войти · Tarmoq.uz");
     const cookie = (await context.cookies()).find((c) => c.name === "lang");
     expect(cookie?.value).toBe("ru");
@@ -217,7 +217,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
 
     const menu = page.locator("header").getByRole("button", { name: "Меню аккаунта: Demo Mijoz" });
     await menu.click();
-    await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText(["Кабинет", "Сообщения", "Креаторы", "Помощь", "Выйти"]);
+    await expect(page.getByRole("menu").getByRole("menuitem")).toHaveText(["Кабинет", "Сообщения", "Креаторы", "Уведомления", "Настройки", "Помощь", "Выйти"]);
     await expect(page.getByRole("menu").locator("..").getByText("Заказчик", { exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator("footer").getByRole("navigation", { name: "Нижнее меню" }).getByRole("link")).toHaveText(["Креаторы", "Кабинет", "Сообщения", "Помощь"]);

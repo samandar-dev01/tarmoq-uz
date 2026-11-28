@@ -20,7 +20,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
   await prisma.$transaction(async (tx) => {
     const moved = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: "DISPUTED" } });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
-    await postOrderMessage(order.id, user.id, `Nizo ochildi: ${reason}`, tx);
+    await postOrderMessage(order.id, user.id, `Nizo ochildi: ${reason}`, tx, "dispute");
   });
   await logAudit({ actorId: user.id, action: "ORDER_DISPUTED", entity: "Order", entityId: order.id, meta: { by: actor, reason } });
   return ok({ status: "DISPUTED" });

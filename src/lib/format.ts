@@ -32,7 +32,7 @@ const MONTHS_RU = ["января", "февраля", "марта", "апреля
 // Uzbekistan is UTC+5 all year (no daylight saving), so a fixed offset is exact.
 const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
 const two = (n: number) => String(n).padStart(2, "0");
-const toTashkent = (d: Date) => new Date(d.getTime() + TASHKENT_OFFSET_MS);
+export const toTashkent = (d: Date) => new Date(d.getTime() + TASHKENT_OFFSET_MS);
 /** "10-noyabr" / «10 ноября», from the UTC fields of `d`. */
 const dayMonth = (d: Date, locale: Locale) =>
   locale === "ru" ? `${d.getUTCDate()} ${MONTHS_RU[d.getUTCMonth()]}` : `${d.getUTCDate()}-${MONTHS[d.getUTCMonth()]}`;

@@ -7,10 +7,10 @@ describe("theme cookie", () => {
     expect(parseTheme("dark")).toBe("dark");
   });
 
-  it("treats a missing or unknown value as dark, the default for a first visit", () => {
-    expect(DEFAULT_THEME).toBe("dark");
+  it("treats a missing or unknown value as light, the default for a first visit", () => {
+    expect(DEFAULT_THEME).toBe("light");
     for (const bad of [undefined, null, "", " ", "Light", "LIGHT", "Dark", "light ", " dark", "auto", "system", "1", "true", "0", "light;dark", "<script>", "ligh"]) {
-      expect(parseTheme(bad as string | null | undefined)).toBe("dark");
+      expect(parseTheme(bad as string | null | undefined)).toBe("light");
     }
   });
 

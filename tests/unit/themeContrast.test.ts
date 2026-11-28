@@ -139,12 +139,11 @@ describe("the two schemes", () => {
     expect(luminance(rgb("dark", "paper"))).toBeLessThan(luminance(rgb("dark", "ink")));
   });
 
-  it("is a warm paper in light: not pure white as the ground, white as the card, not a grey dashboard", () => {
-    const [r, g, b] = rgb("light", "paper");
-    expect([r, g, b]).not.toEqual([255, 255, 255]);
+  it("is white in light (the owner's choice): a white ground and cards, a neutral grey for hover", () => {
+    expect(rgb("light", "paper")).toEqual([255, 255, 255]);
     expect(rgb("light", "surface")).toEqual([255, 255, 255]);
-    expect(r).toBeGreaterThan(b); // warm: more red than blue
-    expect(r - b).toBeGreaterThanOrEqual(8);
+    const [r, g, b] = rgb("light", "paper-deep");
+    expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeLessThanOrEqual(4);
   });
 
   it("tells the browser which scheme each block is", () => {
@@ -194,8 +193,9 @@ describe("theme names in use", () => {
   });
 
   it("writes no white or black by hand in a component: colours come from the theme, so both schemes look right", () => {
-    // The share-card picture and the manifest are rendered outside the page and cannot read the theme; they are not components.
-    const exempt = new Set(["src/app/opengraph-image.tsx", "src/app/manifest.ts"]);
+    // The share-card picture and the manifest are rendered outside the page and cannot read the theme, and themePure.ts holds
+    // the browser bar colours (checked against globals.css above); none of them is a component.
+    const exempt = new Set(["src/app/opengraph-image.tsx", "src/app/manifest.ts", "src/lib/themePure.ts"]);
     const bad = /\b(?:text|bg|border|ring|from|via|to|fill|stroke|divide|outline|shadow)-(?:white|black)\b|#(?:fff|ffffff|000|000000)\b/i;
     const offenders = sources.filter((p) => !exempt.has(p)).filter((p) => bad.test(read(p)));
     expect(offenders).toEqual([]);

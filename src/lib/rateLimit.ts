@@ -64,8 +64,16 @@ export const LIMITS = {
   loginPerPair: { limit: 5, windowMs: 15 * 60 * 1000 }, // failed attempts from one address for one email
   loginPerEmail: { limit: 30, windowMs: 15 * 60 * 1000 }, // failed attempts for one email from anywhere
   loginPerIp: { limit: 20, windowMs: 15 * 60 * 1000 }, // failed attempts
+  // Wrong two-step codes for one account, counted from anywhere: six digits must not be guessable by trying.
+  loginCodeFailures: { limit: 10, windowMs: 60 * 60 * 1000 },
   registerPerIp: { limit: 5, windowMs: 60 * 60 * 1000 },
   otpPerPhone: { limit: 3, windowMs: 10 * 60 * 1000 },
+  // The settings page (src/app/api/account). Counted per signed-in user, not per address.
+  accountEdit: { limit: 20, windowMs: 15 * 60 * 1000 }, // name, phone, photo removal, "sign out everywhere"
+  avatarUpload: { limit: 10, windowMs: 15 * 60 * 1000 }, // each upload is up to 2 MB held in memory
+  // Wrong "current password" answers (password change and email change share one counter): a stolen session must not be
+  // able to guess the password through these routes. A right answer clears it, as at sign-in.
+  accountPasswordFailures: { limit: 5, windowMs: 15 * 60 * 1000 },
 } as const;
 
 /**

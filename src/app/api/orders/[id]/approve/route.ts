@@ -6,6 +6,7 @@ import { getParticipantOrder } from "@/lib/orders";
 import { releaseEscrow } from "@/lib/payments/escrow";
 import { logAudit } from "@/lib/audit";
 import { postOrderMessage } from "@/lib/messaging";
+import { invalidatePublicListing } from "@/lib/publicCache";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -22,9 +23,12 @@ export const POST = handle(async (_req, ctx: Ctx) => {
     const moved = await tx.order.updateMany({ where: { id: order.id, status: "DELIVERED" }, data: { status: "COMPLETED", completedAt: new Date() } });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
     const r = await releaseEscrow(tx, order.id);
-    await postOrderMessage(order.id, user.id, "Ishni qabul qildim. Rahmat!", tx);
+    await tx.providerProfile.updateMany({ where: { userId: order.providerId }, data: { completedCount: { increment: 1 } } });
+    await postOrderMessage(order.id, user.id, "Ishni qabul qildim. Rahmat!", tx, "completed");
     return r;
   });
+  // The level shown on public cards counts completed orders.
+  invalidatePublicListing();
   await logAudit({ actorId: user.id, action: "ORDER_APPROVED", entity: "Order", entityId: order.id, meta: released });
   return ok({ status: "COMPLETED" });
 });

@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/auth/login/route";
+import { seal } from "@/lib/secretBox";
+import { newSecret, totpCode } from "@/lib/totp";
 
 // The route's own order of checks is what is tested here, so the database and the session are stood in for.
 const { findUnique, startSession, RIGHT, HASH } = vi.hoisted(() => ({
@@ -134,5 +136,36 @@ describe("POST /api/auth/login with a door", () => {
     expect(unknown.status).toBe(400);
     expect(await known.json()).toEqual(await unknown.json());
     expect(findUnique).not.toHaveBeenCalled(); // refused before any account is looked up
+  });
+});
+
+describe("POST /api/auth/login with two-step sign-in", () => {
+  it("stops code guessing for one account after ten wrong codes, from however many addresses", async () => {
+    vi.stubEnv("AUTH_SECRET", "unit-test-secret-of-at-least-32-characters");
+    const secret = newSecret();
+    accounts["two@t.test"] = {
+      id: "u5", name: "Two", role: "CLIENT", isActive: true, passwordHash: HASH,
+      totpEnabledAt: new Date(), totpSecretEnc: seal(secret, "totp"),
+    } as (typeof accounts)[string];
+    const withCode = (code: string) =>
+      POST(
+        new Request("http://localhost/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-forwarded-for": freshIp() },
+          body: JSON.stringify({ email: "two@t.test", password: RIGHT, code }),
+        }),
+      );
+    try {
+      // Not any of the three codes accepted now.
+      const near = [-30_000, 0, 30_000].map((d) => totpCode(secret, Date.now() + d));
+      const wrong = ["000000", "111111", "222222", "333333"].find((c) => !near.includes(c))!;
+      for (let i = 0; i < 10; i++) expect((await withCode(wrong)).status).toBe(401);
+      const blocked = await withCode(totpCode(secret));
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get("retry-after")).not.toBeNull();
+      expect(startSession).not.toHaveBeenCalled();
+    } finally {
+      delete accounts["two@t.test"];
+    }
   });
 });

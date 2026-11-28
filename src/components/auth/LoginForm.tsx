@@ -27,11 +27,14 @@ export function LoginForm({
   role,
   next,
   googleEnabled = false,
+  resetEnabled = false,
   notice = null,
 }: {
   role: Door;
   next: string | null;
   googleEnabled?: boolean;
+  // Only when the site can send the reset email.
+  resetEnabled?: boolean;
   notice?: { message: string; door?: Door; info?: boolean } | null;
 }) {
   const router = useRouter();
@@ -40,6 +43,8 @@ export function LoginForm({
   const [failure, setFailure] = useState<FormError | null>(notice ? { at: role, ...notice } : null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
+  // Shown once the server says this account also needs the authenticator code.
+  const [needCode, setNeedCode] = useState(false);
   const error = failure?.at === role ? failure : null;
   const setError = (message: string, door?: Door) => setFailure({ at: role, message, door });
 
@@ -54,7 +59,7 @@ export function LoginForm({
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.get("email"), password: form.get("password"), role }),
+        body: JSON.stringify({ email: form.get("email"), password: form.get("password"), role, code: form.get("code") || undefined }),
       });
       const data = await res.json();
       if (res.status === 429) {
@@ -64,6 +69,7 @@ export function LoginForm({
         return;
       }
       if (!res.ok) {
+        if (data.details?.code === "NEED_CODE") setNeedCode(true);
         const door = data.details?.code === "WRONG_DOOR" ? DOORS.find((d) => d === data.details.door) : undefined;
         if (door) {
           // The password was right but this is not the account's door. Nothing was signed in: the email stays for
@@ -99,6 +105,12 @@ export function LoginForm({
       )}
       <Field label={t("Email")} name="email" type="email" autoComplete="email" required error={fieldErrors.email?.[0]} />
       <Field label={t("Parol")} name="password" type="password" autoComplete="current-password" required error={fieldErrors.password?.[0]} />
+      {needCode && <Field label={t("Ilovadagi kod")} name="code" inputMode="numeric" autoComplete="one-time-code" error={fieldErrors.code?.[0]} />}
+      {resetEnabled && (
+        <p className="text-right text-sm">
+          <ButtonLink href="/forgot" variant="link">{t("Parolni unutdingizmi?")}</ButtonLink>
+        </p>
+      )}
       <Button type="submit" size="lg" loading={loading} disabled={!ready} className="w-full">
         {loading ? t("Kirilmoqda…") : t("Kirish")}
       </Button>

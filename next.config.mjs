@@ -45,7 +45,7 @@ const securityHeaders = [
 // Search engines must not list the private and account pages or the API. These page files are owned by other parts of
 // the app, so the rule lives here as a response header: it covers every page under these prefixes at once. robots.txt
 // (src/lib/seo.ts, PRIVATE_PATHS) asks crawlers to stay away as well; keep the two lists the same.
-const noindexPrefixes = ["/api", "/admin", "/dashboard", "/orders", "/checkout", "/messages", "/settings", "/login", "/register", "/forbidden"];
+const noindexPrefixes = ["/api", "/admin", "/dashboard", "/orders", "/checkout", "/messages", "/settings", "/login", "/register", "/forbidden", "/notifications", "/forgot", "/reset", "/verify"];
 const noindexHeaders = noindexPrefixes.map((prefix) => ({
   // ":path*" also matches the bare prefix itself (/admin as well as /admin/payments).
   source: `${prefix}/:path*`,

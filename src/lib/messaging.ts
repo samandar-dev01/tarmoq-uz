@@ -1,11 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { HttpError } from "./errors";
+import { notifyOrder } from "./notifications";
+import type { NoticeKind } from "./notificationsPure";
 
-export async function postOrderMessage(orderId: string, senderId: string, body: string, db: Prisma.TransactionClient = prisma) {
+/** An order event: a line in the order's conversation, and a notification of its kind for the others on the order. */
+export async function postOrderMessage(orderId: string, senderId: string, body: string, db: Prisma.TransactionClient = prisma, kind: NoticeKind = "update") {
   const conversation = await db.conversation.findUnique({ where: { orderId }, select: { id: true } });
   if (!conversation) return;
   await db.message.create({ data: { conversationId: conversation.id, senderId, body: body.slice(0, 2000) } });
+  await notifyOrder(orderId, senderId, kind, db);
 }
 
 export async function getParticipantConversation(conversationId: string, userId: string) {
@@ -26,9 +30,21 @@ export async function getParticipantConversation(conversationId: string, userId:
 export async function assertParticipant(conversationId: string, userId: string) {
   const c = await prisma.conversation.findFirst({
     where: { id: conversationId, OR: [{ userAId: userId }, { userBId: userId }] },
-    select: { id: true },
+    select: { userAId: true, userA: { select: { id: true, lastSeenAt: true } }, userB: { select: { id: true, lastSeenAt: true } } },
   });
   if (!c) throw new HttpError(404, "Suhbat topilmadi.");
+  // The other side, for the chat's online and typing line: it comes with the same query.
+  return { other: c.userAId === userId ? c.userB : c.userA };
+}
+
+/** The newest of my messages the other person has opened, or null. */
+export async function lastSeenByOther(conversationId: string, userId: string): Promise<string | null> {
+  const m = await prisma.message.findFirst({
+    where: { conversationId, senderId: userId, readAt: { not: null } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { id: true },
+  });
+  return m?.id ?? null;
 }
 
 /** True when at least one of these messages came from the other person and has not been read yet. */

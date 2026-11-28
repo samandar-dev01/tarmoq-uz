@@ -8,8 +8,6 @@ export const common: Record<string, string> = {
   "Qayta urinish": "Повторить",
   "Reyting: {value} / 5": "Рейтинг: {value} из 5",
   "Internet aloqasida muammo. Aloqani tekshirib, qayta urinib koʻring.": "Проблема с интернетом. Проверьте соединение и попробуйте ещё раз.",
-  "Sinov rejimi": "Тестовый режим",
-  "Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi.": "Оплата пока работает в тестовом режиме: настоящие деньги не списываются.",
   // The two ways in: the header's buttons, the sign-in headings and the wrong-door links.
   "Mijoz sifatida kirish": "Войти как заказчик",
   "Ijodkor sifatida kirish": "Войти как креатор",

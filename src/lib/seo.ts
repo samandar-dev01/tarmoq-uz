@@ -1,8 +1,8 @@
 // Pure builders for everything a search engine or an AI crawler reads: metadata pieces, JSON-LD, robots rules,
 // llms.txt and the home page FAQ. No database and no request here, so every string they produce is unit-tested.
 //
-// HARD RULE: no payment promise in any of it, in Russian too. Payments run in manual or test mode and none of these
-// places can carry the "Sinov rejimi" badge. A creator's real package price is a fact from the database and may be listed.
+// HARD RULE: no payment promise in any of it, in Russian too. Payments run in manual or test mode and search text
+// says nothing about money. A creator's real package price is a fact from the database and may be listed.
 // tests/unit/seo.test.ts guards the wording (Uzbek and Russian).
 //
 // LANGUAGES. Every builder that writes words takes the page's `locale` (last parameter, "uz" when left out, so the Uzbek
@@ -87,7 +87,7 @@ export function searchIndexing(sp: Record<string, string | string[] | undefined>
 
 // ---------- robots.txt ----------
 
-export const PRIVATE_PATHS = ["/api/", "/admin", "/dashboard", "/orders", "/checkout", "/messages", "/settings", "/login", "/register", "/forbidden"];
+export const PRIVATE_PATHS = ["/api/", "/admin", "/dashboard", "/orders", "/checkout", "/messages", "/settings", "/login", "/register", "/forbidden", "/notifications", "/forgot", "/reset", "/verify"];
 /** Named so their owners can see they are welcome: AI search and assistant crawlers. */
 export const AI_CRAWLERS = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "PerplexityBot", "Google-Extended", "Applebot-Extended"];
 

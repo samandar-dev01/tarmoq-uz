@@ -286,3 +286,20 @@ test("manual payment through the real pages: checkout, waiting, admin confirm, p
   await client.ctx.dispose();
   await jasur.dispose();
 });
+
+// Last in this file on purpose: it leaves receipts waiting for the admin.
+test("a receipt and a change of terms sent at the same moment never both go through", async () => {
+  const bad: string[] = [];
+  for (let i = 0; i < 16; i++) {
+    const { client, jasur, orderId } = await orderAwaitingPayment();
+    const [paid, changed] = await Promise.all([
+      submit(client.ctx, orderId, receipt()),
+      new Promise((r) => setTimeout(r, i * 2)).then(() => jasur.post(`/api/orders/${orderId}/propose`, { data: { price: 900000, deliveryDays: 2, revisions: 1 } })),
+    ]);
+    // Either one may lose, but never with a server error.
+    expect(paid.status()).toBeLessThan(500);
+    expect(changed.status()).toBeLessThan(500);
+    if (paid.ok() && changed.ok()) bad.push(`round ${i}`);
+  }
+  expect(bad).toEqual([]);
+});

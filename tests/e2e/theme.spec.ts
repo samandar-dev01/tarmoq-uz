@@ -32,37 +32,37 @@ function watchConsole(page: Page) {
 }
 
 test.describe("first byte of HTML", () => {
-  test("first visit is dark: the server HTML already says data-theme=dark, with the sun on the button", async ({ request }) => {
+  test("first visit is light: the server HTML already says data-theme=light, with the sun on the button", async ({ request }) => {
     const res = await request.get("/");
     expect(res.status()).toBe(200);
     const html = await res.text();
-    expect(htmlTag(html)).toContain('data-theme="dark"');
-    expect(metaThemeColor(html)).toBe("#090D16");
-    expect(serverToggle(html)).toEqual({ label: TO_LIGHT, sun: true, moon: false });
+    expect(htmlTag(html)).toContain('data-theme="light"');
+    expect(metaThemeColor(html)).toBe("#FFFFFF");
+    expect(serverToggle(html)).toEqual({ label: TO_DARK, sun: false, moon: true });
   });
 
-  test("an unknown or stray cookie value is dark too", async ({ request }) => {
-    for (const value of ["sepia", "LIGHT", "", "light,dark", "%3Cscript%3E", "1"]) {
+  test("an unknown or stray cookie value is light too", async ({ request }) => {
+    for (const value of ["sepia", "LIGHT", "", "dark,light", "%3Cscript%3E", "1"]) {
       const html = await (await request.get("/search", { headers: { cookie: `theme=${value}` } })).text();
-      expect(htmlTag(html), `theme=${value}`).toContain('data-theme="dark"');
+      expect(htmlTag(html), `theme=${value}`).toContain('data-theme="light"');
     }
   });
 
-  test("with the light cookie the raw HTML is light from the first byte, with the moon and the matching browser bar colour", async ({ request }) => {
+  test("with the dark cookie the raw HTML is dark from the first byte, with the moon and the matching browser bar colour", async ({ request }) => {
     for (const path of ["/", "/search", "/login?role=client"]) {
-      const html = await (await request.get(path, { headers: { cookie: "theme=light" } })).text();
-      expect(htmlTag(html), path).toContain('data-theme="light"');
-      expect(metaThemeColor(html), path).toBe("#F7F3EC");
-      expect(serverToggle(html), path).toEqual({ label: TO_DARK, sun: false, moon: true });
+      const html = await (await request.get(path, { headers: { cookie: "theme=dark" } })).text();
+      expect(htmlTag(html), path).toContain('data-theme="dark"');
+      expect(metaThemeColor(html), path).toBe("#090D16");
+      expect(serverToggle(html), path).toEqual({ label: TO_LIGHT, sun: true, moon: false });
     }
   });
 });
 
 test.describe("one click", () => {
-  test("flips to light with no navigation, writes the cookie, and a reload (and the raw HTML with that cookie) is light", async ({ page, context, request }) => {
+  test("flips to dark with no navigation, writes the cookie, and a reload (and the raw HTML with that cookie) is dark", async ({ page, context, request }) => {
     await page.goto("/");
     await settled(page);
-    expect(await themeOf(page)).toBe("dark");
+    expect(await themeOf(page)).toBe("light");
     expect(await themeCookie(context)).toBeUndefined(); // nothing is stored before the visitor chooses
 
     // A marker that a reload or a navigation would wipe out.
@@ -72,13 +72,13 @@ test.describe("one click", () => {
     const url = page.url();
 
     await toggle(page).click();
-    await expect.poll(() => themeOf(page)).toBe("light");
+    await expect.poll(() => themeOf(page)).toBe("dark");
     expect(page.url()).toBe(url);
     expect(await page.evaluate(() => (window as unknown as { __stay?: boolean }).__stay)).toBe(true);
-    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible(); // the name followed the scheme
+    await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible(); // the name followed the scheme
 
     const cookie = await themeCookie(context);
-    expect(cookie?.value).toBe("light");
+    expect(cookie?.value).toBe("dark");
     expect(cookie?.path).toBe("/");
     expect(cookie?.sameSite).toBe("Lax");
     expect(cookie?.httpOnly).toBe(false); // the toggle writes it in the browser
@@ -86,33 +86,33 @@ test.describe("one click", () => {
     expect(lifetimeDays).toBeGreaterThan(360);
     expect(lifetimeDays).toBeLessThanOrEqual(366);
 
-    // A reload keeps it. The server has the cookie, so it paints light before any script runs.
-    await page.reload();
-    await settled(page);
-    expect(await themeOf(page)).toBe("light");
-    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
-
-    // The raw HTML fetched with the cookie the browser holds is light from the first byte.
-    const html = await (await request.get("/", { headers: { cookie: `theme=${cookie!.value}` } })).text();
-    expect(htmlTag(html)).toContain('data-theme="light"');
-
-    // And back: one more click returns to dark, with the cookie to match.
-    await toggle(page).click();
-    await expect.poll(() => themeOf(page)).toBe("dark");
-    expect((await themeCookie(context))?.value).toBe("dark");
+    // A reload keeps it. The server has the cookie, so it paints dark before any script runs.
     await page.reload();
     await settled(page);
     expect(await themeOf(page)).toBe("dark");
+    await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
+
+    // The raw HTML fetched with the cookie the browser holds is dark from the first byte.
+    const html = await (await request.get("/", { headers: { cookie: `theme=${cookie!.value}` } })).text();
+    expect(htmlTag(html)).toContain('data-theme="dark"');
+
+    // And back: one more click returns to light, with the cookie to match.
+    await toggle(page).click();
+    await expect.poll(() => themeOf(page)).toBe("light");
+    expect((await themeCookie(context))?.value).toBe("light");
+    await page.reload();
+    await settled(page);
+    expect(await themeOf(page)).toBe("light");
   });
 
-  test("the browser sees light before React has started: the page paints from the server HTML alone", async ({ browser }) => {
+  test("the browser sees dark before React has started: the page paints from the server HTML alone", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
-    await context.addCookies([{ name: "theme", value: "light", url: BASE }]);
+    await context.addCookies([{ name: "theme", value: "dark", url: BASE }]);
     const page = await context.newPage();
     await page.goto("/");
-    expect(await themeOf(page)).toBe("light");
+    expect(await themeOf(page)).toBe("dark");
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    expect(bg).toBe("rgb(247, 243, 236)"); // the light paper, painted with no script at all
+    expect(bg).toBe("rgb(9, 13, 22)"); // the dark paper, painted with no script at all
     await context.close();
   });
 });
@@ -125,7 +125,7 @@ test.describe("the button", () => {
     expect(box!.width).toBeGreaterThanOrEqual(44);
     expect(box!.height).toBeGreaterThanOrEqual(44);
     await expect(toggle(page)).toHaveAttribute("type", "button");
-    await expect(toggle(page)).toHaveAttribute("title", TO_LIGHT);
+    await expect(toggle(page)).toHaveAttribute("title", TO_DARK);
     await expect(toggle(page)).not.toHaveAttribute("aria-pressed");
 
     // Tab until the toggle has focus (the logo and the nav links come first).
@@ -142,11 +142,11 @@ test.describe("the button", () => {
     expect(ring).toEqual({ style: "solid", width: "2px" }); // the project's focus ring
 
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
-    expect(await themeOf(page)).toBe("light");
-    await page.keyboard.press("Space");
     await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
     expect(await themeOf(page)).toBe("dark");
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
+    expect(await themeOf(page)).toBe("light");
   });
 
   test("does not move the page when pressed", async ({ page }) => {
@@ -156,7 +156,7 @@ test.describe("the button", () => {
     const headerBefore = await page.locator("header").boundingBox();
     const mainBefore = await page.locator("main").boundingBox();
     await toggle(page).click();
-    await expect.poll(() => themeOf(page)).toBe("light");
+    await expect.poll(() => themeOf(page)).toBe("dark");
     const after = await toggle(page).boundingBox();
     const headerAfter = await page.locator("header").boundingBox();
     const mainAfter = await page.locator("main").boundingBox();
@@ -209,7 +209,7 @@ test.describe("readable text, measured in the page", () => {
     });
   }
 
-  for (const theme of ["light", "dark"] as const) {
+  for (const theme of ["dark", "light"] as const) {
     test(`in ${theme} mode body text and the primary button reach contrast 4.5`, async ({ page, context }) => {
       await context.addCookies([{ name: "theme", value: theme, url: BASE }]);
       await page.goto("/");
@@ -226,7 +226,7 @@ test.describe("readable text, measured in the page", () => {
     await page.goto("/");
     await settled(page);
     const colours = await page.evaluate(() => ({ ground: getComputedStyle(document.body).backgroundColor, ink: getComputedStyle(document.body).color, scheme: getComputedStyle(document.documentElement).colorScheme }));
-    expect(colours).toEqual({ ground: "rgb(247, 243, 236)", ink: "rgb(28, 25, 23)", scheme: "light" });
+    expect(colours).toEqual({ ground: "rgb(255, 255, 255)", ink: "rgb(34, 35, 37)", scheme: "light" });
   });
 });
 
@@ -237,14 +237,14 @@ test.describe("no console errors", () => {
       await page.goto(path);
       await settled(page);
       await toggle(page).click();
-      await expect.poll(() => themeOf(page)).toBe("light");
-      await toggle(page).click();
       await expect.poll(() => themeOf(page)).toBe("dark");
       await toggle(page).click();
       await expect.poll(() => themeOf(page)).toBe("light");
-      await page.reload(); // the server renders it light: that render must hydrate cleanly too
+      await toggle(page).click();
+      await expect.poll(() => themeOf(page)).toBe("dark");
+      await page.reload(); // the server renders it dark: that render must hydrate cleanly too
       await settled(page);
-      expect(await themeOf(page)).toBe("light");
+      expect(await themeOf(page)).toBe("dark");
       expect(problems).toEqual([]);
     });
   }
@@ -256,30 +256,30 @@ test.describe("signed in", () => {
     await page.goto("/login?role=client");
     await settled(page);
     await toggle(page).click();
-    await expect.poll(() => themeOf(page)).toBe("light");
+    await expect.poll(() => themeOf(page)).toBe("dark");
 
     await login(page, "client@demo.test");
     await settled(page);
-    expect(await themeOf(page)).toBe("light");
-    expect((await themeCookie(context))?.value).toBe("light");
-    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
+    expect(await themeOf(page)).toBe("dark");
+    expect((await themeCookie(context))?.value).toBe("dark");
+    await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
     await expect(page.getByRole("button", { name: /^Hisob menyusi/ })).toBeVisible(); // really signed in (the account menu is the signed-in header)
 
     // Flip it as a signed-in user, and go to another page: the choice stays.
     await toggle(page).click();
-    await expect.poll(() => themeOf(page)).toBe("dark");
+    await expect.poll(() => themeOf(page)).toBe("light");
     await page.goto("/orders");
     await settled(page);
-    expect(await themeOf(page)).toBe("dark");
-    await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
+    expect(await themeOf(page)).toBe("light");
+    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
 
     // Signing out refreshes the header from the server: the scheme and the button agree with the cookie.
     await page.getByRole("button", { name: /^Hisob menyusi/ }).click();
     await page.getByRole("menuitem", { name: "Chiqish" }).click();
     await expect(page).toHaveURL(/\/$/);
     await settled(page);
-    expect(await themeOf(page)).toBe("dark");
-    await expect(page.getByRole("button", { name: TO_LIGHT })).toBeVisible();
+    expect(await themeOf(page)).toBe("light");
+    await expect(page.getByRole("button", { name: TO_DARK })).toBeVisible();
     expect(problems).toEqual([]);
   });
 });
@@ -307,13 +307,13 @@ test.describe("on a phone (390 px wide)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390); // no sideways scroll
 
     await toggle(page).tap();
-    await expect.poll(() => themeOf(page)).toBe("light");
-    expect((await themeCookie(context))?.value).toBe("light");
+    await expect.poll(() => themeOf(page)).toBe("dark");
+    expect((await themeCookie(context))?.value).toBe("dark");
 
-    // Signed in on the phone: the choice is still light and the button is still there.
+    // Signed in on the phone: the choice is still dark and the button is still there.
     await login(page, "client@demo.test");
     await settled(page);
-    expect(await themeOf(page)).toBe("light");
+    expect(await themeOf(page)).toBe("dark");
     await expect(toggle(page)).toBeVisible();
     // A signed-in phone has the account menu where signed-out visitors have Menyu, and the scheme button is still beside it.
     const account = page.getByRole("button", { name: /^Hisob menyusi/ });
@@ -323,6 +323,6 @@ test.describe("on a phone (390 px wide)", () => {
     expect(scheme.x + scheme.width).toBeLessThanOrEqual((await account.boundingBox())!.x);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await toggle(page).tap();
-    await expect.poll(() => themeOf(page)).toBe("dark");
+    await expect.poll(() => themeOf(page)).toBe("light");
   });
 });

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { authHref, doorForRole, doorForRoles, LAST_ROLE_COOKIE } from "./authRole";
 import { prisma } from "./db";
 import { HttpError } from "./http";
-import { signToken, verifyToken, type AppRole, type SessionPayload } from "./token";
+import { touchDue } from "./presence";
+import { sessionIsCurrent, signToken, verifyToken, type AppRole, type SessionPayload } from "./token";
 
 export const SESSION_COOKIE = "session";
 const maxAgeDays = () => Number(process.env.SESSION_MAX_AGE_DAYS ?? 7);
@@ -13,8 +14,9 @@ const maxAgeDays = () => Number(process.env.SESSION_MAX_AGE_DAYS ?? 7);
 export const hashPassword = (plain: string) => bcrypt.hash(plain, 12);
 export const verifyPassword = (plain: string, hash: string) => bcrypt.compare(plain, hash);
 
-export async function startSession(user: { id: string; role: AppRole; name: string }) {
-  const token = await signToken({ sub: user.id, role: user.role, name: user.name }, maxAgeDays());
+/** `tokenVersion` is the user's current `User.tokenVersion`; the cookie carries it so a later bump ends this session (see getCurrentUser). */
+export async function startSession(user: { id: string; role: AppRole; name: string; tokenVersion: number }) {
+  const token = await signToken({ sub: user.id, role: user.role, name: user.name, tv: user.tokenVersion }, maxAgeDays());
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -42,7 +44,10 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 /**
- * Authoritative user lookup: role and active flag always come from the database, not the token.
+ * Authoritative user lookup: role and active flag always come from the database, not the token, and so does the session
+ * version: a session whose `tv` is not the user's current `tokenVersion` has been ended (password change, "sign out
+ * everywhere") and counts as signed out. What comes back is safe to hand to a page: no password hash, no storage key,
+ * no token version. `avatarUpdatedAt` is how a page knows there is a photo (src/lib/avatar.ts).
  *
  * Wrapped in React's `cache`, so while one page is being rendered the layout, the header and the page itself share a
  * single query instead of running it three or four times (a signed-in visitor used to cost that many round trips to the
@@ -55,11 +60,29 @@ export const getCurrentUser = cache(async () => {
   if (!session) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { id: true, email: true, name: true, phone: true, role: true, isActive: true },
+    select: { id: true, email: true, name: true, phone: true, role: true, isActive: true, avatarUpdatedAt: true, tokenVersion: true, lastSeenAt: true },
   });
   if (!user || !user.isActive) return null;
-  return user;
+  if (!sessionIsCurrent(session.tv, user.tokenVersion)) return null;
+  // Online status. Not awaited: a slow or failed write must not slow or break the page.
+  if (touchDue(user.lastSeenAt)) void prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
+  const { tokenVersion: _tokenVersion, lastSeenAt: _lastSeenAt, ...visible } = user;
+  return visible;
 });
+
+/**
+ * Ends every session of the user except the one making this request: raises `tokenVersion` (so every cookie issued so
+ * far stops matching) and writes a fresh cookie with the new number into THIS browser, which stays signed in.
+ * Route handlers only (it sets a cookie).
+ */
+export async function endOtherSessions(userId: string): Promise<void> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+    select: { id: true, role: true, name: true, tokenVersion: true },
+  });
+  await startSession(user);
+}
 
 /** For API route handlers (throws HttpError). */
 export async function requireUser() {

@@ -1,15 +1,25 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "./db";
-import { CITIES, PAGE_SIZE } from "./constants";
+import { CITIES, LANGUAGES, PAGE_SIZE } from "./constants";
+import { findSubcategory } from "./catalog";
+import { LEVEL_MINIMUM } from "./levels";
+import { ONLINE_MS } from "./presence";
 
 export const searchSchema = z.object({
   q: z.string().trim().max(100).optional(),
   city: z.enum(CITIES).optional(),
   category: z.string().trim().max(60).optional(),
+  // A subdirection of that direction (src/lib/catalog.ts).
+  sub: z.string().trim().max(60).optional(),
   minPrice: z.coerce.number().int().min(0).max(1_000_000_000).optional(),
   maxPrice: z.coerce.number().int().min(0).max(1_000_000_000).optional(),
   sort: z.enum(["rating", "price_asc", "price_desc", "newest"]).default("rating"),
+  // More ways to narrow: delivery within so many days, the creator's level or higher, a working language, online now.
+  days: z.coerce.number().pipe(z.union([z.literal(1), z.literal(3), z.literal(7), z.literal(14)])).optional(),
+  level: z.coerce.number().pipe(z.union([z.literal(1), z.literal(2), z.literal(3)])).optional(),
+  lang: z.enum(LANGUAGES).optional(),
+  online: z.literal("1").optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
 });
 export type SearchFilters = z.infer<typeof searchSchema>;
@@ -25,6 +35,12 @@ export function parseSearch(sp: Record<string, string | string[] | undefined>): 
     if (parsed.success) out[key] = parsed.data;
   }
   const filters = searchSchema.parse(out);
+  // A subdirection brings its direction with it; one that is unknown, or belongs to another direction, is dropped.
+  if (filters.sub !== undefined) {
+    const found = findSubcategory(filters.sub);
+    if (found && (filters.category === undefined || filters.category === found.category.slug)) filters.category = found.category.slug;
+    else delete filters.sub;
+  }
   if (filters.minPrice !== undefined && filters.maxPrice !== undefined && filters.minPrice > filters.maxPrice) {
     [filters.minPrice, filters.maxPrice] = [filters.maxPrice, filters.minPrice];
   }
@@ -39,24 +55,24 @@ const ORDER: Record<SearchFilters["sort"], Prisma.ProviderProfileOrderByWithRela
 };
 
 /** What a creator card needs, and nothing else (no bio, no payout fields). */
-const CARD_SELECT = {
+export const CARD_SELECT = {
   id: true, slug: true, headline: true, city: true, district: true,
-  startingPrice: true, ratingAvg: true, ratingCount: true, languages: true,
-  user: { select: { name: true } },
+  startingPrice: true, ratingAvg: true, ratingCount: true, completedCount: true, languages: true,
+  user: { select: { id: true, name: true, avatarUpdatedAt: true, lastSeenAt: true } },
   category: { select: { name: true, nameRu: true } },
 } satisfies Prisma.ProviderProfileSelect;
 
+/** Who may be listed at all: approved profiles of active accounts. */
+export const listedWhere = (): Prisma.ProviderProfileWhereInput => ({ status: "APPROVED", user: { isActive: true } });
+
 function buildWhere(filters: SearchFilters): Prisma.ProviderProfileWhereInput {
-  const { q, city, category, minPrice, maxPrice } = filters;
-  const where: Prisma.ProviderProfileWhereInput = {
-    status: "APPROVED",
-    user: { isActive: true },
-  };
+  const { q, city, category, sub, minPrice, maxPrice } = filters;
+  const where = listedWhere();
   if (city) where.city = city;
   if (category) where.category = { slug: category };
-  // Price filter: provider has at least one active package inside the range.
-  if (minPrice !== undefined || maxPrice !== undefined) {
-    where.services = { some: { isActive: true, price: { gte: minPrice, lte: maxPrice } } };
+  // One of the creator's active packages has to match the price range and the subdirection together.
+  if (minPrice !== undefined || maxPrice !== undefined || sub !== undefined) {
+    where.services = { some: { isActive: true, price: { gte: minPrice, lte: maxPrice }, subcategory: sub } };
   }
   if (q) {
     where.OR = [
@@ -104,3 +120,60 @@ export function featuredProviders(limit: number) {
 }
 
 export type ProviderCardData = Awaited<ReturnType<typeof featuredProviders>>[number];
+
+// ---------- the search page lists packages ----------
+
+/** What a package card needs. */
+export const SERVICE_SELECT = {
+  id: true, title: true, price: true, deliveryDays: true,
+  profile: {
+    select: {
+      slug: true, ratingAvg: true, ratingCount: true, completedCount: true,
+      user: { select: { id: true, name: true, avatarUpdatedAt: true, lastSeenAt: true } },
+      portfolio: { orderBy: { sortOrder: "asc" }, take: 4, select: { imageUrl: true, videoUrl: true } },
+    },
+  },
+} satisfies Prisma.ServiceSelect;
+export type ServiceCardData = Prisma.ServiceGetPayload<{ select: typeof SERVICE_SELECT }>;
+
+const SERVICE_ORDER: Record<SearchFilters["sort"], Prisma.ServiceOrderByWithRelationInput[]> = {
+  rating: [{ profile: { ratingAvg: "desc" } }, { profile: { ratingCount: "desc" } }, { price: "asc" }, { id: "asc" }],
+  price_asc: [{ price: "asc" }, { profile: { ratingAvg: "desc" } }, { id: "asc" }],
+  price_desc: [{ price: "desc" }, { profile: { ratingAvg: "desc" } }, { id: "asc" }],
+  newest: [{ profile: { createdAt: "desc" } }, { id: "desc" }],
+};
+
+export function serviceWhere(filters: SearchFilters, now = Date.now()): Prisma.ServiceWhereInput {
+  const { q, city, category, sub, minPrice, maxPrice, days, level, lang, online } = filters;
+  const user: Prisma.UserWhereInput = { isActive: true };
+  if (online) user.lastSeenAt = { gt: new Date(now - ONLINE_MS) };
+  const profile: Prisma.ProviderProfileWhereInput = { status: "APPROVED", user };
+  if (city) profile.city = city;
+  if (category) profile.category = { slug: category };
+  if (lang) profile.languages = { has: lang };
+  if (level) {
+    const [completed, reviews, rating] = LEVEL_MINIMUM[level];
+    profile.completedCount = { gte: completed };
+    profile.ratingCount = { gte: reviews };
+    profile.ratingAvg = { gte: rating };
+  }
+  const where: Prisma.ServiceWhereInput = { isActive: true, profile };
+  if (minPrice !== undefined || maxPrice !== undefined) where.price = { gte: minPrice, lte: maxPrice };
+  if (sub) where.subcategory = sub;
+  if (days) where.deliveryDays = { lte: days };
+  if (q) {
+    const text = { contains: q, mode: "insensitive" as const };
+    where.OR = [{ title: text }, { description: text }, { profile: { headline: text } }, { profile: { user: { name: text } } }];
+  }
+  return where;
+}
+
+export async function searchServices(filters: SearchFilters, pageSize = PAGE_SIZE) {
+  const { sort, page } = filters;
+  const where = serviceWhere(filters);
+  const [total, items] = await Promise.all([
+    prisma.service.count({ where }),
+    prisma.service.findMany({ where, orderBy: SERVICE_ORDER[sort], skip: (page - 1) * pageSize, take: pageSize, select: SERVICE_SELECT }),
+  ]);
+  return { items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
+}

@@ -232,25 +232,27 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await expect(page.getByText(/^\d+ (правка|правки|правок)$/)).toBeVisible();
     await expect(page.getByLabel("Опишите, что нужно")).toBeVisible();
     await expect(page.getByLabel("Дата мероприятия или съёмки (необязательно)")).toBeVisible();
-    await expect(page.getByText("Деньги пока не списываются. Сначала креатор отправит условия, а вы их посмотрите и примете.")).toBeVisible();
+    await expect(page.getByText("Оплата на следующей странице. До оплаты и вы, и креатор можете предложить изменить условия.")).toBeVisible();
+    await page.locator("form input[type=checkbox]").check(); // the terms: without them the button stays off
 
     // A field error from the server, in Russian: the brief is too short.
     await page.getByLabel("Опишите, что нужно").fill("Коротко");
-    await page.getByRole("button", { name: "Отправить заказ" }).click();
+    await page.getByRole("button", { name: "Купить" }).click();
     await expect(page.locator("form").getByRole("alert")).toHaveText("Проверьте отмеченные поля.");
     await expect(page.getByText("Опишите, что нужно (не менее 20 символов)")).toBeVisible();
 
     // A date in the past: a server error with a field.
     await page.getByLabel("Опишите, что нужно").fill(goodBrief);
     await page.getByLabel("Дата мероприятия или съёмки (необязательно)").fill("2020-01-01");
-    await page.getByRole("button", { name: "Отправить заказ" }).click();
+    await page.getByRole("button", { name: "Купить" }).click();
     await expect(page.locator("form").getByRole("alert")).toHaveText("Дата мероприятия не может быть в прошлом.");
 
     // And the real thing: the order is placed from this page.
     await page.getByLabel("Дата мероприятия или съёмки (необязательно)").fill("");
-    await page.getByRole("button", { name: "Отправить заказ" }).click();
-    await expect(page).toHaveURL(/\/orders\/[a-z0-9]+$/);
-    await expect(statusBadges(page)).toHaveText("Заявка отправлена");
+    await page.getByRole("button", { name: "Купить" }).click();
+    await expect(page).toHaveURL(/\/checkout\/[a-z0-9]+$/);
+    await page.goto(page.url().replace("/checkout/", "/orders/"));
+    await expect(statusBadges(page)).toHaveText("Ожидается оплата");
     expect(await uzbekLeftovers(page)).toEqual([]);
     expect(problems).toEqual([]);
     await context.close();
@@ -262,7 +264,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     const table: { status: Status; badge: string; client: string; creator: string; clientSees: string[]; creatorSees: string[] }[] = [
       { status: "REQUESTED", badge: "Заявка отправлена", client: "Дождитесь условий от креатора", creator: "Отправьте свои условия", clientSees: ["Отменить заказ"], creatorSees: ["Отправьте свои условия", "Отправить условия заказчику", "Отклонить заявку"] },
       { status: "AGREEMENT_PENDING", badge: "Ожидается соглашение", client: "Изучите условия и примите их", creator: "Дождитесь, пока заказчик примет условия", clientSees: ["Принять соглашение", "Отменить заказ"], creatorSees: ["Обновить условия", "Отправить обновлённые условия"] },
-      { status: "AWAITING_PAYMENT", badge: "Ожидается оплата", client: "Оплатите заказ, чтобы работа началась", creator: "Дождитесь оплаты от заказчика", clientSees: ["Оплатить (тестовый режим)", "Хотите остановить заказ?"], creatorSees: ["Отменить заказ"] },
+      { status: "AWAITING_PAYMENT", badge: "Ожидается оплата", client: "Оплатите заказ, чтобы работа началась", creator: "Дождитесь оплаты от заказчика", clientSees: ["Оплатить", "Хотите остановить заказ?"], creatorSees: ["Отменить заказ"] },
       { status: "IN_PROGRESS", badge: "В работе", client: "Креатор работает над вашим видео", creator: "Загрузите готовое видео", clientSees: ["Открыть спор", "Хотите остановить заказ?"], creatorSees: ["Сдача видео", "Сдать работу", "Открыть спор"] },
       { status: "DELIVERED", badge: "Работа сдана", client: "Посмотрите сданную работу и примите её", creator: "Дождитесь, пока заказчик примет работу", clientSees: ["Сданная работа", "Принять работу и перевести оплату", "Запросить правки (осталось: 1)", "Скачать"], creatorSees: ["Сданная работа", "Скачать"] },
       { status: "COMPLETED", badge: "Завершён", client: "Оставьте отзыв", creator: "Завершён", clientSees: ["Оставьте отзыв", "Отправить отзыв", "Транзакция", "Переведено креатору"], creatorSees: ["Транзакция", "Комиссия платформы", "Доход креатора"] },
@@ -363,13 +365,12 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     const problems = watchConsole(page);
     await page.goto(`/checkout/${id}`);
     await settled(page);
-    await expect(page).toHaveTitle("Оплата (тестовый режим) · Tarmoq.uz");
+    await expect(page).toHaveTitle("Оплата · Tarmoq.uz");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Оплата");
     await expect(page.getByText("с Jasur Karimov")).toBeVisible();
     await expect(page.getByText(money(300000)).first()).toBeVisible();
     await expect(page.getByText("Деньги удерживаются, пока вы не примете готовое видео.")).toBeVisible();
-    await expect(page.getByText("Тестовый режим", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Тестовый режим.", { exact: true })).toBeVisible();
+    await expect(page.getByText(/тестовый режим/i)).toHaveCount(0);
     await expect(page.getByLabel("Номер карты")).toBeVisible();
     await expect(page.getByLabel("Срок действия (ММ/ГГ)")).toBeVisible();
     await expect(page.getByLabel("Код безопасности (CVC)")).toBeVisible();
@@ -394,10 +395,9 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await page.getByRole("button", { name: "Заполнить: Успешная" }).click();
     await page.getByRole("button", { name: /^Оплатить / }).click();
     await expect(page).toHaveURL(/paid=1/);
-    await expect(page.getByText("Оплата подтверждена (тестовый режим). Теперь креатор может приступить к работе.")).toBeVisible();
+    await expect(page.getByText("Оплата подтверждена. Теперь креатор может приступить к работе.")).toBeVisible();
     await expect(statusBadges(page)).toHaveText("В работе");
-    await expect(page.getByText("Тестовая оплата: настоящие деньги не списывались.")).toBeVisible();
-    await expect(page.getByText(/Тестовая карта visa •••• 4242/)).toBeVisible();
+    await expect(page.getByText(/visa •••• 4242/)).toBeVisible();
     expect(problems).toEqual([]);
     await context.close();
   });
@@ -528,7 +528,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Кабинет креатора");
     await expect(page.getByText("Ваш профиль активен.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Посмотреть публичный профиль" })).toBeVisible();
-    await expect(tilesOf(page)).toHaveText(["Новые заявки", "В работе", "Удерживаемые средства", "Полученный доход (без комиссии)"]);
+    await expect(tilesOf(page)).toHaveText(["Новые заявки", "В работе", "Удерживаемые средства", "Полученный доход (без комиссии)", "Просмотры профиля", "Выполненные заказы", "Средняя оценка", "Доля завершённых"]);
     await expect(page.getByRole("heading", { level: 2, name: "Получение денег" })).toBeVisible();
     await expect(page.getByText("Когда заказчик примет работу, ваш доход (без комиссии) будет переведён на эту карту.")).toBeVisible();
     await expect(page.getByLabel("Владелец карты")).toBeVisible();

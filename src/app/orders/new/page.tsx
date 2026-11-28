@@ -9,6 +9,7 @@ import { Card, tagClasses } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NewOrderForm } from "@/components/orders/NewOrderForm";
+import { buildTermsText, russianReading } from "@/lib/agreements";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -17,7 +18,8 @@ export async function generateMetadata() {
 
 export default async function NewOrderPage(props: { searchParams: Promise<{ service?: string }> }) {
   const searchParams = await props.searchParams;
-  await requirePageRole("CLIENT");
+  // Signing in comes first: a signed-out visitor is sent to the client door whatever the address says.
+  const client = await requirePageRole("CLIENT");
   const t = await getT();
   const locale = await getLocale();
   if (!searchParams.service) redirect("/search");
@@ -40,6 +42,12 @@ export default async function NewOrderPage(props: { searchParams: Promise<{ serv
     );
   }
 
+  // The package's terms as they will be agreed, shown before buying (with a Russian reading for a Russian reader).
+  const terms = buildTermsText({
+    orderId: "", version: 1, serviceTitle: service.title, clientName: client.name, providerName: service.profile.user.name,
+    price: service.price, deliveryDays: service.deliveryDays, revisions: service.revisions,
+  });
+
   return (
     <Container size="md">
       <h1>{t("Buyurtma: {title}", { title: service.title })}</h1>
@@ -55,7 +63,13 @@ export default async function NewOrderPage(props: { searchParams: Promise<{ serv
         </p>
       </Card>
       <div className="mt-8">
-        <NewOrderForm serviceId={service.id} />
+        <NewOrderForm
+          serviceId={service.id}
+          seen={{ price: service.price, deliveryDays: service.deliveryDays, revisions: service.revisions }}
+          questions={service.questions ?? []}
+          terms={terms}
+          termsRu={locale === "ru" ? russianReading(terms) : null}
+        />
       </div>
     </Container>
   );

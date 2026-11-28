@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { hashPassword, startSession } from "@/lib/auth";
+import { mailEnabled } from "@/lib/mail";
+import { sendVerifyLink } from "@/lib/authTokens";
 import { clientIp, handle, ok, readJson, HttpError } from "@/lib/http";
 import { LIMITS, rateLimit, retryAfterSeconds } from "@/lib/rateLimit";
 import { registerSchema } from "@/lib/validators";
@@ -28,10 +30,12 @@ export const POST = handle(async (req) => {
       role: input.role, // validated: CLIENT or PROVIDER only
       passwordHash: await hashPassword(input.password),
     },
-    select: { id: true, name: true, role: true },
+    select: { id: true, name: true, role: true, tokenVersion: true },
   });
 
   await logAudit({ actorId: user.id, action: "USER_REGISTERED", entity: "User", entityId: user.id });
   await startSession(user);
-  return ok({ user }, 201);
+  // When the site can send email, the new address is asked to confirm itself. Not awaited.
+  if (mailEnabled()) void sendVerifyLink({ id: user.id, email: input.email }).catch((e) => console.error("Verification link failed:", e));
+  return ok({ user: { id: user.id, name: user.name, role: user.role } }, 201);
 });

@@ -2,7 +2,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRole, requireUser } from "@/lib/auth";
 import { HttpError, handle, ok, readJson } from "@/lib/http";
-import { assertParticipant, getParticipantConversation, hasUnreadFromOthers, markRead } from "@/lib/messaging";
+import { assertParticipant, getParticipantConversation, hasUnreadFromOthers, lastSeenByOther, markRead } from "@/lib/messaging";
+import { isOnline } from "@/lib/presence";
+import { isTyping, stopTyping } from "@/lib/typing";
 import { rateLimit } from "@/lib/rateLimit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,7 +17,7 @@ export const GET = handle(async (req, ctx: Ctx) => {
   const params = await ctx.params;
   const user = await requireUser();
   // This runs every few seconds per open chat, so it only checks membership and loads no names.
-  await assertParticipant(params.id, user.id);
+  const { other } = await assertParticipant(params.id, user.id);
   const after = new URL(req.url).searchParams.get("after");
 
   let messages;
@@ -38,7 +40,12 @@ export const GET = handle(async (req, ctx: Ctx) => {
   // Opening the chat (no `after`) marks everything unread, however old. A poll only writes when it brought something new
   // from the other person; an empty poll, the usual case, no longer runs an UPDATE.
   if (!after || hasUnreadFromOthers(messages, user.id)) await markRead(params.id, user.id);
-  return ok({ messages });
+  return ok({
+    messages,
+    presence: { online: isOnline(other.lastSeenAt), lastSeenAt: other.lastSeenAt },
+    typing: isTyping(params.id, other.id),
+    seenId: await lastSeenByOther(params.id, user.id),
+  });
 });
 
 export const POST = handle(async (req, ctx: Ctx) => {
@@ -48,5 +55,6 @@ export const POST = handle(async (req, ctx: Ctx) => {
   await getParticipantConversation(params.id, user.id);
   if (!rateLimit(`msg:${user.id}`, 30, 60 * 1000)) throw new HttpError(429, "Xabarlarni juda tez yuboryapsiz. Sal sekinroq.");
   const message = await prisma.message.create({ data: { conversationId: params.id, senderId: user.id, body }, select });
+  stopTyping(params.id, user.id);
   return ok({ message }, 201);
 });
