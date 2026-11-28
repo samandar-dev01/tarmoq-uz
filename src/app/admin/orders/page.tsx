@@ -27,6 +27,12 @@ export default async function AdminOrders() {
     : [];
   const reason = new Map<string, string>();
   for (const l of logs) if (!reason.has(l.entityId)) reason.set(l.entityId, String((l.meta as { reason?: string } | null)?.reason ?? ""));
+  // A cancellation both sides agreed to arrives here too: it is not a quarrel, and the money goes back to the client.
+  const agreed = new Map(
+    disputeIds.length
+      ? (await prisma.orderRequest.findMany({ where: { orderId: { in: disputeIds }, type: "CANCEL", status: "ACCEPTED" } })).map((r) => [r.orderId, r.reason])
+      : [],
+  );
 
   return (
     <>
@@ -47,9 +53,16 @@ export default async function AdminOrders() {
               </div>
               {o.status === "DISPUTED" && (
                 <Card tone="pomegranate" padding="sm" className="mt-4 space-y-3">
-                  <p><strong>Nizo sababi:</strong> {reason.get(o.id) || "Koʻrsatilmagan"}</p>
+                  {agreed.has(o.id) ? (
+                    <>
+                      <p><strong>Ikkala tomon bekor qilishga rozi boʻlgan.</strong> Pulni mijozga qaytaring.</p>
+                      <p data-user-content><strong>Sababi:</strong> {agreed.get(o.id)}</p>
+                    </>
+                  ) : (
+                    <p><strong>Nizo sababi:</strong> {reason.get(o.id) || "Koʻrsatilmagan"}</p>
+                  )}
                   {manual && <Alert variant="warning">Qoʻlda toʻlov: <strong>Mijozga qaytarish</strong> tugmasini bosishdan oldin pulni mijozning kartasiga oʻzingiz yuboring.</Alert>}
-                  <ResolveDispute orderId={o.id} />
+                  <ResolveDispute orderId={o.id} refundOnly={agreed.has(o.id)} />
                 </Card>
               )}
             </Card>

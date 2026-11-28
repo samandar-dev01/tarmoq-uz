@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Alert } from "@/components/ui/Alert";
-import { TestModeBadge } from "@/components/ui/TestModeBadge";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { ManualTransfer } from "@/components/checkout/ManualTransfer";
 import { manualPaymentsOn, paymentsAreTest } from "@/lib/payments/mode";
@@ -16,7 +15,7 @@ import { manualInstructions, orderReference } from "@/lib/payments/manualPure";
 
 export async function generateMetadata() {
   const t = await getT();
-  return { title: paymentsAreTest() ? t("Toʻlov (sinov rejimi)") : t("Toʻlov") };
+  return { title: t("Toʻlov") };
 }
 
 export default async function CheckoutPage(props: { params: Promise<{ orderId: string }> }) {
@@ -54,10 +53,10 @@ export default async function CheckoutPage(props: { params: Promise<{ orderId: s
         <p className="font-bold">{order.service.title}</p>
         <p className="text-ink-soft">{t("{name} bilan", { name: order.provider.name })}</p>
         <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight">{order.agreedPrice ? formatUZS(order.agreedPrice, locale) : "—"}</p>
-        <p className="mt-1 text-sm text-ink-soft">{t("Siz tayyor videoni qabul qilmaguncha ushlab turiladi.")} <TestModeBadge /></p>
+        <p className="mt-1 text-sm text-ink-soft">{t("Siz tayyor videoni qabul qilmaguncha ushlab turiladi.")}</p>
       </Card>
       <div className="mt-6">
-        {!manual ? (
+        {paymentsAreTest() ? (
           <CheckoutForm orderId={order.id} />
         ) : instructions && order.agreedPrice ? (
           <ManualTransfer

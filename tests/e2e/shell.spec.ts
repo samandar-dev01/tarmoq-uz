@@ -127,10 +127,9 @@ test.describe("the account menu in the header", () => {
     await expect(box).toContainText("Mijoz");
     await expect(panel(page)).toHaveAttribute("aria-labelledby", /.+/);
     // The note is outside the list of items: the list has only items and the divider.
-    expect(await panel(page).evaluate((el) => [...el.children].map((c) => c.getAttribute("role")))).toEqual(["menuitem", "menuitem", "menuitem", "menuitem", "separator", "menuitem"]); // three destinations, Yordam, divider, Chiqish
+    expect(await panel(page).evaluate((el) => [...el.children].map((c) => c.getAttribute("role")))).toEqual(["menuitem", "menuitem", "menuitem", "menuitem", "menuitem", "menuitem", "separator", "menuitem"]); // three destinations, Bildirishnomalar, Sozlamalar, Yordam, divider, Chiqish
     await expect(panel(page).getByText("Demo Mijoz")).toHaveCount(0);
-    // No settings item yet: the page for it is a later wave.
-    await expect(page.getByRole("menuitem", { name: "Sozlamalar" })).toHaveCount(0);
+    await expect(page.getByRole("menuitem", { name: "Sozlamalar" })).toHaveAttribute("href", "/settings");
   });
 });
 
@@ -140,7 +139,7 @@ test.describe("what each role finds in the menu", () => {
     await page.goto("/");
     await settled(page);
     await openMenu(page);
-    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Ijodkorlar", "Yordam", "Chiqish"]);
+    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Ijodkorlar", "Bildirishnomalar", "Sozlamalar", "Yordam", "Chiqish"]);
     await expect(item(page, "Kabinet")).toHaveAttribute("href", CLIENT.home);
     await expect(item(page, "Xabarlar")).toHaveAttribute("href", "/messages");
     await expect(item(page, "Ijodkorlar")).toHaveAttribute("href", "/search");
@@ -154,7 +153,7 @@ test.describe("what each role finds in the menu", () => {
     await page.goto("/");
     await settled(page);
     await openMenu(page);
-    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Yordam", "Chiqish"]);
+    expect(await itemNames(page)).toEqual(["Kabinet", "Xabarlar", "Bildirishnomalar", "Sozlamalar", "Yordam", "Chiqish"]);
     await expect(item(page, "Kabinet")).toHaveAttribute("href", CREATOR.home);
     await expect(page.getByRole("menuitem", { name: "Ijodkorlar" })).toHaveCount(0);
     await expect(page.locator('header a[href="/search"]')).toHaveCount(0);
@@ -167,7 +166,7 @@ test.describe("what each role finds in the menu", () => {
     await page.goto("/admin");
     await settled(page);
     await openMenu(page);
-    expect(await itemNames(page)).toEqual(["Admin", "Ijodkorlar", "Chiqish"]);
+    expect(await itemNames(page)).toEqual(["Admin", "Ijodkorlar", "Bildirishnomalar", "Sozlamalar", "Chiqish"]);
     await expect(item(page, "Admin")).toHaveAttribute("href", "/admin");
     await expect(page.getByRole("menuitem", { name: "Xabarlar" })).toHaveCount(0);
     await expect(page.locator('header a[href="/messages"]')).toHaveCount(0);
@@ -184,6 +183,37 @@ test.describe("what each role finds in the menu", () => {
     await expect(header(page).getByRole("link", { name: "Ijodkor sifatida kirish" })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(header(page).locator("summary", { hasText: "Menyu" })).toBeVisible();
+  });
+
+  test("a visitor on a phone sees both ways in and sign-up without opening Menyu, but not on those pages themselves", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await settled(page);
+    const ways = page.getByRole("navigation", { name: "Kirish", exact: true });
+    for (const [name, href] of [
+      ["Mijoz sifatida kirish", "/login?role=client"],
+      ["Ijodkor sifatida kirish", "/login?role=provider"],
+      ["Roʻyxatdan oʻting", "/register"],
+    ] as const) {
+      const link = ways.getByRole("link", { name });
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute("href", href);
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    for (const path of ["/login?role=client", "/register"]) {
+      await page.goto(path);
+      await expect(ways).toHaveCount(0);
+    }
+    // A wide screen has the buttons in the bar instead.
+    await page.goto("/");
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(ways).toBeHidden();
+    // Signed in, there is nothing to offer.
+    await login(page, CLIENT.email);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(ways).toHaveCount(0);
   });
 });
 
@@ -213,7 +243,7 @@ test.describe("opening and closing", () => {
     await openMenu(page);
     await themeToggle(page).click(); // another control: it works, and the menu is gone
     await expect(panel(page)).toHaveCount(0);
-    expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("light");
+    expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
   });
 
   test("choosing an item closes the menu and goes there", async ({ page }) => {
@@ -258,6 +288,10 @@ test.describe("opening and closing", () => {
     await expect(item(page, "Xabarlar")).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(item(page, "Ijodkorlar")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Bildirishnomalar")).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Sozlamalar")).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(item(page, "Yordam")).toBeFocused();
     await page.keyboard.press("ArrowDown");
@@ -554,7 +588,7 @@ test.describe("readable and visible in both colour schemes", () => {
       await expect(item(page, "Kabinet")).toBeFocused();
       await expect(item(page, "Kabinet")).toHaveAttribute("aria-current", "page");
 
-      for (const name of ["Kabinet", "Xabarlar", "Ijodkorlar", "Chiqish"]) {
+      for (const name of ["Kabinet", "Xabarlar", "Ijodkorlar", "Sozlamalar", "Chiqish"]) {
         expect(await contrastOf(page, item(page, name)), `${theme}: ${name}`).toBeGreaterThanOrEqual(4.5);
       }
       const id = await trigger(page).getAttribute("aria-controls");

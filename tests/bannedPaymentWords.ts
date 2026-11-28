@@ -1,6 +1,6 @@
 // The words that must never appear where search engines and AI crawlers read: titles, descriptions, Open Graph, JSON-LD,
-// the FAQ, llms.txt, the manifest, the sitemap. Payments run in manual or test mode, and none of these places can carry the
-// "Sinov rejimi" (test mode) badge, so none of them may promise anything about money, in either language.
+// the FAQ, llms.txt, the manifest, the sitemap. Payments run in manual or test mode, so none of these places may promise
+// anything about money, in either language.
 // Used by tests/unit/seo.test.ts and tests/e2e/language-public.spec.ts (tests/e2e/seo.spec.ts keeps its own copy of the Uzbek list).
 //
 // The text is normalised first: lower case, "ё" folded to "е", and every Uzbek apostrophe look-alike removed, so every spelling matches.

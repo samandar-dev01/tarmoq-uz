@@ -13,14 +13,14 @@ import type { NavEntry } from "@/lib/shellNav";
  * how to sign out. The destinations come from the server (src/lib/shellNav.ts), which knows the role; the header hands
  * them over already in the reader's language.
  */
-export function AccountMenu({ name, roleLabel, links, help }: { name: string; roleLabel: string; links: NavEntry[]; help?: NavEntry }) {
+export function AccountMenu({ name, photo, roleLabel, links, help }: { name: string; photo?: string | null; roleLabel: string; links: NavEntry[]; help?: NavEntry }) {
   const pathname = usePathname();
   const { signOut, signingOut } = useSignOut();
   const t = useT();
   return (
     <Menu
       label={t("Hisob menyusi: {name}", { name })}
-      trigger={<Avatar name={name} size="sm" />}
+      trigger={<Avatar name={name} src={photo} size="sm" />}
       triggerClassName={buttonClasses({ variant: "ghost", size: "icon", className: "aria-expanded:bg-ink/10" })}
       header={
         <>
@@ -34,7 +34,8 @@ export function AccountMenu({ name, roleLabel, links, help }: { name: string; ro
           {link.label}
         </MenuLink>
       ))}
-      {/* «Sozlamalar» goes here, after the destinations, when the settings page exists (a later wave). */}
+      <MenuLink href="/notifications" current={isCurrentPath(pathname, "/notifications")}>{t("Bildirishnomalar")}</MenuLink>
+      <MenuLink href="/settings" current={isCurrentPath(pathname, "/settings")}>{t("Sozlamalar")}</MenuLink>
       {/* Help is Telegram, outside the site: it opens in a new tab. Not given to an admin (see Header). */}
       {help && <MenuLink href={help.href} external>{help.label}</MenuLink>}
       <MenuSeparator />

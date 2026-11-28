@@ -8,7 +8,7 @@ import { useT } from "@/i18n/client";
 import { useAction } from "./useAction";
 
 /** Provider: send (or update) the terms. */
-export function ProposeTerms({ orderId, defaults, update }: { orderId: string; defaults: { price: number; days: number; revisions: number }; update: boolean }) {
+export function ProposeTerms({ orderId, defaults, update, asClient = false }: { orderId: string; defaults: { price: number; days: number; revisions: number }; update: boolean; asClient?: boolean }) {
   const { run, loading, error, fe } = useAction();
   const t = useT();
   const ready = useHydrated();
@@ -20,7 +20,7 @@ export function ProposeTerms({ orderId, defaults, update }: { orderId: string; d
   const num = (v: string) => (v === "" ? undefined : Number(v));
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await run(`/api/orders/${orderId}/propose`, { json: { price: num(price), deliveryDays: num(days), revisions: num(revisions), notes: notes || undefined } });
+    await run(`/api/orders/${orderId}/${asClient ? "counter" : "propose"}`, { json: { price: num(price), deliveryDays: num(days), revisions: num(revisions), notes: notes || undefined } });
   };
 
   return (
@@ -32,7 +32,7 @@ export function ProposeTerms({ orderId, defaults, update }: { orderId: string; d
         <Field label={t("Tuzatishlar soni")} type="number" inputMode="numeric" min={0} value={revisions} onChange={(e) => setRevisions(e.target.value)} error={fe("revisions")} />
       </div>
       <Field as="textarea" label={t("Izoh (ixtiyoriy)")} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("Ish hajmi, joylashuv, nimalar kirmasligi…")} />
-      <Button type="submit" loading={loading} disabled={!ready}>{update ? t("Yangilangan shartlarni yuborish") : t("Shartlarni mijozga yuborish")}</Button>
+      <Button type="submit" loading={loading} disabled={!ready}>{asClient ? t("Oʻzgartirishni yuborish") : update ? t("Yangilangan shartlarni yuborish") : t("Shartlarni mijozga yuborish")}</Button>
     </form>
   );
 }

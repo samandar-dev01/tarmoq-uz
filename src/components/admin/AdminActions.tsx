@@ -72,7 +72,7 @@ export function MarkPayoutPaid({ payoutId, amount }: { payoutId: string; amount:
   );
 }
 
-export function ResolveDispute({ orderId }: { orderId: string }) {
+export function ResolveDispute({ orderId, refundOnly = false }: { orderId: string; refundOnly?: boolean }) {
   const { run, loading, error } = useAction();
   const resolve = (resolution: "release" | "refund") => {
     const msg = resolution === "release" ? "Ushlab turilgan pul ijodkorga oʻtkazilsinmi?" : "Ushlab turilgan pul mijozga qaytarilsinmi?";
@@ -82,8 +82,8 @@ export function ResolveDispute({ orderId }: { orderId: string }) {
     <div className="space-y-3">
       {error && <Alert variant="error">{error}</Alert>}
       <div className="flex flex-wrap gap-3">
-        <Button loading={loading} onClick={() => resolve("release")}>Ijodkorga oʻtkazish</Button>
-        <Button variant="secondary" disabled={loading} onClick={() => resolve("refund")}>Mijozga qaytarish</Button>
+        {!refundOnly && <Button loading={loading} onClick={() => resolve("release")}>Ijodkorga oʻtkazish</Button>}
+        <Button variant={refundOnly ? "primary" : "secondary"} loading={refundOnly && loading} disabled={loading} onClick={() => resolve("refund")}>Mijozga qaytarish</Button>
       </div>
     </div>
   );

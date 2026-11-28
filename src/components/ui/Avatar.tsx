@@ -49,12 +49,17 @@ const SIZES = {
   xl: { box: "h-24 w-24", text: "text-2xl" },
 } as const;
 
-/** A creator's initials on a plain disc. Decorative: the name is always written next to it. */
-export function Avatar({ name, size = "md", className = "" }: { name: string; size?: keyof typeof SIZES; className?: string }) {
+/** A person's photo, or their initials on a plain disc when they have none. Decorative: the name is always written next to it. */
+export function Avatar({ name, src, size = "md", className = "" }: { name: string; src?: string | null; size?: keyof typeof SIZES; className?: string }) {
   const s = SIZES[size];
   return (
-    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center rounded-full border border-line-strong bg-paper-deep font-display font-bold text-ink ${s.box} ${s.text} ${className}`}>
-      {initials(name)}
+    <span aria-hidden="true" className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-line-strong bg-paper-deep font-display font-bold text-ink ${s.box} ${s.text} ${className}`}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        initials(name)
+      )}
     </span>
   );
 }

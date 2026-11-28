@@ -36,7 +36,7 @@ export function ThemeToggle({ initial }: { initial: Theme }) {
         document.cookie = themeCookie(next);
         setTheme(next);
       }}
-      className={buttonClasses({ variant: "secondary", size: "icon" })}
+      className={buttonClasses({ variant: "ghost", size: "icon" })}
     >
       <Icon name={theme === "dark" ? "sun" : "moon"} />
     </button>

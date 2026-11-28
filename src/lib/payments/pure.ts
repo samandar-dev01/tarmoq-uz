@@ -32,5 +32,5 @@ export function evaluateTestCard(input: CardInput, now: Date = new Date()): Card
   if (SUCCESS.has(digits)) return { outcome: "success", brand, last4 };
   const declined = DECLINED[digits];
   if (declined) return { outcome: "declined", brand, last4, failureCode: declined.code, message: declined.message };
-  return invalid("Sinov rejimi: 4242 4242 4242 4242 kabi test kartasidan foydalaning.");
+  return invalid("4242 4242 4242 4242 kabi test kartasidan foydalaning.");
 }

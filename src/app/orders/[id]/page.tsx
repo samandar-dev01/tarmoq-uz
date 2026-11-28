@@ -1,3 +1,8 @@
+import { readQa } from "@/lib/serviceDetails";
+import { Countdown } from "@/components/orders/Countdown";
+import { RequestActions, RequestForm } from "@/components/orders/ResolutionCentre";
+import { canAsk } from "@/lib/resolution";
+import { REQUEST_STATUS } from "@/lib/orderUi";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requirePageRole } from "@/lib/auth";
@@ -5,13 +10,11 @@ import { getLocale, getT } from "@/i18n/server";
 import { russianReading } from "@/lib/agreements";
 import { formatDate, formatMoment, formatUZS } from "@/lib/format";
 import { nextAction } from "@/lib/orderUi";
-import { paymentsAreTest } from "@/lib/payments/mode";
 import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Stars } from "@/components/ui/Stars";
-import { TestModeBadge } from "@/components/ui/TestModeBadge";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
 import { ReviewForm } from "@/components/orders/ReviewForm";
@@ -40,6 +43,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
       deliveries: { orderBy: { createdAt: "desc" } },
       review: true,
       conversation: { select: { id: true } },
+      requests: { orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
   if (!order) notFound();
@@ -50,6 +54,9 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
   if (!isClient && !isProvider && !isAdmin) notFound(); // never reveal that someone else's order exists
 
   const agreement = order.agreements[0];
+  // Terms the client asked to change wait for the creator; otherwise they wait for the client.
+  const waitsForCreator = order.status === "AGREEMENT_PENDING" && !!agreement && !agreement.providerAcceptedAt;
+  const waitsForClient = order.status === "AGREEMENT_PENDING" && !!agreement && !agreement.clientAcceptedAt;
   const paid = order.payments.find((p) => ["HELD", "RELEASED", "REFUNDED"].includes(p.status));
   const payout = paid?.ledger.find((l) => l.type === "PROVIDER_PAYOUT");
   const fee = paid?.ledger.find((l) => l.type === "PLATFORM_FEE");
@@ -67,7 +74,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
 
   return (
     <Container size="lg" className="space-y-6">
-      {searchParams.paid === "1" && <Alert variant="success">{t("Toʻlov tasdiqlandi (sinov rejimi). Endi ijodkor ishni boshlashi mumkin.")}</Alert>}
+      {searchParams.paid === "1" && <Alert variant="success">{t("Toʻlov tasdiqlandi. Endi ijodkor ishni boshlashi mumkin.")}</Alert>}
 
       <Card padding="lg" radius="hero">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -92,7 +99,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
               {t("Keyingi qadam:")}{" "}
               {awaitingConfirmation
                 ? isClient ? t("Administrator toʻlovni tasdiqlashini kuting") : t("Mijozning toʻlovi tekshirilmoqda")
-                : t(nextAction(order.status, role, !!order.review))}
+                : t(nextAction(order.status, role, !!order.review, waitsForCreator))}
             </p>
           </Card>
         )}
@@ -102,7 +109,27 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
         <h2>{t("Buyurtma tavsifi")}</h2>
         <p data-user-content className="mt-3 whitespace-pre-line text-ink-soft">{order.brief}</p>
         {order.eventDate && <p className="mt-3 text-sm font-semibold">{t("Sana: {date}", { date: formatDate(order.eventDate, locale) })}</p>}
+        {readQa(order.answers).length > 0 && (
+          <dl className="mt-5 space-y-3 border-t border-line pt-4">
+            {readQa(order.answers).map((a, i) => (
+              <div key={i}>
+                <dt data-user-content className="text-sm font-semibold text-ink-soft">{a.question}</dt>
+                <dd data-user-content className="mt-0.5 whitespace-pre-line">{a.answer}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </Card>
+
+      {order.status === "IN_PROGRESS" && order.dueAt && (
+        <Card as="section">
+          <h2>{t("Topshirish muddati")}</h2>
+          <div className="mt-3">
+            <Countdown dueAt={order.dueAt.toISOString()} now={new Date().toISOString()} />
+            <p className="mt-1 text-ink-soft">{formatMoment(order.dueAt, locale)}</p>
+          </div>
+        </Card>
+      )}
 
       {isProvider && (order.status === "REQUESTED" || order.status === "AGREEMENT_PENDING") && (
         <Card as="section">
@@ -135,9 +162,53 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
             <li>{t("Ijodkor qabul qildi: {when}", { when: agreement.providerAcceptedAt ? formatMoment(agreement.providerAcceptedAt, locale) : t("kutilmoqda") })}</li>
             <li>{t("Mijoz qabul qildi: {when}", { when: agreement.clientAcceptedAt ? formatMoment(agreement.clientAcceptedAt, locale) : t("kutilmoqda") })}</li>
           </ul>
-          {isClient && order.status === "AGREEMENT_PENDING" && !agreement.clientAcceptedAt && (
+          {((isClient && waitsForClient) || (isProvider && waitsForCreator)) && (
             <div className="mt-5"><AcceptAgreement orderId={order.id} termsHash={agreement.termsHash} /></div>
           )}
+        </Card>
+      )}
+
+      {/* Until the money is on its way, either side may ask for different terms. */}
+      {/* The resolution centre: once money is held, one side asks and the other answers. */}
+      {!isAdmin && (order.requests.length > 0 || canAsk("CANCEL", order.status)) && (
+        <Card as="section">
+          <h2>{t("Hal qilish markazi")}</h2>
+          <ul className="mt-3 space-y-3">
+            {order.requests.map((r) => (
+              <li key={r.id} className="rounded-ctl border border-line-strong p-4">
+                <p className="font-bold">
+                  {r.type === "EXTEND" ? t("Muddatni {days} kunga uzaytirish", { days: r.extraDays ?? 0 }) : t("Buyurtmani bekor qilish")}
+                  {" · "}
+                  {t(REQUEST_STATUS[r.status])}
+                </p>
+                <p className="mt-1 text-sm text-ink-soft">{r.requestedById === user.id ? t("Siz soʻradingiz") : t("{name} soʻradi", { name: other })}</p>
+                <p data-user-content className="mt-2 whitespace-pre-line">{r.reason}</p>
+                {r.status === "PENDING" && <RequestActions orderId={order.id} requestId={r.id} mine={r.requestedById === user.id} />}
+              </li>
+            ))}
+          </ul>
+          {canAsk("CANCEL", order.status) && !order.requests.some((r) => r.status === "PENDING") && (
+            <details className="mt-3">
+              <summary className="min-h-11 py-2 font-bold">{t("Yangi soʻrov")}</summary>
+              <RequestForm key={order.requests.length} orderId={order.id} canExtend={canAsk("EXTEND", order.status)} />
+            </details>
+          )}
+        </Card>
+      )}
+
+      {!awaitingConfirmation && agreement && ((isProvider && order.status === "AWAITING_PAYMENT") || (isClient && (order.status === "AGREEMENT_PENDING" || order.status === "AWAITING_PAYMENT"))) && (
+        <Card as="section">
+          <details>
+            <summary className="min-h-11 py-2 text-lg font-bold">{t("Shartlarni oʻzgartirish")}</summary>
+            <p className="mb-5 mt-2 text-ink-soft">{t("Yangi shartlar ikkinchi tomon qabul qilgandan keyin kuchga kiradi.")}</p>
+            <ProposeTerms
+              key={agreement.version}
+              orderId={order.id}
+              update
+              asClient={isClient}
+              defaults={{ price: order.agreedPrice ?? order.service.price, days: order.agreedDays ?? order.service.deliveryDays, revisions: order.revisionsAllowed }}
+            />
+          </details>
         </Card>
       )}
 
@@ -149,9 +220,9 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
           ) : (
             <>
               <p className="mt-2 text-ink-soft">
-                {t("Hozir {price} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi.", { price: order.agreedPrice ? formatUZS(order.agreedPrice, locale) : "" })} <TestModeBadge />
+                {t("Hozir {price} toʻlang. Pul ushlab turiladi va faqat siz tayyor videoni qabul qilganingizdan keyin ijodkorga oʻtkaziladi.", { price: order.agreedPrice ? formatUZS(order.agreedPrice, locale) : "" })}
               </p>
-              <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">{paymentsAreTest() ? t("Xavfsiz toʻlash (sinov rejimi)") : t("Toʻlash")}</ButtonLink>
+              <ButtonLink href={`/checkout/${order.id}`} size="lg" className="mt-5">{t("Toʻlash")}</ButtonLink>
             </>
           )}
         </Card>
@@ -225,7 +296,7 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
             </div>
             <div>
               <dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov usuli")}</dt>
-              <dd>{paid.provider === "manual" ? t("Karta orqali oʻtkazma (administrator tasdiqlagan)") : t("Sinov kartasi {card}", { card: `${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}` })}</dd>
+              <dd>{paid.provider === "manual" ? t("Karta orqali oʻtkazma (administrator tasdiqlagan)") : `${paid.cardBrand ? `${paid.cardBrand} ` : ""}•••• ${paid.cardLast4 ?? ""}`}</dd>
             </div>
             <div><dt className="text-sm font-semibold text-ink-soft">{t("Toʻlov ID")}</dt><dd className="break-all font-mono text-xs">{paid.id}</dd></div>
             {(isProvider || isAdmin) && payout && fee && (
@@ -242,7 +313,6 @@ export default async function OrderPage(props: { params: Promise<{ id: string }>
               </div>
             )}
           </dl>
-          {paid.provider === "sandbox" && <p className="mt-4 text-sm text-ink-soft">{t("Sinov toʻlovi: haqiqiy pul yechilmadi.")}</p>}
         </Card>
       )}
 

@@ -93,7 +93,6 @@ export function CheckoutForm({ orderId }: { orderId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <Alert variant="info"><strong>{t("Sinov rejimi.")}</strong> {t("Haqiqiy pul yechilmaydi. Quyidagi test kartalaridan birini tanlang.")}</Alert>
       {error && <Alert variant="error">{error}</Alert>}
 
       <div aria-hidden="true" className="overflow-hidden rounded-card border border-line-strong bg-gradient-to-br from-cobalt-tint via-surface to-paper text-ink shadow-lift">

@@ -7,13 +7,16 @@ import { getLocale } from "@/i18n/server";
 import { plural } from "@/i18n/plural";
 import { canBrowseCreators, getCurrentUser } from "@/lib/auth";
 import { categoryName } from "@/lib/constants";
-import { parseSearch, searchProviders } from "@/lib/providers";
+import { parseSearch, searchServices } from "@/lib/providers";
+import { cookies } from "next/headers";
+import { parseSaved, SAVED_COOKIE } from "@/lib/recentPure";
 import { getCategories } from "@/lib/publicCache";
 import { breadcrumbJsonLd, creatorListJsonLd, ogDefaults, pageAlternates, searchIndexing, searchMeta } from "@/lib/seo";
-import { searchCategoryHref, searchPageHref } from "@/lib/searchLinks";
+import { searchCategoryHref, searchPageHref, searchSubHref } from "@/lib/searchLinks";
+import { catalogName, findCategory } from "@/lib/catalog";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FilterPanel } from "@/components/FilterPanel";
-import { ProviderCard } from "@/components/ProviderCard";
+import { ServiceCard } from "@/components/ServiceCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -49,9 +52,12 @@ export default async function SearchPage(props: Props) {
   const searchParams = await props.searchParams;
   const filters = parseSearch(searchParams);
   const [result, categories] = await Promise.all([
-    searchProviders(filters),
+    searchServices(filters),
     getCategories(),
   ]);
+  const saved = new Set(parseSaved((await cookies()).get(SAVED_COOKIE)?.value));
+  // The creators behind the listed packages, each once, for the structured data.
+  const creators = [...new Map(result.items.map((s) => [s.profile.slug, { slug: s.profile.slug, name: s.profile.user.name }])).values()];
 
   // Every link goes through localHref (src/lib/searchLinks.ts): on a Russian page a crawler without cookies only meets /ru/... links.
   const pageHref = (page: number) => searchPageHref(locale, filters, page);
@@ -64,7 +70,7 @@ export default async function SearchPage(props: Props) {
   return (
     <Container>
       <JsonLd data={breadcrumbJsonLd(crumbs, undefined, locale)} />
-      <JsonLd data={creatorListJsonLd(result.items.map((p) => ({ slug: p.slug, name: p.user.name })), undefined, locale)} />
+      <JsonLd data={creatorListJsonLd(creators, undefined, locale)} />
       <h1>{t("Ijodkorlarni toping")}</h1>
       <p className="mt-2 text-ink-soft">{t("Shahar, yoʻnalish va narx boʻyicha saralang.")}</p>
       <div className="mt-6">
@@ -77,9 +83,18 @@ export default async function SearchPage(props: Props) {
           <ButtonLink key={c.slug} href={categoryHref(c.slug)} variant="chip" aria-current={filters.category === c.slug ? "true" : undefined}>{categoryName(locale, c)}</ButtonLink>
         ))}
       </nav>
+      {/* Inside one direction, its subdirections. */}
+      {findCategory(filters.category) && (
+        <nav aria-label={t("Ichki yoʻnalishlar")} className="mt-3 flex flex-wrap gap-2">
+          <ButtonLink href={searchSubHref(locale, filters)} variant="chip" aria-current={filters.sub ? undefined : "true"}>{t("Barchasi")}</ButtonLink>
+          {findCategory(filters.category)!.subcategories.map((s) => (
+            <ButtonLink key={s.slug} href={searchSubHref(locale, filters, s.slug)} variant="chip" aria-current={filters.sub === s.slug ? "true" : undefined}>{catalogName(locale, s)}</ButtonLink>
+          ))}
+        </nav>
+      )}
 
       <p className="mt-8 font-semibold" aria-live="polite">
-        {t("{count} topildi", { count: plural(locale, result.total, "ijodkor", ["креатор", "креатора", "креаторов"]) })}
+        {t("{count} topildi", { count: plural(locale, result.total, "xizmat", ["услуга", "услуги", "услуг"]) })}
       </p>
 
       {result.items.length === 0 ? (
@@ -94,7 +109,7 @@ export default async function SearchPage(props: Props) {
         <>
           {/* Four across when the count divides by four, otherwise three, so the last row is rarely a lone card. */}
           <div className={`mt-4 grid gap-5 sm:grid-cols-2 ${result.items.length % 4 === 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-            {result.items.map((p) => <ProviderCard key={p.id} p={p} />)}
+            {result.items.map((s) => <ServiceCard key={s.id} s={s} saved={saved.has(s.id)} />)}
           </div>
           {result.pages > 1 && (
             <nav className="mt-10 flex items-center justify-center gap-4" aria-label={t("Sahifalar")}>

@@ -45,6 +45,9 @@ services:
       # Clients' bank receipts (JPG, PNG, WebP, PDF up to 5 MB) go to their own private bucket; videos stay in S3_BUCKET.
       - key: S3_RECEIPTS_BUCKET
         value: receipts
+      # Profile photos (JPG, PNG, WebP up to 2 MB) have their own private bucket. Create it in Supabase Storage before this goes live.
+      - key: S3_AVATARS_BUCKET
+        value: avatars
       # "sandbox" = test cards, no real money. "manual" = clients send money to the card below and an admin confirms it by hand.
       - key: PAYMENT_PROVIDER
         value: manual
@@ -68,6 +71,11 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Optional: email for password reset and address confirmation (resend.com). Both empty = those features stay hidden.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
         sync: false
       - key: SESSION_MAX_AGE_DAYS
         value: "7"

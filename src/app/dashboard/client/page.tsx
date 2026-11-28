@@ -19,7 +19,7 @@ export default async function ClientDashboard() {
   const orders = await prisma.order.findMany({
     where: { clientId: user.id },
     orderBy: { updatedAt: "desc" },
-    include: { service: { select: { title: true } }, provider: { select: { name: true } }, review: { select: { id: true } } },
+    include: { service: { select: { title: true } }, provider: { select: { name: true } }, review: { select: { id: true } }, agreements: { orderBy: { version: "desc" }, take: 1, select: { providerAcceptedAt: true } } },
   });
 
   const active = orders.filter((o) => !["COMPLETED", "CANCELLED"].includes(o.status)).length;
@@ -50,7 +50,7 @@ export default async function ClientDashboard() {
         <OrderList
           rows={orders.map((o) => ({
             id: o.id, status: o.status, title: o.service.title, other: o.provider.name,
-            price: o.agreedPrice, updatedAt: o.updatedAt, action: t(nextAction(o.status, "client", !!o.review)),
+            price: o.agreedPrice, updatedAt: o.updatedAt, action: t(nextAction(o.status, "client", !!o.review, o.agreements.length > 0 && !o.agreements[0]!.providerAcceptedAt)),
           }))}
         />
       )}

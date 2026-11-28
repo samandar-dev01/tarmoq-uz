@@ -27,7 +27,7 @@ const CALLBACK_PATH = "/api/auth/google/callback";
 const FLOW_AUDIENCE = "tarmoq-google-flow"; // a session token can never open a flow, nor a flow be used as a session
 const ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
 
-export type GoogleProblem = "cancelled" | "unverified" | "admin" | "inactive" | "wrong_door" | "limited" | "failed";
+export type GoogleProblem = "cancelled" | "unverified" | "admin" | "inactive" | "wrong_door" | "limited" | "failed" | "two_factor";
 
 export class GoogleAuthError extends Error {
   constructor(public reason: "not_configured" | "exchange" | "invalid_token" | "unverified") {
@@ -175,15 +175,16 @@ export async function verifyIdToken(idToken: string, nonce: string, keys: JWTVer
 // ---- who gets in --------------------------------------------------------------------------------------------------
 
 export type Resolved =
-  | { kind: "ok"; user: { id: string; name: string; role: AppRole }; created: boolean }
+  | { kind: "ok"; user: { id: string; name: string; role: AppRole; tokenVersion: number }; created: boolean }
   | { kind: "wrong_door"; door: Door }
   | { kind: "inactive" }
   | { kind: "admin" }
+  | { kind: "two_factor" }
   | { kind: "conflict" }
   | { kind: "limited"; retryAfter: number };
 
-type Existing = { id: string; name: string; role: AppRole; isActive: boolean; googleSub: string | null };
-const existingSelect = { id: true, name: true, role: true, isActive: true, googleSub: true } as const;
+type Existing = { id: string; name: string; role: AppRole; isActive: boolean; googleSub: string | null; tokenVersion: number; totpEnabledAt?: Date | null };
+const existingSelect = { id: true, name: true, role: true, isActive: true, googleSub: true, tokenVersion: true, totpEnabledAt: true } as const;
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
@@ -192,9 +193,11 @@ function admit(user: Existing, door: EntryRole): Resolved {
   // An admin signs in with a password only. Google never opens, creates or links an admin account.
   if (user.role === "ADMIN") return { kind: "admin" };
   if (!user.isActive) return { kind: "inactive" };
+  // Google must not step around two-step sign-in: such an account signs in with its password and code.
+  if (user.totpEnabledAt) return { kind: "two_factor" };
   const other = wrongDoor(door, user.role);
   if (other) return { kind: "wrong_door", door: other };
-  return { kind: "ok", user: { id: user.id, name: user.name, role: user.role }, created: false };
+  return { kind: "ok", user: { id: user.id, name: user.name, role: user.role, tokenVersion: user.tokenVersion }, created: false };
 }
 
 /**
@@ -234,7 +237,7 @@ export async function resolveGoogleUser(profile: GoogleProfile, door: EntryRole,
   try {
     user = await prisma.user.create({
       data: { name, email: profile.email, role: door === "provider" ? "PROVIDER" : "CLIENT", googleSub: profile.sub },
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true, role: true, tokenVersion: true },
     });
   } catch (e) {
     if (isUniqueViolation(e)) return { kind: "conflict" }; // two sign-ins for the same new person at the same moment

@@ -26,7 +26,7 @@ export const POST = handle(async (req, ctx: Ctx) => {
       data: { status: "IN_PROGRESS", revisionsUsed: { increment: 1 } },
     });
     if (moved.count !== 1) throw new HttpError(409, "Buyurtma oʻzgargan. Sahifani yangilang.");
-    await postOrderMessage(order.id, user.id, `Tuzatish soʻralmoqda: ${note}`, tx);
+    await postOrderMessage(order.id, user.id, `Tuzatish soʻralmoqda: ${note}`, tx, "revision");
   });
   await logAudit({ actorId: user.id, action: "REVISION_REQUESTED", entity: "Order", entityId: order.id });
   return ok({ status: "IN_PROGRESS" });

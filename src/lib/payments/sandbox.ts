@@ -4,6 +4,7 @@ import { HttpError } from "../errors";
 import { logAudit } from "../audit";
 import { evaluateTestCard, type CardInput } from "./pure";
 import { markPaymentHeld } from "./escrow";
+import { notifyOrder } from "../notifications";
 
 /** Creates (or reuses) the payment attempt for an order. The amount always comes from the order, never from the client. */
 export async function getOrCreateIntent(orderId: string, clientId: string) {
@@ -50,6 +51,7 @@ export async function confirmPayment(args: { orderId: string; paymentId: string;
         orderId, paymentId, from: "REQUIRES_PAYMENT",
         data: { cardBrand: evaluated.brand, cardLast4: evaluated.last4 },
       });
+      await notifyOrder(orderId, clientId, "payment", tx);
       return { ok: true as const };
     });
   } catch (e) {

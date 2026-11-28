@@ -4,8 +4,8 @@
 
 @layer base {
   /* The theme. Change a colour here and the whole site follows. Values are RGB triplets (see tailwind.config.ts).
-     Two schemes share these names: this block is the dark one (the default for a first visit), and the
-     `html[data-theme="light"]` block below overrides everything that has to flip. The server writes data-theme on <html>
+     Two schemes share these names: this block is the dark one, and the
+     `html[data-theme="light"]` block below (the default for a first visit) overrides everything that has to flip. The server writes data-theme on <html>
      from the `theme` cookie, so the first byte of every page is already in the right scheme.
      Dark cinema: an obsidian ground, slate cards, warm amber and electric blue accents. */
   :root {
@@ -54,27 +54,27 @@
     --c-cover-night: 9 13 22; /* dark strokes and shading on creator art and on the logo mark */
   }
 
-  /* The light scheme: warm paper, white cards, deep ink. Only what has to flip is written here. */
+  /* The light scheme, the default: a white ground, white cards with grey edges, near-black ink. Only what has to flip is written here. */
   html[data-theme="light"] {
     color-scheme: light;
-    --c-ink: 28 25 23; /* #1C1917 */
-    --c-ink-soft: 68 64 60; /* #44403C */
-    --c-ink-mute: 100 94 87; /* #645E57 */
-    --c-paper: 247 243 236; /* page ground #F7F3EC */
-    --c-paper-deep: 236 230 218; /* hover and recessed #ECE6DA */
+    --c-ink: 34 35 37; /* #222325 */
+    --c-ink-soft: 64 65 69; /* #404145 */
+    --c-ink-mute: 98 100 106; /* #62646A */
+    --c-paper: 255 255 255; /* page ground, white */
+    --c-paper-deep: 241 241 242; /* hover and recessed #F1F1F2 */
     --c-surface: 255 255 255; /* elevated card */
-    --c-line: 28 25 23;
-    --c-line-a: 0.11;
-    --c-line-strong-a: 0.2;
-    --c-shadow: 46 34 20; /* a warm, soft shadow */
+    --c-line: 34 35 37;
+    --c-line-a: 0.12;
+    --c-line-strong-a: 0.24;
+    --c-shadow: 34 35 37; /* a soft, neutral shadow */
     --shadow-lift-sm: 0 1px 2px 0 rgb(var(--c-shadow) / 0.1);
     --shadow-lift: 0 10px 28px -12px rgb(var(--c-shadow) / 0.2), 0 2px 6px -2px rgb(var(--c-shadow) / 0.1);
     --shadow-lift-lg: 0 28px 64px -24px rgb(var(--c-shadow) / 0.3), 0 8px 20px -8px rgb(var(--c-shadow) / 0.14);
-    --glow-warm: 0.14;
-    --glow-cool: 0.05;
+    --glow-warm: 0;
+    --glow-cool: 0;
     --c-focus: 29 78 216; /* #1D4ED8 */
     --c-star: 204 107 4; /* burnt amber, 3:1 on paper and on white */
-    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23645E57' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2362646A' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     --c-cobalt-dark: 30 64 175; /* #1E40AF */
     --c-cobalt-tint: 225 235 254;
     --c-saffron-deep: 133 58 10; /* #853A0A */

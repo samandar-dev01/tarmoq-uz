@@ -1,10 +1,11 @@
 /**
- * True while payments are the internal sandbox (no real money moves). It is the default: only an explicit
- * PAYMENT_PROVIDER naming a real gateway turns it off. Two things hang on it:
- *   - the sandbox payment endpoints (test cards) answer only while it is true;
- *   - every public promise about held payments carries a visible "Sinov rejimi" badge while it is true.
+ * True while payments are the internal sandbox (test cards, no real money moves): the sandbox payment endpoints and
+ * card form answer only then. No page announces it, so a production server is in the sandbox only when
+ * PAYMENT_PROVIDER says "sandbox" in so many words. If that setting goes missing there, payments stay closed, so a
+ * test card can never mark a real order as paid. Everywhere else (development, tests) the sandbox is the default.
  */
-export const paymentsAreTest = (): boolean => (process.env.PAYMENT_PROVIDER ?? "sandbox") === "sandbox";
+export const paymentsAreTest = (): boolean =>
+  (process.env.PAYMENT_PROVIDER ?? (process.env.NODE_ENV === "production" ? "" : "sandbox")) === "sandbox";
 
 /**
  * True when clients pay by sending money to the owner's own card and an admin confirms it by hand

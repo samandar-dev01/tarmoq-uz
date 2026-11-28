@@ -139,7 +139,7 @@ Open two browsers (or one normal and one private window).
 4. Write a brief (20+ characters) and **Buyurtma yuborish** (send order request). Status: *Soʻrov yuborildi* (requested).
 5. In the other browser sign in as `jasur@demo.test`, open the order, **Shartlarni mijozga yuborish** (send terms to client). Status: *Kelishuv kutilmoqda* (agreement pending).
 6. As the client, reload, tick "Shartlar bilan tanishib chiqdim va qabul qilaman" (I have read and accept these terms), **Kelishuvni qabul qilish** (accept agreement). Status: *Toʻlov kutilmoqda* (awaiting payment). (The acceptance time, IP and terms hash are stored.)
-7. Click **Xavfsiz toʻlash (sinov rejimi)** (pay securely, sandbox), use `4242 4242 4242 4242`, then the **… soʻm toʻlash** (pay) button. Status: *Jarayonda* (in progress).
+7. Click **Toʻlash** (pay; the sandbox on a development server), use `4242 4242 4242 4242`, then the **… soʻm toʻlash** (pay) button. Status: *Jarayonda* (in progress).
 8. As the provider, reload, choose a small `.mp4`, **Ishni topshirish** (upload delivery). Status: *Topshirildi* (delivered).
 9. As the client, reload: play the video, **Qabul qilish va toʻlovni oʻtkazish** (approve & release payment). Status: *Yakunlandi* (completed), and the **Tranzaksiya** (transaction) panel shows "Ijodkorga oʻtkazildi" (released to provider).
 10. **Sharhni yuborish** (submit a review). It appears on Jasur's public profile and updates his rating.
@@ -203,6 +203,8 @@ See `.env.example`. The important ones:
 | `APP_URL` | The site's public address, no trailing slash (live: `https://tarmoq-uz.onrender.com`). Canonical links, the sitemap, `robots.txt`, Open Graph and `llms.txt` are built from it; falls back to Render's `RENDER_EXTERNAL_URL`, then `http://localhost:3000`. See section 14. |
 | `GOOGLE_SITE_VERIFICATION`, `YANDEX_VERIFICATION` | Optional. The verification codes from Google Search Console and Yandex Webmaster; when set, the matching `<meta>` tag is added to every page. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Switch on "Continue with Google" (see "Sign in with Google" below). Both must be set, or no Google button is shown. |
+| `S3_AVATARS_BUCKET` | Profile photos have their own private bucket (JPG, PNG, WebP, 2 MB). Create it before photos are used on the live site. |
+| `RESEND_API_KEY`, `MAIL_FROM` | Optional. Email through resend.com: password reset ("Parolni unutdingizmi?") and address confirmation appear only when both are set. `MAIL_DRIVER=log` writes mail to the server log in development only. |
 
 ### Sign in with Google
 
@@ -294,7 +296,7 @@ What exists, so Google, Yandex and AI assistants (ChatGPT, Claude, Perplexity an
 - **`/robots.txt`** welcomes the AI crawlers by name (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-SearchBot, PerplexityBot, Google-Extended, Applebot-Extended) and lists the sitemap. **`/sitemap.xml`** is built from the database on each request: approved creators of active accounts only, up to 5000. **`/llms.txt`** is a plain-text guide for AI assistants (what the site is, the categories, the creators), cached for an hour.
 - **Page metadata:** each public page has its own title, description, canonical address and Open Graph card (the picture is `src/app/opengraph-image.tsx`); there is also a web app manifest.
 - **Structured data (JSON-LD):** organisation and website with a search box on the home page; a visible FAQ with the same text as `FAQPage` data; a profile page with a person and one offer per active package on each creator page (the star rating only when real reviews are shown); a breadcrumb and a creator list on `/search`. The builders are plain functions in `src/lib/seo.ts`.
-- **Rule: no payment promise** in any title, description, Open Graph, JSON-LD, FAQ or `llms.txt` text. Payments are manual or in test mode, and a meta tag cannot carry the "Sinov rejimi" badge. `tests/unit/seo.test.ts` fails if such a word appears, and `tests/e2e/seo.spec.ts` checks the pages themselves.
+- **Rule: no payment promise** in any title, description, Open Graph, JSON-LD, FAQ or `llms.txt` text. Payments are manual or in test mode, so search text says nothing about money. `tests/unit/seo.test.ts` fails if such a word appears, and `tests/e2e/seo.spec.ts` checks the pages themselves.
 
 **Three actions only the owner can do** (nothing here can be done from the code):
 

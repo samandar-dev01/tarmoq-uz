@@ -1,3 +1,6 @@
+import { avatarUrl } from "@/lib/avatar";
+import { LEVEL_LABEL, sellerLevel } from "@/lib/levels";
+import { isOnline } from "@/lib/presence";
 import Link from "next/link";
 import { translator } from "@/i18n/dictionary";
 import { getLocale } from "@/i18n/server";
@@ -20,6 +23,7 @@ export async function ProviderCard({ p, variant = "card" }: { p: ProviderCardDat
   const t = translator(locale);
   const href = providerHref(locale, p.slug);
   const category = categoryName(locale, p.category);
+  const level = sellerLevel(p);
   if (variant === "poster") {
     return (
       <Link
@@ -55,13 +59,21 @@ export async function ProviderCard({ p, variant = "card" }: { p: ProviderCardDat
           </svg>
           {t(PROFILE_STATUS_LABEL.APPROVED)}
         </span>
-        {p.ratingCount === 0 && (
-          <span className="absolute right-3 top-3 rounded-full bg-saffron px-3 py-0.5 text-xs font-bold text-night">{t("Yangi")}</span>
+        {level > 0 ? (
+          <span className="absolute right-3 top-3 rounded-full bg-saffron px-3 py-0.5 text-xs font-bold text-night">{t(LEVEL_LABEL[level as 1 | 2 | 3])}</span>
+        ) : (
+          p.ratingCount === 0 && <span className="absolute right-3 top-3 rounded-full bg-saffron px-3 py-0.5 text-xs font-bold text-night">{t("Yangi")}</span>
         )}
       </span>
       <span className="flex flex-1 flex-col px-5 pb-5">
-        <Avatar name={p.user.name} size="lg" className="-mt-8 ring-4 ring-surface" />
+        <Avatar name={p.user.name} src={avatarUrl(p.user)} size="lg" className="-mt-8 ring-4 ring-surface" />
         <h3 className="mt-3 font-display text-lg font-semibold tracking-tight">{p.user.name}</h3>
+        {isOnline(p.user.lastSeenAt) && (
+          <span className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-turquoise-deep">
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-turquoise" />
+            {t("Onlayn")}
+          </span>
+        )}
         <span className="mt-2 flex flex-wrap gap-1.5">
           <span className={tagClasses("paper")}>
             {labelFor(locale, p.city)}

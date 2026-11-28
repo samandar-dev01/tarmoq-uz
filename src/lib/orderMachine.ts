@@ -7,7 +7,8 @@ export type Actor = "client" | "provider" | "admin" | "system";
 const TRANSITIONS: Record<OrderStatus, Partial<Record<OrderStatus, Actor[]>>> = {
   REQUESTED: { AGREEMENT_PENDING: ["provider"], CANCELLED: ["client", "provider"] },
   AGREEMENT_PENDING: { AWAITING_PAYMENT: ["system"], CANCELLED: ["client", "provider"] },
-  AWAITING_PAYMENT: { IN_PROGRESS: ["system"], CANCELLED: ["client", "provider"] },
+  // Either side may ask to change terms that are not paid yet: back to waiting for the other's acceptance.
+  AWAITING_PAYMENT: { IN_PROGRESS: ["system"], AGREEMENT_PENDING: ["client", "provider"], CANCELLED: ["client", "provider"] },
   IN_PROGRESS: { DELIVERED: ["provider"], DISPUTED: ["client", "provider"] },
   DELIVERED: {
     IN_PROGRESS: ["client"], // revision request (limit checked by the route)

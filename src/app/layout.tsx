@@ -1,17 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Onest, Unbounded } from "next/font/google";
 import "./globals.css";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { Container } from "@/components/ui/Container";
 import { LocaleProvider } from "@/i18n/client";
 import { OG_LOCALE } from "@/i18n/config";
 import { translator } from "@/i18n/dictionary";
-import { localHref } from "@/i18n/paths";
 import { getLocale } from "@/i18n/server";
-import { getCurrentUser } from "@/lib/auth";
-import { paymentsAreTest } from "@/lib/payments/mode";
-import { footerLinks, HELP } from "@/lib/shellNav";
 import { SITE_NAME, siteUrl } from "@/lib/site";
 import { getTheme } from "@/lib/theme";
 import { THEME_BROWSER_COLOR } from "@/lib/themePure";
@@ -26,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = translator(locale);
   return {
     title: { default: t("Tarmoq.uz: ijodkorlar tarmogʻi"), template: "%s · Tarmoq.uz" },
-    // No payment promise here: a meta description cannot carry the "Sinov rejimi" badge (hard rule 2).
+    // No payment promise here: search text never says anything about money (hard rule 2).
     description: t("Oʻzbekistondagi videograf, fotograf va montajchilarni toping, narxlarini solishtiring va shartlarni yozma kelishib oling."),
     // Every address search engines and link previews see is built from APP_URL (src/lib/site.ts), so a new domain is one setting.
     metadataBase: new URL(siteUrl()),
@@ -45,12 +40,10 @@ export async function generateViewport(): Promise<Viewport> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const viewer = await getCurrentUser();
   // The scheme is decided here, on the server, from the cookie: the first byte of HTML is already in it (no script, no flash).
   const theme = await getTheme();
   // The language is decided here too (src/i18n/server.ts) and handed to the client components, so both write the same text.
   const locale = await getLocale();
-  const t = translator(locale);
   return (
     <html lang={locale} data-theme={theme} data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
@@ -67,30 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LocaleProvider locale={locale}>
         <Header />
         <main className="flex-1">{children}</main>
-        <footer className="mt-24 border-t border-line bg-surface">
-          <Container pad="none" className="grid gap-8 py-12 sm:grid-cols-[1.4fr_1fr] sm:items-start">
-            <div>
-              <p className="font-display text-2xl font-bold tracking-tight">
-                tarmoq<span className="text-cobalt-dark">.uz</span>
-              </p>
-              <p className="mt-2 max-w-sm text-ink-soft">{t("Oʻzbekiston ijodkorlari bir tarmoqda: videograf, fotograf va montajchilarni toping.")}</p>
-            </div>
-            <nav aria-label={t("Pastki menyu")} className="flex flex-wrap gap-x-6 gap-y-0 sm:justify-end">
-              {footerLinks(viewer).map((link) => (
-                <ButtonLink key={link.href} href={localHref(locale, link.href)} variant="link" className="inline-flex min-h-11 items-center">{t(link.label)}</ButtonLink>
-              ))}
-              {/* Help: the support team's Telegram, in a new tab. An admin answers from the admin area and is not given it. */}
-              {viewer?.role !== "ADMIN" && (
-                <ButtonLink href={HELP.href} target="_blank" rel="noopener noreferrer" variant="link" className="inline-flex min-h-11 items-center">{t(HELP.label)}</ButtonLink>
-              )}
-            </nav>
-          </Container>
-          <div className="border-t border-line bg-paper">
-            <Container pad="none" className="py-4 text-sm text-ink-soft">
-              © {new Date().getFullYear()} Tarmoq.uz.{paymentsAreTest() && ` ${t("Toʻlovlar hozircha sinov rejimida ishlaydi: haqiqiy pul yechilmaydi.")}`}
-            </Container>
-          </div>
-        </footer>
+        <Footer />
         </LocaleProvider>
       </body>
     </html>

@@ -22,7 +22,7 @@ test("mijoz Andijondagi mobilografni topadi, buyurtma beradi, kelishadi, toʻlay
   await page.getByLabel("Eng kam narx (soʻm)").fill("250000");
   await page.getByLabel("Eng yuqori narx (soʻm)").fill("350000");
   await page.getByRole("button", { name: "Filtrlarni qoʻllash" }).click();
-  await expect(page.getByText("Jasur Karimov")).toBeVisible();
+  await expect(page.getByText("Jasur Karimov").first()).toBeVisible();
   await expect(page.getByText("Bobur Tursunov")).toHaveCount(0);
   await expect(page.getByText("Dilshod Rahimov")).toHaveCount(0);
 
@@ -31,39 +31,42 @@ test("mijoz Andijondagi mobilografni topadi, buyurtma beradi, kelishadi, toʻlay
   await expect(page.getByRole("heading", { name: "Jasur Karimov" })).toBeVisible();
   await page.locator("li", { hasText: "Instagram Reel" }).getByRole("link", { name: "Buyurtma berish" }).click();
 
-  // 4. Create the order
+  // 4. Buy the package: accept its terms, and the checkout opens
   await settled(page);
   await page.getByLabel("Nima kerakligini yozing").fill(goodBrief);
-  await page.getByRole("button", { name: "Buyurtma yuborish" }).click();
-  await expect(page).toHaveURL(/\/orders\/[a-z0-9]+$/);
-  const orderUrl = page.url();
-  await expect(page.getByTestId("order-status")).toHaveText("Soʻrov yuborildi");
+  await page.getByLabel("Shartlar bilan tanishib chiqdim va qabul qilaman").check();
+  await page.getByRole("button", { name: "Sotib olish" }).click();
+  await expect(page).toHaveURL(/\/checkout\/[a-z0-9]+$/);
+  const orderUrl = page.url().replace("/checkout/", "/orders/");
+  await page.goto(orderUrl);
+  await expect(page.getByTestId("order-status")).toHaveText("Toʻlov kutilmoqda");
+  await expect(page.getByText("Kelishuv (1-versiya)")).toBeVisible();
 
-  // 5. Provider sends terms (acceptance recorded)
+  // 5. Before the payment the creator changes the terms
   const providerCtx = await browser.newContext();
   const provider = await providerCtx.newPage();
   await login(provider, "jasur@demo.test");
   await provider.goto(orderUrl);
   await settled(provider);
-  await expect(provider.getByRole("heading", { name: "Shartlaringizni yuboring" })).toBeVisible();
-  await provider.getByRole("button", { name: "Shartlarni mijozga yuborish" }).click();
-  await expect(provider.getByText("Kelishuv (1-versiya)")).toBeVisible();
+  await provider.locator("summary", { hasText: "Shartlarni oʻzgartirish" }).click();
+  await provider.getByRole("button", { name: "Yangilangan shartlarni yuborish" }).click();
+  await expect(provider.getByText("Kelishuv (2-versiya)")).toBeVisible();
 
-  // 6. Client accepts the agreement
+  // 6. Client accepts the new version
   await page.reload();
   await settled(page);
-  await expect(page.getByText("Kelishuv (1-versiya)")).toBeVisible();
+  await expect(page.getByTestId("order-status")).toHaveText("Kelishuv kutilmoqda");
   await page.getByLabel("Shartlar bilan tanishib chiqdim va qabul qilaman").check();
   await page.getByRole("button", { name: "Kelishuvni qabul qilish" }).click();
   await expect(page.getByTestId("order-status")).toHaveText("Toʻlov kutilmoqda");
   await expect(page.getByText(/Mijoz qabul qildi: \d{1,2}-/)).toBeVisible();
 
   // 7. Sandbox payment with the success test card
-  await page.getByRole("link", { name: "Xavfsiz toʻlash (sinov rejimi)" }).click();
+  await page.getByRole("link", { name: "Toʻlash", exact: true }).click();
   await page.getByRole("button", { name: "Toʻldirish: Muvaffaqiyatli" }).click();
   await page.getByRole("button", { name: /toʻlash$/ }).click();
   await expect(page).toHaveURL(/paid=1/);
-  await expect(page.getByText("Toʻlov tasdiqlandi (sinov rejimi)")).toBeVisible();
+  await expect(page.getByText("Toʻlov tasdiqlandi.")).toBeVisible();
   await expect(page.getByTestId("order-status")).toHaveText("Jarayonda");
 
   // 8. Provider uploads the video

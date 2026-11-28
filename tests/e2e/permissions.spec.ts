@@ -19,7 +19,7 @@ test.describe("anonymous visitors", () => {
 
   test("can browse public pages", async ({ page }) => {
     await page.goto("/search?city=Andijon");
-    await expect(page.getByText("Jasur Karimov")).toBeVisible();
+    await expect(page.getByText("Jasur Karimov").first()).toBeVisible(); // one card per package
     // pending and non-Andijon providers are not listed
     await expect(page.getByText("Dilshod Rahimov")).toHaveCount(0);
   });
@@ -71,7 +71,7 @@ test.describe("creators do not see other creators", () => {
     // A visitor: the list, the API and a profile are public.
     expect((await request.get("/api/providers")).status()).toBe(200);
     await page.goto("/search");
-    await expect(page.getByText("Jasur Karimov")).toBeVisible();
+    await expect(page.getByText("Jasur Karimov").first()).toBeVisible(); // one card per package
     await expect(page.getByRole("link", { name: "Ijodkorlar", exact: true }).first()).toBeVisible();
 
     for (const email of ["client@demo.test", "admin@demo.test"]) {
@@ -158,9 +158,9 @@ test.describe("order access and workflow permissions", () => {
     // wrong role for the step
     expect((await owner.ctx.post(`/api/orders/${orderId}/propose`, { data: { price: 1, deliveryDays: 1, revisions: 0 } })).status()).toBe(403);
     expect((await jasur.post(`/api/orders/${orderId}/approve`)).status()).toBe(403);
-    expect((await jasur.post(`/api/orders/${orderId}/agreement`, { data: { termsHash: "a".repeat(64), accept: true } })).status()).toBe(403);
 
-    // right role, but state does not allow it yet
+    // right role, but state does not allow it yet (a creator accepts only terms the client asked for: none wait here)
+    expect((await jasur.post(`/api/orders/${orderId}/agreement`, { data: { termsHash: "a".repeat(64), accept: true } })).status()).toBe(409);
     expect((await owner.ctx.post(`/api/orders/${orderId}/approve`)).status()).toBe(409);
     expect((await owner.ctx.post("/api/payments/sandbox/intent", { data: { orderId } })).status()).toBe(409);
     expect((await owner.ctx.post(`/api/orders/${orderId}/agreement`, { data: { termsHash: "a".repeat(64), accept: true } })).status()).toBe(409);

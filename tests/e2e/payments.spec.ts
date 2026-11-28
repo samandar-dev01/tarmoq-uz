@@ -1,11 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { apiAs, registerApi, jasurServiceId, goodBrief, tinyMp4 } from "./helpers";
 
-// A page may say "payments are a test" only while they are. With real money moving (manual mode) it must not.
-test("the footer admits test mode only while payments are the sandbox", async ({ page }) => {
-  const sandbox = (process.env.PAYMENT_PROVIDER ?? "sandbox") === "sandbox";
-  await page.goto("/");
-  await expect(page.getByText("Toʻlovlar hozircha sinov rejimida ishlaydi")).toHaveCount(sandbox ? 1 : 0);
+// The owner's rule: no page carries a test-mode label, in any payment mode.
+test("no public page says payments are in test mode", async ({ page }) => {
+  for (const path of ["/", "/search", "/providers/jasur-karimov"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText(/sinov rejimi/i)).toHaveCount(0);
+  }
 });
 
 // Payment success must come from the server's own check of the card, never from anything the browser claims.

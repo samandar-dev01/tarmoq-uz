@@ -61,8 +61,8 @@ const creator: CreatorSeo = {
 
 // ---------- the payment-words guard ----------
 
-// Payments are manual or test mode, and meta tags, JSON-LD, llms.txt and the FAQ cannot carry the "Sinov rejimi" badge.
-// So none of them may promise anything about money, in Uzbek or in Russian (the lists and why: tests/bannedPaymentWords.ts).
+// Payments are manual or test mode, so meta tags, JSON-LD, llms.txt and the FAQ
+// may not promise anything about money, in Uzbek or in Russian (the lists and why: tests/bannedPaymentWords.ts).
 const bannedIn = (text: string) => bannedWordsIn(text);
 /** Every string anywhere inside a value (keys are not text a reader sees, so only values). */
 function allStrings(value: unknown, out: string[] = []): string[] {

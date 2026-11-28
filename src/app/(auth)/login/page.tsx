@@ -7,6 +7,7 @@ import { getT } from "@/i18n/server";
 import { DOORS, parseDoor } from "@/lib/authRole";
 import { WRONG_DOOR } from "@/lib/doorMessages";
 import { googleEnabled } from "@/lib/googleAuth";
+import { mailEnabled } from "@/lib/mail";
 import { safeNext } from "@/lib/safeNext";
 
 export async function generateMetadata() {
@@ -24,6 +25,7 @@ const GOOGLE_NOTICE: Record<string, string> = {
   cancelled: tk("Google orqali kirish bekor qilindi."),
   unverified: tk("Google hisobingizdagi email tasdiqlanmagan. Emailni tasdiqlab, qayta urinib koʻring."),
   admin: tk("Admin hisobi Google orqali kirmaydi. Email va parol bilan kiring."),
+  two_factor: tk("Bu hisobda ikki bosqichli kirish yoqilgan. Email, parol va ilovadagi kod bilan kiring."),
   inactive: tk("Bu hisob faolsizlantirilgan."),
   limited: tk("Urinishlar juda koʻp. Birozdan keyin qayta urinib koʻring."),
   failed: tk("Google orqali kirib boʻlmadi. Qayta urinib koʻring."),
@@ -57,7 +59,7 @@ export default async function LoginPage(props: Props) {
         </>
       )}
       <Card padding="lg" className={role === "admin" ? "mt-6" : "mt-4"}>
-        <LoginForm role={role} next={next} googleEnabled={googleEnabled()} notice={notice} />
+        <LoginForm role={role} next={next} googleEnabled={googleEnabled()} notice={notice} resetEnabled={mailEnabled()} />
       </Card>
     </Container>
   );

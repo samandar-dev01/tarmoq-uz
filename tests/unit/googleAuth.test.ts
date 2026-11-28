@@ -250,11 +250,11 @@ describe("resolveGoogleUser: who ends up signed in", () => {
 
   it("makes a new CLIENT at the client door and a new CREATOR at the creator door, with no password and no phone", async () => {
     holds();
-    db.create.mockImplementation(async ({ data }: { data: { name: string; role: "CLIENT" | "PROVIDER" } }) => ({ id: "new1", name: data.name, role: data.role }));
-    expect(await resolveGoogleUser(profile, "client", "2.2.2.2")).toEqual({ kind: "ok", user: { id: "new1", name: "Ali Valiyev", role: "CLIENT" }, created: true });
+    db.create.mockImplementation(async ({ data }: { data: { name: string; role: "CLIENT" | "PROVIDER" } }) => ({ id: "new1", name: data.name, role: data.role, tokenVersion: 0 }));
+    expect(await resolveGoogleUser(profile, "client", "2.2.2.2")).toEqual({ kind: "ok", user: { id: "new1", name: "Ali Valiyev", role: "CLIENT", tokenVersion: 0 }, created: true });
     expect(db.create).toHaveBeenLastCalledWith({
       data: { name: "Ali Valiyev", email: "ali@example.com", role: "CLIENT", googleSub: "g-1" },
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true, role: true, tokenVersion: true },
     });
     expect(db.audit).toHaveBeenLastCalledWith(expect.objectContaining({ action: "USER_REGISTERED", meta: { via: "google" } }));
 

@@ -95,7 +95,7 @@ function missing(f: Found): string[] {
 describe("every Uzbek sentence has a Russian entry", () => {
   it("the scanner sees the keys it is meant to see", () => {
     const of = (file: string) => found.find((f) => f.file === file)!;
-    expect(of("src/components/AccountMenu.tsx").ui).toEqual(["Hisob menyusi: {name}", "Chiqilmoqda…", "Chiqish"]);
+    expect(of("src/components/AccountMenu.tsx").ui).toEqual(["Hisob menyusi: {name}", "Bildirishnomalar", "Sozlamalar", "Chiqilmoqda…", "Chiqish"]);
     expect(of("src/lib/shellNav.ts").ui).toContain("Ijodkor boʻlib qoʻshilish");
     expect(of("src/lib/auth.ts").server).toEqual(["Davom etish uchun tizimga kiring.", "Buning uchun sizda ruxsat yoʻq."]);
     expect(of("src/lib/validators.ts").server).toEqual([
