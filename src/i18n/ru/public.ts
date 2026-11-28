@@ -46,6 +46,7 @@ export const publicPages: Record<string, string> = {
   "Instagram uchun professional reel…": "Профессиональный рилс для Instagram…",
   "Dron orqali suratga olish…": "Съёмка с дрона…",
   "Mahsulotlarim uchun fotosessiya…": "Фотосессия для моих товаров…",
+  "Aynan mos xizmat topilmadi. Yaqin natijalarni koʻrsatyapmiz.": "Точных совпадений нет. Показываем близкие результаты.",
   "Shahar": "Город",
   "Barcha shaharlar": "Все города",
   "Qidirish": "Найти",

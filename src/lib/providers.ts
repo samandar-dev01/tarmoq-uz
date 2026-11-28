@@ -5,6 +5,7 @@ import { CITIES, LANGUAGES, PAGE_SIZE } from "./constants";
 import { findSubcategory } from "./catalog";
 import { LEVEL_MINIMUM } from "./levels";
 import { ONLINE_MS } from "./presence";
+import { spellings, understand, type Concept } from "./searchWords";
 
 export const searchSchema = z.object({
   q: z.string().trim().max(100).optional(),
@@ -170,12 +171,58 @@ export function serviceWhere(filters: SearchFilters, now = Date.now()): Prisma.S
   return where;
 }
 
+const holds = (word: string) => ({ contains: word, mode: "insensitive" as const });
+
+/**
+ * A package answers a concept by its creator's direction, its subdirection or its own words. The creator's headline is
+ * left out on purpose: one that mentions weddings would make each of their packages a wedding package.
+ */
+function answers({ categories, subs, written }: Concept): Prisma.ServiceWhereInput {
+  const ways: Prisma.ServiceWhereInput[] = written.flatMap(spellings).flatMap((w) => [{ title: holds(w) }, { description: holds(w) }]);
+  if (categories) ways.push({ profile: { category: { slug: { in: [...categories] } } } });
+  if (subs) ways.push({ subcategory: { in: [...subs] } });
+  return { OR: ways };
+}
+
+/** A package says a word that is no concept (a name, a camera): in its title or description, or its creator's headline or name. */
+const says = (word: string): Prisma.ServiceWhereInput => ({
+  OR: spellings(word).flatMap((w) => [{ title: holds(w) }, { description: holds(w) }, { profile: { headline: holds(w) } }, { profile: { user: { name: holds(w) } } }]),
+});
+
+/**
+ * What to try, in order, when no package holds the phrase as typed (src/lib/searchWords.ts reads the sentence): first the
+ * packages that answer everything it asks for, then, as `close` results, those that answer any of it. The other filters
+ * (city, price, delivery...) always hold; a city named in the sentence counts when none was chosen.
+ */
+export function meaningSearches(filters: SearchFilters, now = Date.now()): { where: Prisma.ServiceWhereInput; close: boolean }[] {
+  if (!filters.q) return [];
+  const { concepts, words, city } = understand(filters.q);
+  const asked = [...concepts.map(answers), ...words.map(says)];
+  if (asked.length === 0 && !city) return [];
+  const base = serviceWhere({ ...filters, q: undefined, city: filters.city ?? city ?? undefined }, now);
+  const searches = [{ where: { ...base, AND: asked }, close: false }];
+  // Close results go by what is wanted (the concepts); other words only when there is nothing else to go by.
+  if (asked.length > 1) searches.push({ where: { ...base, AND: [{ OR: concepts.length > 0 ? concepts.map(answers) : words.map(says) }] }, close: true });
+  return searches;
+}
+
 export async function searchServices(filters: SearchFilters, pageSize = PAGE_SIZE) {
   const { sort, page } = filters;
-  const where = serviceWhere(filters);
-  const [total, items] = await Promise.all([
-    prisma.service.count({ where }),
-    prisma.service.findMany({ where, orderBy: SERVICE_ORDER[sort], skip: (page - 1) * pageSize, take: pageSize, select: SERVICE_SELECT }),
-  ]);
-  return { items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
+  const read = (where: Prisma.ServiceWhereInput) =>
+    Promise.all([
+      prisma.service.count({ where }),
+      prisma.service.findMany({ where, orderBy: SERVICE_ORDER[sort], skip: (page - 1) * pageSize, take: pageSize, select: SERVICE_SELECT }),
+    ]);
+  let [total, items] = await read(serviceWhere(filters));
+  let close = false;
+  if (total === 0) {
+    for (const search of meaningSearches(filters)) {
+      [total, items] = await read(search.where);
+      if (total > 0) {
+        close = search.close;
+        break;
+      }
+    }
+  }
+  return { items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)), close };
 }

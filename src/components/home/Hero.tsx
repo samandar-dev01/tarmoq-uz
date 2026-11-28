@@ -11,6 +11,7 @@ import { localHref } from "@/i18n/paths";
 import { catalogName, findSubcategory } from "@/lib/catalog";
 import { categoryName, CITIES, labelFor } from "@/lib/constants";
 import { HERO_PHOTOS, type HomePhoto } from "@/lib/homeImages";
+import { SEARCH_EXAMPLES } from "@/lib/searchWords";
 
 type Category = { slug: string; name: string; nameRu?: string | null };
 type Tile = { photo: HomePhoto; href: string; label: string; shape: string; priority?: boolean; lazy?: boolean };
@@ -46,13 +47,8 @@ export function Hero({ locale, categories }: { locale: Locale; categories: Categ
     { photo: HERO_PHOTOS.samarkand, href: localHref(locale, "/search?city=Samarqand"), label: labelFor(locale, "Samarqand"), shape: "aspect-[4/3]", lazy: false },
     { photo: HERO_PHOTOS.cafe, ...sub("product-video"), shape: "aspect-[4/5]" },
   ];
-  const examples = [
-    t("Toʻyimiz uchun fotograf kerak…"),
-    t("Kafem uchun kreativ video…"),
-    t("Instagram uchun professional reel…"),
-    t("Dron orqali suratga olish…"),
-    t("Mahsulotlarim uchun fotosessiya…"),
-  ];
+  // The search understands each of these (src/lib/searchWords.ts).
+  const examples = SEARCH_EXAMPLES.map((example) => t(example));
 
   return (
     <section className="border-b border-line bg-warm">
@@ -72,14 +68,14 @@ export function Hero({ locale, categories }: { locale: Locale; categories: Categ
           </p>
           <form action={localHref(locale, "/search")} method="get" className="relative z-20 mt-5 animate-rise [animation-delay:240ms] sm:mt-8">
             {/* One search block: what on the first row, where and go on the second. It shows focus for the controls inside it. */}
-            <div className="rounded-hero border border-line-strong bg-surface p-2 shadow-lift-lg transition-[border-color,box-shadow] duration-200 ease-snap focus-within:border-cobalt focus-within:shadow-[0_0_0_4px_rgb(var(--c-cobalt)/0.25)]">
+            <div className="relative rounded-hero border border-line-strong bg-surface p-2 shadow-lift-lg transition-[border-color,box-shadow] duration-200 ease-snap focus-within:border-cobalt focus-within:shadow-[0_0_0_4px_rgb(var(--c-cobalt)/0.25)]">
               <div className="flex items-center">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" className="ml-3 hidden shrink-0 text-cobalt-dark sm:block">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m20 20-3.8-3.8" />
                 </svg>
                 <div className="min-w-0 flex-1">
-                  <SearchBox big bare hideLabel label={t("Sizga nima kerak?")} placeholder={t("Qanday ijodkor yoki xizmat izlayapsiz?")} examples={examples} />
+                  <SearchBox big bare hideLabel listUnderPanel label={t("Sizga nima kerak?")} placeholder={t("Qanday ijodkor yoki xizmat izlayapsiz?")} examples={examples} />
                 </div>
               </div>
               <div className="mt-1 flex items-center gap-2 border-t border-line pt-2">

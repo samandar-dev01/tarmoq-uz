@@ -18,6 +18,11 @@ type Props = {
   bare?: boolean;
   /** Example searches that take turns with the placeholder while the field is empty and not in use. Already translated. */
   examples?: readonly string[];
+  /**
+   * For a field with more controls under it in one panel: from the `sm` width up, the suggestions drop under the whole
+   * panel (the nearest positioned box around the field), so they never lie over those controls.
+   */
+  listUnderPanel?: boolean;
 };
 
 const TURN_MS = 3500;
@@ -52,7 +57,7 @@ function Turns({ texts }: { texts: readonly string[] }) {
  * The search field with suggestions under it while typing (the WAI-ARIA combobox pattern). It stays a plain field of its
  * form: with nothing picked, Enter sends the form as before, and without JavaScript it is simply the field.
  */
-export function SearchBox({ defaultValue = "", examples, ...field }: Props) {
+export function SearchBox({ defaultValue = "", examples, listUnderPanel, ...field }: Props) {
   const t = useT();
   const router = useRouter();
   const listId = useId();
@@ -126,33 +131,36 @@ export function SearchBox({ defaultValue = "", examples, ...field }: Props) {
   };
 
   return (
-    <div ref={box} className="relative">
-      <Field
-        {...field}
-        className={takingTurns ? "placeholder:!text-transparent" : ""}
-        name="q"
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          setTyped(true);
-        }}
-        onKeyDown={onKeyDown}
-        onBlur={() => {
-          setOpen(false);
-          setFocused(false);
-        }}
-        onFocus={() => {
-          setOpen(true);
-          setFocused(true);
-        }}
-        autoComplete="off"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={shown}
-        aria-controls={listId}
-        aria-activedescendant={shown && active >= 0 ? `${listId}-${active}` : undefined}
-      />
-      {takingTurns && <Turns texts={[field.placeholder, ...examples]} />}
+    <div ref={box} className={listUnderPanel ? "relative sm:static" : "relative"}>
+      {/* The examples lie over the field only, so the field has a box of its own. */}
+      <div className="relative">
+        <Field
+          {...field}
+          className={takingTurns ? "placeholder:!text-transparent" : ""}
+          name="q"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setTyped(true);
+          }}
+          onKeyDown={onKeyDown}
+          onBlur={() => {
+            setOpen(false);
+            setFocused(false);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setFocused(true);
+          }}
+          autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={shown}
+          aria-controls={listId}
+          aria-activedescendant={shown && active >= 0 ? `${listId}-${active}` : undefined}
+        />
+        {takingTurns && <Turns texts={[field.placeholder, ...examples]} />}
+      </div>
       <ul id={listId} role="listbox" aria-label={t("Takliflar")} hidden={!shown} className="absolute inset-x-0 top-full z-30 mt-2 min-w-64 overflow-hidden rounded-card border border-line-strong bg-surface p-2 text-left text-ink shadow-lift-lg">
         {list.map((s, i) => (
           <li
