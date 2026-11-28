@@ -90,7 +90,7 @@ test.describe("Russian off (the live site today): the public pages are what they
     // The words themselves are the ones the suite has always looked for.
     const home = await (await request.get("/")).text();
     expect(titleOf(home)).toBe("Tarmoq.uz: Oʻzbekistondagi videograf, fotograf va montajchilar");
-    expect(home).toContain("Ijodkorni shu yerdan toping.");
+    expect(home).toContain("Ijodingiz uchun kerakli inson");
     expect(jsonLdOf(home).find((b) => b["@type"] === "WebSite")!.inLanguage).toBe("uz");
     expect(JSON.stringify(jsonLdOf(home).find((b) => b["@type"] === "FAQPage"))).not.toContain("inLanguage");
   });
@@ -138,7 +138,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     const expected: Record<string, { title: RegExp | string; h: string[]; uz: string }> = {
       "/ru": {
         title: "Tarmoq.uz: видеографы, фотографы и монтажёры Узбекистана",
-        h: ["Найдите креатора здесь.", "Лучшие креаторы", "Как работает заказ", "Почему Tarmoq.uz?", "Частые вопросы", "Вы креатор? Вас ждут заказы."],
+        h: ["Тот, кто нужен вашей идее, —", "Лучшие креаторы", "Как работает заказ", "Почему Tarmoq.uz?", "Частые вопросы", "Вы креатор? Вас ждут заказы."],
         uz: "/",
       },
       "/ru/search": { title: "Найдите креаторов · Tarmoq.uz", h: ["Найдите креаторов", "Фильтруйте по городу, направлению и цене."], uz: "/search" },
@@ -372,7 +372,7 @@ test.describe("Russian on (second copy of the build, RUSSIAN_LIVE=1)", () => {
     expect(UZ_APOSTROPHE.test(shown)).toBe(false);
     await page.getByRole("link", { name: "Вернуться на главную" }).click();
     await expect(page).toHaveURL(new RegExp(`^${RU_BASE}/ru$`));
-    await expect(page.getByRole("heading", { level: 1, name: "Найдите креатора здесь." })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Тот, кто нужен вашей идее, — здесь." })).toBeVisible();
     expect(problems).toEqual([]);
   });
 

@@ -63,6 +63,8 @@ const nextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/api/admin/payments/:id/receipt", headers: [{ key: "Content-Security-Policy", value: `${siteCsp}, ${receiptCsp}` }] },
+      // The home page photographs (public/images): kept for a week. A changed picture gets a new file name.
+      { source: "/images/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
       ...noindexHeaders,
     ];
   },

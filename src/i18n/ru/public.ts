@@ -34,11 +34,19 @@ export const publicPages: Record<string, string> = {
     "Зарегистрируйтесь как креатор, заполните профиль и добавьте пакеты. Администраторы сайта проверят профиль, и после одобрения он появится в списке креаторов.",
 
   // ---- home page ----
-  "Ijodkorni shu yerdan toping.": "Найдите креатора здесь.",
-  "Mobilograf, fotograf va montajchilarni solishtiring, shartlarni yozma kelishib oling. Pul ish qabul qilinmaguncha ijodkorga oʻtmaydi.":
-    "Сравнивайте мобильных видеографов, фотографов и монтажёров, согласуйте условия письменно. Деньги не перейдут к креатору, пока вы не примете работу.",
+  "Oʻzbekiston ijodkorlari bir tarmoqda": "Креаторы Узбекистана в одной сети",
+  "Ijodingiz uchun kerakli inson": "Тот, кто нужен вашей идее, —",
+  "shu yerda.": "здесь.",
+  "Eng yaxshi ijodkorlarni toping, xizmatlarni solishtiring va gʻoyalaringizni amalga oshiring.":
+    "Находите лучших креаторов, сравнивайте услуги и воплощайте свои идеи.",
   "Sizga nima kerak?": "Что вам нужно?",
-  "Toʻy videosi, reel, kafe reklamasi…": "Свадебное видео, рилс, реклама кафе…",
+  "Qanday ijodkor yoki xizmat izlayapsiz?": "Какого креатора или услугу вы ищете?",
+  "Toʻyimiz uchun fotograf kerak…": "Нужен фотограф на нашу свадьбу…",
+  "Kafem uchun kreativ video…": "Креативное видео для моего кафе…",
+  "Instagram uchun professional reel…": "Профессиональный рилс для Instagram…",
+  "Dron orqali suratga olish…": "Съёмка с дрона…",
+  "Mahsulotlarim uchun fotosessiya…": "Фотосессия для моих товаров…",
+  "Aynan mos xizmat topilmadi. Yaqin natijalarni koʻrsatyapmiz.": "Точных совпадений нет. Показываем близкие результаты.",
   "Shahar": "Город",
   "Barcha shaharlar": "Все города",
   "Qidirish": "Найти",

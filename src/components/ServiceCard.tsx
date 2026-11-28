@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { Avatar, coverArt } from "@/components/ui/Avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { cardClasses } from "@/components/ui/Card";
+import { CardPicture } from "@/components/ui/CardPicture";
+import { CoverFallback } from "@/components/ui/CoverFallback";
 import { SaveButton } from "@/components/SaveButton";
 import { translator } from "@/i18n/dictionary";
 import { getLocale } from "@/i18n/server";
@@ -24,12 +26,8 @@ export async function ServiceCard({ s, saved }: { s: ServiceCardData; saved: boo
     <div className="relative flex w-full">
       <Link href={providerHref(locale, p.slug)} className={cardClasses({ interactive: true, padding: "none", className: "group flex w-full flex-col overflow-hidden" })}>
         <span className="relative block aspect-video overflow-hidden border-b border-line">
-          {thumb.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-snap group-hover:scale-105" />
-          ) : (
-            <span aria-hidden="true" className="ikat absolute -inset-4 transition-transform duration-300 ease-snap group-hover:scale-105" style={{ background: coverArt(s.id) }} />
-          )}
+          <CoverFallback />
+          {thumb.image && <CardPicture src={thumb.image} />}
           {thumb.video && (
             <span aria-hidden="true" className="absolute bottom-2 left-2 grid h-9 w-9 place-items-center rounded-full bg-media/60">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="rgb(var(--c-on-accent))">

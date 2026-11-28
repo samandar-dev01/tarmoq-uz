@@ -96,6 +96,8 @@ export default async function SearchPage(props: Props) {
       <p className="mt-8 font-semibold" aria-live="polite">
         {t("{count} topildi", { count: plural(locale, result.total, "xizmat", ["услуга", "услуги", "услуг"]) })}
       </p>
+      {/* Nothing answers all of the sentence: say so, rather than pass these off as what was asked for. */}
+      {result.close && <p className="mt-1 text-ink-soft">{t("Aynan mos xizmat topilmadi. Yaqin natijalarni koʻrsatyapmiz.")}</p>}
 
       {result.items.length === 0 ? (
         <div className="mt-4">

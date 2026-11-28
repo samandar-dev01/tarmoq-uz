@@ -15,7 +15,7 @@ A working marketplace where clients find and hire creators across Uzbekistan (fo
 | Area | Where | Notes |
 |---|---|---|
 | Auth (register, login, logout, roles) | `src/lib/auth.ts`, `src/app/api/auth/*` | bcrypt, signed httpOnly cookie, role re-checked against the DB on every API call |
-| Homepage | `src/app/page.tsx` | Hero search with a live creator feed, categories, top creators |
+| Homepage | `src/app/page.tsx`, `src/components/home` | Hero search with rotating examples beside a photo collage, the directions as photographs, top creators with a preview of their portfolio. The photographs are stock pictures (not creators' work) in `public/images/home`, listed with their sources in `src/lib/homeImages.ts` |
 | Search and filters | `src/app/search`, `src/lib/providers.ts` | keyword, city, category, price range, sort, pagination, URL-shareable |
 | Provider profiles | `src/app/providers/[slug]` | packages, portfolio, reviews, order button |
 | Profile wizard | `src/components/wizard`, `src/app/api/profile` | 5 steps, server-validated, submit for admin review |
