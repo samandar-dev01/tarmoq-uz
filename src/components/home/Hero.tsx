@@ -51,8 +51,8 @@ export function Hero({ locale, categories }: { locale: Locale; categories: Categ
   const examples = SEARCH_EXAMPLES.map((example) => t(example));
 
   return (
-    <section className="border-b border-line bg-warm">
-      <Container pad="none" className="grid items-center gap-7 py-6 sm:gap-10 sm:py-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 lg:py-16">
+    <section>
+      <Container pad="none" className="grid items-center gap-7 pt-6 sm:gap-10 sm:pt-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 lg:pt-14">
         {/* Above the collage, so the search suggestions are never under a picture. */}
         <div className="relative z-20 min-w-0">
           {/* On a phone the line is left out, so the first photographs show without scrolling. */}
